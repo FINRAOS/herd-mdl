@@ -1,0 +1,13 @@
+{
+    "namespace": "MDL",
+    "businessObjectDefinitionName": "MDL_OBJECT",
+    "businessObjectFormatUsage": "MDL",
+    "businessObjectFormatFileType": "TXT",
+"businessObjectFormatVersion": "0",
+    "partitionKey": "TDATE",
+    "partitionValue": "2017-01-02",
+    "manifestFiles" : [ {
+        "fileName" : "smokeTestingDataFile.txt",
+        "rowCount" : "2"
+    } ]
+}

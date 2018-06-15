@@ -1,0 +1,30 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.java]
+indent_style = space
+indent_size = 4
+
+# Docstrings and comments use max_line_length = 79
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 119
+
+# Use 2 spaces for bash files
+[*.{sh,yml}]
+indent_style = space
+indent_size = 2
+
+# The JSON files contain newlines inconsistently
+[*.json]
+indent_size = 2
+insert_final_newline = ignore
+
+[*.md]
+trim_trailing_whitespace = false

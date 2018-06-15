@@ -1,0 +1,437 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Wrapper template which drives the installation of a new MDL stack.
+Parameters:
+  ReleaseVersion:
+    Description: >
+      MDL release version to use. [REQUIRED]
+    Type: String
+    Default: '1.0.0'
+  DeployComponents:
+    Type: String
+    Default: Herd
+    AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
+    Description: Choose individual MDL components to deploy. Default is All, which will deploy all components.
+  CertificateInfo:
+    Default: 'CN=mdl.org,OU=MDL,O=FINRA,L=WASHINGTON,ST=DC,C=US'
+    Description: Format - CN=<>,OU=<>,O=<>,L=<>,ST=<>,C=<>
+    Type: String
+  MDLInstanceName:
+    Description: MDL Instance Name, lowercase letters and numbers with max length 15
+    AllowedPattern: '[a-z0-9]*'
+    MaxLength: 15
+    Type: String
+    Default: mdl
+  CreateIAMRoles:
+    Default: 'true'
+    Description: Create IAM Roles - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  HerdDBClass:
+    Default: db.m4.large
+    Description: Database instance class for Herd
+    Type: String
+  MetastorDBClass:
+    Default: db.m4.large
+    Description: Database instance class for Metastor
+    Type: String
+  HerdDBSize:
+    Default: '10'
+    Description: The size of the database (GB) for Herd
+    Type: Number
+  MetastorDBSize:
+    Default: '10'
+    Description: The size of the database (GB) for Metastor
+    Type: Number
+  CreateRDSInstances:
+    Default: 'true'
+    Description: Create RDS instances - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  CreateS3Buckets:
+    Default: 'true'
+    Description: Create S3 buckets - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  CreateSecurityGroups:
+    Default: 'true'
+    Description: Create Security Groups - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  CreateSQS:
+    Default: 'true'
+    Description: Create SQS - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  CreateOpenLDAP:
+    Default: 'false'
+    Description: Create OpenLDAP for Authentication - true || false
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Type: String
+  CreateKeypair:
+    Default: 'true'
+    Type: String
+    Description: Create Keypair - true || false
+    AllowedValues: [true, false]
+  LdapDN:
+    AllowedPattern: ^(dc=[^=]+,)*(dc=[^=]+)$
+    ConstraintDescription: Must be 1 or more dc= statements separated by commas. all
+      lowercase, no spaces.
+    Default: dc=mdl,dc=org
+    Description: 'The DN of the LDAP domain. example: dc=myorg,dc=com'
+    Type: String
+  CreateVPC:
+    Default: 'true'
+    Description: Create VPC - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateCloudFrontDistribution:
+    Default: 'true'
+    Description: Create Cloudfront distribution for Shepherd - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CertificateArn:
+    Description: Certificate Arn paramter key for MDL
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Default: 'mdl'
+    Description: Domain name suffix for MDL Domains
+    Type: String
+  ImageId:
+    Default: ami-1853ac65
+    Description: AMI id for EC2 instances
+    Type: String
+  CreateDemoObjects:
+    Default: 'true'
+    Description: Whether to configure Herd/Metastor with demo objects and data
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  RefreshDatabase:
+    Default: 'true'
+    Description: Whether to refresh database
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'false'
+    Description: Whether to enable SSL for Load Balancers
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  Environment:
+    Description: Application environment
+    Default: prod
+    Type: String
+  CustomTagName:
+    Description: Custom tag name to be applied to all the resources
+    Type: String
+    Default: 'application'
+  CustomTagValue:
+    Description: Custom tag value to be applied to all the resources
+    Type: String
+    Default: 'herd-mdl'
+  EsInstanceType:
+    Description: Elasticsearch EC2 node instance type
+    Type: String
+    Default: t2.medium
+  HerdInstanceType:
+    Description: Herd Application EC2 instance type
+    Type: String
+    Default: m4.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  MetastorInstanceType:
+    Description: Metastor Application EC2 instance type
+    Type: String
+    Default: m4.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  BdsqlMasterInstanceType:
+    Description: Bdsql Application EMR Master instance type
+    Type: String
+    Default: m4.4xlarge
+  BdsqlCoreInstanceType:
+    Description: Bdsql Application EMR Core instance type
+    Type: String
+    Default: m4.4xlarge
+  LdapInstanceType:
+    Default: t2.medium
+    Description: ldap EC2 instance type
+    Type: String
+  NumberOfBdsqlCoreInstances:
+    Description: Number of Core Instances for the EMR cluster
+    Type: String
+    Default: '1'
+  JavaKeyStoreFile:
+    Description: S3 location of JKS file for the given certificate
+    Type: String
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Deployment Parameters
+        Parameters:
+          - ReleaseVersion
+          - DeployComponents
+      - Label:
+          default: Resources - Conditional Parameters
+        Parameters:
+          - CreateS3Buckets
+          - CreateIAMRoles
+          - CreateRDSInstances
+          - CreateSecurityGroups
+          - CreateSecurityGroups
+          - CreateSQS
+          - CreateOpenLDAP
+          - CreateVPC
+          - CreateKeypair
+          - CreateCloudFrontDistribution
+          - CreateDemoObjects
+          - EnableSSLAndAuth
+          - RefreshDatabase
+      - Label:
+          default: Generic Parameters
+        Parameters:
+          - ImageId
+          - MDLInstanceName
+      - Label:
+          default: RDS Parameters
+        Parameters:
+          - HerdDBClass
+          - HerdDBSize
+          - MetastorDBClass
+          - MetastorDBSize
+      - Label:
+          default: Web Domain and Certificate Parameters
+        Parameters:
+          - CertificateArn
+          - DomainNameSuffix
+          - HostedZoneName
+          - CertificateInfo
+          - JavaKeyStoreFile
+          - LdapDN
+      - Label:
+          default: EC2 Instance Parameters
+        Parameters:
+          - EsInstanceType
+          - HerdInstanceType
+          - LdapInstanceType
+          - MetastorInstanceType
+          - BdsqlMasterInstanceType
+          - BdsqlCoreInstanceType
+          - NumberOfBdsqlCoreInstances
+      - Label:
+          default: Tag Parameters
+        Parameters:
+          - CustomTagName
+          - CustomTagValue
+          - Environment
+Resources:
+  DeployBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: '*'
+  ArtifactCopyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import os
+          import zipfile
+          import cfnresponse
+          import boto3
+          import urllib.request
+
+
+          def handler(event, context):
+              release_version = event['ResourceProperties']['ReleaseVersion']
+              deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
+
+              deployment_bucket_name = deployment_bucket_location
+              prefix = release_version
+
+              s3 = boto3.client('s3')
+              physical_id = "CopyArtifactsLambdaPhysicalID"
+              response_data = {}
+
+              if event['RequestType'] == 'Create':
+                  response_data['Message'] = 'Copied artifacts to staging bucket: {}.'.format(deployment_bucket_name)
+
+                  try:
+                      os.makedirs('/tmp/downloads/')
+                      os.makedirs('/tmp/extracts/')
+                      release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/v{}/herd-mdl-{}.zip'.format(release_version, release_version)
+                      local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('mdl.zip'))
+                      urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
+
+                      local_extract_directory = '/tmp/extracts/{}'.format(release_version)
+                      with zipfile.ZipFile(local_deploy_file, 'r') as zip_ref:
+                          zip_ref.extractall(local_extract_directory)
+
+                      s3_resource = boto3.resource('s3')
+                      for root, dirs, files in os.walk(local_extract_directory):
+                          for filename in files:
+                              abs_filepath = os.path.join(root, filename)
+                              directory = os.path.relpath(root, local_extract_directory)
+                              print('Uploading file: {} to bucket: {} with key: {}'.format(abs_filepath, deployment_bucket_name, os.path.join(prefix, directory, filename)))
+                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.join(prefix, directory, filename))
+
+                      response_data['Message'] = 'Successfully uploaded artifacts to staging location.'
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Delete':
+                  response_data['Message'] = 'Deleted artifacts from bucket: {}'.format(deployment_bucket_name)
+
+                  objects_to_delete = []
+
+                  try:
+                      for key in s3.list_objects_v2(Bucket=deployment_bucket_name, Prefix=prefix, MaxKeys=1000)['Contents']:
+                          objects_to_delete.append({
+                              'Key': key['Key']
+                          })
+
+                      print('Deleting {} objects from staging bucket: {}'.format(len(objects_to_delete), deployment_bucket_name))
+                      s3.delete_objects(
+                          Bucket=deployment_bucket_name,
+                          Delete={
+                              'Objects': objects_to_delete
+                          }
+                      )
+                      print('Deleted {} objects'.format(len(objects_to_delete)))
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Update':
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  ArtifactCopyCustomResource:
+    Type: Custom::ArtifactCopierResource
+    Properties:
+      ServiceToken: !GetAtt 'ArtifactCopyLambdaFunction.Arn'
+      ReleaseVersion: !Ref ReleaseVersion
+      BucketArn: !GetAtt DeployBucket.Arn
+      DeploymentBucketLocation: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
+  MdlStack:
+    DependsOn: ArtifactCopyCustomResource
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}', '/', !Ref ReleaseVersion,  '/cft/mdl.yml']]
+      Parameters:
+        ReleaseVersion: !Ref ReleaseVersion
+        DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
+        DeployComponents: !Ref DeployComponents
+        CertificateInfo: !Ref CertificateInfo
+        MDLInstanceName: !Ref MDLInstanceName
+        CreateIAMRoles: !Ref CreateIAMRoles
+        HerdDBClass: !Ref HerdDBClass
+        MetastorDBClass: !Ref MetastorDBClass
+        HerdDBSize: !Ref HerdDBSize
+        MetastorDBSize: !Ref MetastorDBSize
+        CreateRDSInstances: !Ref CreateRDSInstances
+        CreateS3Buckets: !Ref CreateS3Buckets
+        CreateSecurityGroups: !Ref CreateSecurityGroups
+        CreateSQS: !Ref CreateSQS
+        CreateOpenLDAP: !Ref CreateOpenLDAP
+        CreateKeypair: !Ref CreateKeypair
+        LdapDN: !Ref LdapDN
+        CreateVPC: !Ref CreateVPC
+        CreateCloudFrontDistribution: !Ref CreateCloudFrontDistribution
+        CertificateArn: !Ref CertificateArn
+        HostedZoneName: !Ref HostedZoneName
+        DomainNameSuffix: !Ref DomainNameSuffix
+        ImageId: !Ref ImageId
+        HerdInstanceType: !Ref HerdInstanceType
+        BdsqlMasterInstanceType: !Ref BdsqlMasterInstanceType
+        MetastorInstanceType: !Ref MetastorInstanceType
+        BdsqlCoreInstanceType: !Ref BdsqlCoreInstanceType
+        LdapInstanceType: !Ref LdapInstanceType
+        EsInstanceType: !Ref EsInstanceType
+        CreateDemoObjects: !Ref CreateDemoObjects
+        RefreshDatabase: !Ref RefreshDatabase
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        Environment: !Ref Environment
+        CustomTagName: !Ref CustomTagName
+        CustomTagValue: !Ref CustomTagValue
+        NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
+        JavaKeyStoreFile: !Ref JavaKeyStoreFile
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+Outputs:
+  HerdURL:
+    Value: !GetAtt [MdlStack, Outputs.HerdURL]
+    Description: URL to access Herd

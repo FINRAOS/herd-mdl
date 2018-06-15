@@ -1,0 +1,129 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Functional Test
+Parameters:
+  RollbackOnFailure:
+    Default: 'true'
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Whether rollback on app stack failure
+  MDLInstanceName:
+    Default: mdlt
+    Description: Application Name:Unique name to be associated with the stack, max length 5 as LB name has 32 chars length limitation
+    Type: String
+    AllowedPattern: '[a-z0-9]*'
+    MaxLength: 5
+  MDLRelease:
+    Default: DEV
+    Description: 'Enter the MDL release to use - RC, DEV etc'
+    Type: String
+  MDLTBranch:
+    Default: mdlt
+    Description: Enter the MDLT branch to use
+    Type: String
+  KeyName:
+    Default: APP_MDL_PROD
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: String
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  DeploymentBucketName:
+    Description: Bucket where the deployment code resides
+    Default: 328703175456-us-east-1-prod-poc
+    Type: String
+  BuildBucketName:
+    Description: Bucket where the latest build is available
+    Default: mdl-build-bucket
+    Type: String
+  ImageIdParamterKey:
+    Default: ami-1853ac65
+    Description: AMI id for EC2 instances
+    Type: String
+  InstanceType:
+    Description: Test deploy host EC2 instance type
+    Type: String
+    Default: t2.medium
+  VpcIdParameterKey:
+    Default: /VPC/Primary/ID
+    Description: VPC Parameter key name in system store
+    Type: String
+  PrivateSubnetsParameterKey:
+    Default: /VPC/Primary/SubnetIDs/private
+    Description: VPC Parameter key name in system store
+    Type: String
+  JavaKeyStoreFile:
+    Description: S3 location of JKS file for the given certificate
+    Type: String
+    Default: s3://mdl-build-bucket/certs/certs.jks
+Resources:
+  DeployHostHttpsWithAuth:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref BuildBucketName
+          - /mdlt/build/
+          - !Ref MDLTBranch
+          - /
+          - scripts/cft/mdltDeployHost.yml
+      Parameters:
+        EnableSSLAndAuth: 'true'
+        RollbackOnFailure: !Ref RollbackOnFailure
+        MDLInstanceName: !Join
+          - ''
+          - - !Ref MDLInstanceName
+            - httpsauth
+        MDLRelease: !Ref MDLRelease
+        MDLTBranch: !Ref MDLTBranch
+        KeyName: !Ref KeyName
+        DeploymentBucketName: !Ref DeploymentBucketName
+        BuildBucketName: !Ref BuildBucketName
+        ImageIdParamterKey: !Ref ImageIdParamterKey
+        InstanceType: !Ref InstanceType
+        VpcIdParameterKey: !Ref VpcIdParameterKey
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        JavaKeyStoreFile: !Ref JavaKeyStoreFile
+  DeployHostHttpWithoutAuth:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref BuildBucketName
+          - /mdlt/build/
+          - !Ref MDLTBranch
+          - /
+          - scripts/cft/mdltDeployHost.yml
+      Parameters:
+        EnableSSLAndAuth: 'false'
+        RollbackOnFailure: !Ref RollbackOnFailure
+        MDLInstanceName: !Join
+          - ''
+          - - !Ref MDLInstanceName
+            - httpnauth
+        MDLRelease: !Ref MDLRelease
+        MDLTBranch: !Ref MDLTBranch
+        KeyName: !Ref KeyName
+        DeploymentBucketName: !Ref DeploymentBucketName
+        BuildBucketName: !Ref BuildBucketName
+        ImageIdParamterKey: !Ref ImageIdParamterKey
+        InstanceType: !Ref InstanceType
+        VpcIdParameterKey: !Ref VpcIdParameterKey
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        JavaKeyStoreFile: !Ref JavaKeyStoreFile

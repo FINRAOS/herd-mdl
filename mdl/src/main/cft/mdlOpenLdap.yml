@@ -1,0 +1,352 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MDL - OpenLDAP - Installation template
+Parameters:
+  MDLInstanceName:
+    Description: MDLInstanceName name
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+  EnableHTTPS:
+    Description: Whether to enable HTTPS
+    Type: String
+  DeploymentBucketName:
+    Description: Deployment bucket where the code resides
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+  VpcIdParameterKey:
+    Description: SSM Parameter Name for VPC ID
+    Type: String
+  PrivateSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: String
+  KeypairName:
+    Description: The name of the keypair in parameter store.
+    Type: String
+  ImageId:
+    Description: AMI id for EC2 instances
+    Type: String
+  LdapInstanceType:
+    Description: Ldap EC2 instance type
+    Type: String
+  DN:
+    AllowedPattern: ^(dc=[^=]+,)*(dc=[^=]+)$
+    ConstraintDescription: Must be 1 or more dc= statements separated by commas. all
+      lowercase, no spaces.
+    Default: dc=mdl,dc=org
+    Description: 'The DN of the LDAP domain. example: dc=myorg,dc=com'
+    Type: String
+  MDLServerDeploymentRole:
+    Description: Elasticsearch Deployment Service Role Name
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLInstanceProfile:
+    Description: Elasticsearch Instance Profile Name
+    Type: AWS::SSM::Parameter::Value<String>
+  CreateOpenLDAP:
+    Description: Create OpenLDAP for Authentication - true || false
+    Type: String
+Conditions:
+  CreateOpenLDAPCondition: !Equals
+    - !Ref CreateOpenLDAP
+    - 'true'
+Resources:
+  MDLLdap:
+    Condition: CreateOpenLDAPCondition
+    Type: 'AWS::CodeDeploy::Application'
+    Properties:
+      ApplicationName: !Sub '${MDLInstanceName}-OpenLdap'
+  DeployGroupASGroup:
+    Condition: CreateOpenLDAPCondition
+    Type: 'AWS::CodeDeploy::DeploymentGroup'
+    DependsOn: MDLLdap
+    Properties:
+      ApplicationName: !Sub '${MDLInstanceName}-OpenLdap'
+      DeploymentGroupName: !Sub '${MDLInstanceName}-OpenLdapDeployGroup'
+      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      ServiceRoleArn: !Ref MDLServerDeploymentRole
+      Ec2TagFilters:
+        - Key: Name
+          Value: !Sub 'AWSLX${MDLInstanceName}-OpenLdap-${Environment}'
+          Type: KEY_AND_VALUE
+  LdapSecurityGroup:
+    Condition: CreateOpenLDAPCondition
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${MDLInstanceName}-${Environment}-OpenLdapInstanceSecurityGroup'
+      GroupDescription: Allows ssl, http and https ingress from all sources in the VPC
+      VpcIdParameterKey: !Ref VpcIdParameterKey
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '636'
+          ToPort: '636'
+          CidrIp: 0.0.0.0/0
+  LdapEc2Instance:
+    Condition: CreateOpenLDAPCondition
+    Type: 'AWS::EC2::Instance'
+    DependsOn: LdapSecurityGroup
+    Metadata:
+      Comment: Install Open Ldap
+      'AWS::CloudFormation::Init':
+        configSets:
+          PreInstallAndInstall:
+            - PreInstall
+            - Install
+        PreInstall:
+          commands:
+            1-setup-codedeploy:
+              command: !Join
+                - ''
+                - - |
+                    function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
+                  - |
+                    function execute_cmd {         cmd="${1}";             echo $cmd;         eval $cmd;         check_error ${PIPESTATUS[0]} "$cmd"; }
+                  - |
+                    user=mdladmin
+                  - |
+                    password=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
+                  - |
+                    execute_cmd "useradd -m -d /home/${user} ${user}"
+                  - |
+                    echo ${user}:${password} | chpasswd
+                  - |
+                    echo "${user} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+                  - |
+                    cd /home/${user}
+                  - |
+                    execute_cmd "curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install"
+                  - |
+                    execute_cmd "chmod +x ./install"
+                  - |
+                    ./install auto 2>&1
+                  - |
+                    sleep 2m
+                  - |
+                    execute_cmd "./install auto" 2>&1 # Retrying after 2m
+                  - |
+                    execute_cmd "sudo service codedeploy-agent status"
+                  - |
+                    echo 'Code deploy setup complete, sleeping for 2 mins'
+                  - |
+                    sleep 2m
+        Install:
+          commands:
+            1-deploy:
+              command: !Join
+                - ''
+                - - |
+                    chown -R mdladmin:mdladmin /home/mdladmin/deploy
+                  - 'aws deploy create-deployment --application-name '
+                  - !Sub '${MDLInstanceName}-OpenLdap'
+                  - ' --deployment-config-name CodeDeployDefault.OneAtATime'
+                  - ' --deployment-group-name '
+                  - !Sub '${MDLInstanceName}-OpenLdapDeployGroup'
+                  - ' --s3-location bucket='
+                  - !Ref DeploymentBucketName
+                  - ',bundleType=zip,key='
+                  - !Ref ReleaseVersion
+                  - '/ldap/ldap.zip '
+                  - ' --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+          files:
+            /home/mdladmin/deploy/mdl/conf/deploy.props:
+              content: !Join
+                - ''
+                - - waitHandleForLdap="
+                  - !Ref LdapWaitHandle
+                  - |-
+                    "
+                    MDLInstanceName=
+                  - !Ref MDLInstanceName
+                  - |-
+
+                    Environment=
+                  - !Ref Environment
+                  - |-
+
+                    stackName=
+                  - !Ref 'AWS::StackName'
+                  - |-
+
+                    region=
+                  - !Ref 'AWS::Region'
+                  - |-
+
+                    deployLocation=/home/mdladmin/deploy/mdl
+                  - |+
+
+              mode: '000400'
+              owner: mdladmin
+              group: mdladmin
+            /etc/cfn/cfn-hup.conf:
+              content: !Join
+                - ''
+                - - |
+                    [main]
+                  - stack=
+                  - !Ref 'AWS::StackId'
+                  - |+
+
+                  - region=
+                  - !Ref 'AWS::Region'
+                  - |+
+
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join
+                - ''
+                - - |
+                    [cfn-auto-reloader-hook]
+                  - |
+                    triggers=post.update
+                  - >
+                    path=Resources.LdapEc2Instance.Metadata.AWS::CloudFormation::Init
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '  --stack '
+                  - !Ref 'AWS::StackId'
+                  - '  --resource LdapEc2Instance '
+                  - '  --configsets PreInstallAndInstall '
+                  - '  --region     '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    runas=root
+    Properties:
+      ImageId: !Ref ImageId
+      KeyName: !Ref KeypairName
+      InstanceType: !Ref LdapInstanceType
+      SecurityGroupIds:
+        - !Ref LdapSecurityGroup
+      SubnetId: !Select
+        - '0'
+        - !Split
+          - ','
+          - !Ref PrivateSubnetsParameterKey
+      IamInstanceProfile: !Ref MDLInstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub 'AWSLX${MDLInstanceName}-OpenLdap-${Environment}'
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LdapEc2Instance --configsets PreInstallAndInstall --region ${AWS::Region}
+          wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+          wget https://s3.amazonaws.com/aws-codedeploy-${AWS::Region}/cloudwatch/codedeploy_logs.conf
+          chmod +x ./awslogs-agent-setup.py
+          sudo python awslogs-agent-setup.py -n -r ${AWS::Region} -c s3://aws-codedeploy-${AWS::Region}/cloudwatch/awslogs.conf
+          sudo mkdir -p /var/awslogs/etc/config
+          sudo cp codedeploy_logs.conf /var/awslogs/etc/config/
+          service awslogs restart
+  LdapWaitHandle:
+    Condition: CreateOpenLDAPCondition
+    Type: AWS::CloudFormation::WaitConditionHandle
+  LdapWaitCondition:
+    Condition: CreateOpenLDAPCondition
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: LdapEc2Instance
+    Properties:
+      Handle: !Ref LdapWaitHandle
+      Timeout: '600'
+  LdapBaseDNParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/BaseDN
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, !Ref DN, NoAuthentication]
+      Description: LDAP Base DN parameter
+  LdapMdlAppUsernameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/MdlAppUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, ldap_mdl_app_user, NoAuthentication]
+      Description: MDL LDAP username parameter
+  LdapAdministratorNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AdministratorName
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, ldap_admin_user, NoAuthentication]
+      Description: LDAP administrator name
+  HostNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/HostName
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: LDAP HostName name
+  MDLAppPasswordParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/MDLAppPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: LDAP MDLAppPassword
+Outputs:
+  OpenLdapHostnameDns:
+    Condition: CreateOpenLDAPCondition
+    Description: Open LDAP instance's private DNS name.
+    Value: !GetAtt
+      - LdapEc2Instance
+      - PrivateDnsName
+  OpenLdapHostIp:
+    Condition: CreateOpenLDAPCondition
+    Description: Open LDAP instance's private IP address.
+    Value: !GetAtt
+      - LdapEc2Instance
+      - PrivateIp

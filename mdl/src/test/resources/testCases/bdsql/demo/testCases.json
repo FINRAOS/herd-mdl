@@ -1,0 +1,65 @@
+[{
+	"name": "List Objects",
+	"description": "List all the objects in sec_market_data schema",
+	"testCase" : {
+		"type": "jdbc",
+		"connectionProperties" : {
+			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
+			"user": "${ldapAppUser}",
+			"password": "${ldapAppPassword}",
+			"jdbcURL": "${BdsqlURL}/sec_market_data"
+		},
+		"query": [
+			"show tables from sec_market_data"
+		]
+	},
+	"assert": [
+		"securitydata_mdl_txt",
+		"tradedata_mdl_txt"
+	]
+},
+{
+	"name": "Data Multiple Files",
+	"description": "Verify data from multiple files for the same partition is available",
+	"ignore": false,
+	"testCase" : {
+		"type": "jdbc",
+		"connectionProperties" : {
+			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
+            "user": "${ldapTestUser1}",
+            "password": "${ldapTestUser1Password}",
+			"jdbcURL": "${BdsqlURL}/sec_market_data"
+		},
+		"query": [
+			"select * from securitydata_mdl_txt",
+			"where date=DATE'2017-08-01' and (symbol='MMM' or symbol='ABBV')"
+		]
+	},
+	"assert": [
+		"2017-08-01,202.29,203.31,201.76,203.18,2015108,MMM,2017-08-01",
+		"2017-08-01,70.03,70.84,69.85,70.38,6681693,ABBV,2017-08-01"
+	]
+},{
+	"name": "Data Multiple Partitions",
+	"description": "Verify data from multiple partition is available",
+	"ignore": false,
+	"testCase" : {
+		"type": "jdbc",
+		"connectionProperties" : {
+			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
+            "user": "${ldapTestUser1}",
+            "password": "${ldapTestUser1Password}",
+			"jdbcURL": "${BdsqlURL}/sec_market_data"
+		},
+		"query": [
+			"select * from securitydata_mdl_txt",
+			"where date IN (DATE'2017-08-01',DATE'2017-08-02') and symbol='ATVI'",
+			"order by date asc"
+		],
+		"delimiter": "|"
+	},
+	"assert": [
+		"2017-08-01|62.26|62.48|61.52|62.4|4484472|ATVI|2017-08-01",
+		"2017-08-02|62.6|62.65|60.43|61.45|5559231|ATVI|2017-08-02"
+	]
+}]

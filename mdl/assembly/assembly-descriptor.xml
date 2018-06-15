@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2018 herd-mdl contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+  <id>herd-mdl-bundle</id>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <files>
+    <file>
+      <source>${project.build.directory}/herd.zip</source>
+      <outputDirectory>${file.separator}herd</outputDirectory>
+    </file>
+    <file>
+      <source>${project.build.directory}/keypair_generator_lambda.zip</source>
+      <outputDirectory>${file.separator}lambda</outputDirectory>
+    </file>
+    <file>
+      <source>${project.build.directory}/elasticsearch.zip</source>
+      <outputDirectory>${file.separator}elasticsearch</outputDirectory>
+    </file>
+    <file>
+      <source>${project.build.directory}/metastorEc2.zip</source>
+      <outputDirectory>${file.separator}metastorEc2</outputDirectory>
+    </file>
+    <file>
+      <source>${project.build.directory}/metastorEmr.zip</source>
+      <outputDirectory>${file.separator}metastorEmr</outputDirectory>
+    </file>
+    <file>
+      <source>${project.build.directory}/ldap.zip</source>
+      <outputDirectory>${file.separator}ldap</outputDirectory>
+    </file>
+  </files>
+  <fileSets>
+    <fileSet>
+      <directory>${project.build.directory}/cft</directory>
+      <outputDirectory>${file.separator}cft</outputDirectory>
+    </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/bootstrap</directory>
+      <outputDirectory>${file.separator}bootstrap</outputDirectory>
+    </fileSet>
+  </fileSets>
+</assembly>

@@ -1,0 +1,214 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Prerequisites Primary installation template
+Parameters:
+  CreateS3Buckets:
+    Default: 'true'
+    Description: Create S3 buckets - true || false
+    Type: String
+  CreateIAMRoles:
+    Default: 'true'
+    Description: Create IAM Roles - true || false
+    Type: String
+  CreateKeypair:
+    Default: 'true'
+    Description: Create Keypair - true || false
+    Type: String
+  CreateSecurityGroups:
+    Default: 'true'
+    Description: Create Security Groups - true || false
+    Type: String
+  CreateSQS:
+    Default: 'true'
+    Description: Create SQS - true || false
+    Type: String
+  CreateVPC:
+    Default: 'true'
+    Description: Create VPC - true || false
+    Type: String
+  DeploymentBucketName:
+    Description: Deployment bucket name
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+    Default: RC
+  MDLInstanceName:
+    Description: MDLInstance name
+    Type: String
+  Environment:
+    Description: Application environment
+    Default: dev
+    Type: String
+  CustomTagName:
+    Description: Custom tag name to be applied to all the resources
+    Type: String
+  CustomTagValue:
+    Description: Custom tag value to be applied to all the resources
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'true'
+    Description: Whether to enable Authentication/SSL
+    Type: String
+Conditions:
+  CreateS3BucketsCondition: !Equals
+    - !Ref CreateS3Buckets
+    - 'true'
+  CreateSecurityGroupsCondition: !And
+    - !Equals
+      - !Ref CreateSecurityGroups
+      - 'true'
+    - !Equals
+      - !Ref CreateVPC
+      - 'false'
+  CreateIAMRolesCondition: !Equals
+    - !Ref CreateIAMRoles
+    - 'true'
+  CreateSQSCondition: !Equals
+    - !Ref CreateSQS
+    - 'true'
+  CreateVPCCondition: !Equals
+    - !Ref CreateVPC
+    - 'true'
+  CreateKeypair: !Equals
+    - !Ref CreateKeypair
+    - 'true'
+  UseS3staticWebPages: !And [!Equals [!Ref EnableSSLAndAuth, false], !Equals [!Ref CreateS3Buckets, true]]
+Resources:
+  VPCCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateVPCCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlVpc.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        CustomTagName: !Ref CustomTagName
+        CustomTagValue: !Ref CustomTagValue
+  S3BucketsCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateS3BucketsCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateS3Buckets.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+  IAMRolesCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateIAMRolesCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateIAMRoles.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+  SQSCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateSQSCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateSQS.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+  SecurityGroupsCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn:
+      - VPCCreation
+    Condition: CreateVPCCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateSecurityGroups.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        Environment: !Ref Environment
+  SecurityGroupsCreationWithoutVPC:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateSecurityGroupsCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateSecurityGroups.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        Environment: !Ref Environment
+  KeypairCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateKeypair
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlCreateKeyPair.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        KeypairSsmKeyName: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /KEYS/KeypairName
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+Outputs:
+  ShepherdWebSiteBucketUrl:
+    Condition: UseS3staticWebPages
+    Value: !GetAtt
+      - S3BucketsCreation
+      - Outputs.ShepherdWebSiteBucketUrl
+    Description: URL for website hosted on S3

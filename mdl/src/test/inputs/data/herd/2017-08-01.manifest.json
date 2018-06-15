@@ -1,0 +1,13 @@
+{
+  "namespace": "{{namespace}}",
+  "businessObjectDefinitionName": "{{objectname}}",
+  "businessObjectFormatUsage": "MDL",
+  "businessObjectFormatFileType": "TXT",
+  "businessObjectFormatVersion": "0",
+  "partitionKey": "TDATE",
+  "partitionValue": "2017-08-01",
+  "manifestFiles" : [{
+    "fileName" : "2017-08-01.data.txt",
+    "rowCount" : 2
+  }]
+}

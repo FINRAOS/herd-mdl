@@ -1,0 +1,238 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Prerequisites Secondary installation template
+Parameters:
+  VpcIdParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  PrivateSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  PublicSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  CertificateArn:
+    Description: Certificate Arn
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+  CreateRDSInstances:
+    Default: 'true'
+    Description: Create RDS instances - true || false
+    Type: String
+  CreateCloudFrontDistribution:
+    Default: 'true'
+    Description: Create Cloudfront distribution for Shepherd - true || false
+    Type: String
+  CreateOpenLDAP:
+    Default: 'false'
+    Description: Create OpenLDAP for Authentication - true || false
+    Type: String
+  LdapDN:
+    AllowedPattern: ^(dc=[^=]+,)*(dc=[^=]+)$
+    ConstraintDescription: Must be 1 or more dc= statements separated by commas. all
+      lowercase, no spaces.
+    Description: 'The DN of the LDAP domain. example: dc=myorg,dc=com'
+    Type: String
+  LdapInstanceType:
+    Default: t2.small
+    Description: ldap EC2 instance type
+    Type: String
+  ImageId:
+    Default: ami-1853ac65
+    Description: AMI id for EC2 instances
+    Type: String
+  KeypairName:
+    Description: The name of the keypair in parameter store.
+    Type: AWS::SSM::Parameter::Value<String>
+  HerdDBClass:
+    Default: db.m4.large
+    Description: Database instance class for Herd
+    Type: String
+  MetastorDBClass:
+    Default: db.m4.large
+    Description: Database instance class for Metastor
+    Type: String
+  HerdDBSize:
+    Default: '10'
+    Description: The size of the database (GB) for Herd
+    Type: Number
+  MetastorDBSize:
+    Default: '10'
+    Description: The size of the database (GB) for Metastor
+    Type: Number
+  DeploymentBucketName:
+    Description: Deployment bucket parameter name
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+    Default: RC
+  MDLInstanceName:
+    Description: MDLInstance name
+    Default: MDL
+    Type: String
+  Environment:
+    Description: Application environment
+    Default: dev
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'true'
+    Description: Whether to enable Authentication/SSL
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  MDLInstanceProfile:
+    Description: Elasticsearch Instance Profile Name
+    Type: String
+  MDLServerDeploymentRole:
+    Description: Elasticsearch Deployment Service Role Name
+    Type: String
+Conditions:
+  CreateRDSInstancesCondition: !Equals
+    - !Ref CreateRDSInstances
+    - 'true'
+  CreateCloudFrontDistributionCondition: !Equals [!Ref CreateCloudFrontDistribution, true]
+Resources:
+  OpenLDAPCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlOpenLdap.yml
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        CreateOpenLDAP: !Ref CreateOpenLDAP
+        MDLInstanceProfile: !Ref MDLInstanceProfile
+        MDLServerDeploymentRole: !Ref MDLServerDeploymentRole
+        DeploymentBucketName: !Ref DeploymentBucketName
+        LdapInstanceType: !Ref LdapInstanceType
+        ReleaseVersion: !Ref ReleaseVersion
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        ImageId: !Ref ImageId
+        KeypairName: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /KEYS/KeypairName
+        DN: !Ref LdapDN
+        EnableHTTPS: !Ref EnableSSLAndAuth
+        VpcIdParameterKey: !Ref VpcIdParameterKey
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+  CloudFrontDistributionCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateCloudFrontDistributionCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlShepherd.yml
+      Parameters:
+        ShepherdS3BucketName: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /S3/Shepherd
+        ShepherdS3BucketDomain: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /S3/Domain/Shepherd
+        DomainNameSuffix: !Ref DomainNameSuffix
+        CertificateArn: !Ref CertificateArn
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        MDLInstanceName: !Ref MDLInstanceName
+        HostedZoneName: !Ref HostedZoneName
+  HerdRDSInstanceCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateRDSInstancesCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlHerdRds.yml
+      Parameters:
+        HerdRDSSecurityGroup: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /SecurityGroup/HerdRDS
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        HerdDBClass: !Ref HerdDBClass
+        HerdDBSize: !Ref HerdDBSize
+        VpcIdParameterKey: !Ref VpcIdParameterKey
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        PublicSubnetsParameterKey: !Ref PublicSubnetsParameterKey
+  MetastorRDSInstanceCreation:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateRDSInstancesCondition
+    Properties:
+      TemplateURL: !Join
+        - ''
+        - - 'https://s3.amazonaws.com/'
+          - !Ref DeploymentBucketName
+          - /
+          - !Ref ReleaseVersion
+          - /cft/mdlMetastorRds.yml
+      Parameters:
+        MetastorRDSSecurityGroup: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /SecurityGroup/MetastorRDS
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        MetastorDBClass: !Ref MetastorDBClass
+        MetastorDBSize: !Ref MetastorDBSize
+Outputs:
+  ShepherdURL:
+    Value: !GetAtt
+      - CloudFrontDistributionCreation
+      - Outputs.ShepherdURL
+    Description: URL for Shepherd
+    Condition: CreateCloudFrontDistributionCondition
+  ShepherdDNSName:
+    Value: !GetAtt
+      - CloudFrontDistributionCreation
+      - Outputs.ShepherdDNSName
+    Description: DNS for Shepherd
+    Condition: CreateCloudFrontDistributionCondition

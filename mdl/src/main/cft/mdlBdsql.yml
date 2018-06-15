@@ -1,0 +1,363 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Bdsql - Installation Template
+Parameters:
+  MDLInstanceName:
+    Description: 'MDL Instance name'
+    Type: String
+  Environment:
+    Description: 'Environment/SDLC (eg DEV, QA, PROD)'
+    Default: 'PROD'
+    Type: String
+  MetastorDBHostName:
+    Description: The database host name
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLServerDeploymentRole:
+    Description: 'Metastor Service Deployment role '
+    Type: AWS::SSM::Parameter::Value<String>
+  DeploymentBucketName:
+    Description: Deployment bucket where the code resides
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+    Default: current
+  MDLStagingBucketName:
+    Description: 's3 bucket to store application scripts/metadata for deployment'
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLInstanceProfile:
+    Description: Instance Profile Name
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLEMRServiceRole:
+    Description: EMR Service Profile Name
+    Type: AWS::SSM::Parameter::Value<String>
+  CertificateArn:
+    Description: Certificate Arn
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'true'
+    Description: Whether to enable Authentication/SSL
+    Type: String
+  EmrReleaseLabel:
+    Description: 'EMR release version'
+    Type: String
+    Default: emr-5.13.0
+  BdsqlMasterInstanceType:
+    Description: 'Bdsql Application EMR Master instance type'
+    Type: String
+    Default: m4.4xlarge
+  BdsqlCoreInstanceType:
+    Description: 'Bdsql Application EMR Core instance type'
+    Type: String
+    Default: m4.4xlarge
+  NumberOfBdsqlCoreInstances:
+    Description: 'Number of Core Instances for the EMR cluster'
+    Type: String
+    Default: '1'
+  KeypairName:
+    Description: Key pair name
+    Type: AWS::SSM::Parameter::Value<String>
+  VpcIdParameterKey:
+    Description: 'VPC Parameter key name in system store'
+    Type: AWS::SSM::Parameter::Value<String>
+  PrivateSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  PublicSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  BdsqlALBSecurityGroup:
+    Description: Bdsql ALB Security Group Name
+    Type: AWS::SSM::Parameter::Value<String>
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+  LdapMdlAppUsername:
+    Description: Application service account
+    Type: AWS::SSM::Parameter::Value<String>
+  JavaKeyStoreFile:
+    Description: S3 location of JKS file for the given certificate
+    Type: String
+Conditions:
+  EnableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'true'
+  DisableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'false'
+Resources:
+  BdsqlWaitHandle:
+    Type: 'AWS::CloudFormation::WaitConditionHandle'
+    Properties: {}
+  BdsqlWaitCondition:
+    Type: 'AWS::CloudFormation::WaitCondition'
+    DependsOn: BDSQLConfigStep
+    Properties:
+      Count: 1
+      Handle: !Ref BdsqlWaitHandle
+      Timeout: '900'
+  BdsqlTargetGroupHTTP:
+    Condition: DisableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub '${MDLInstanceName}-BdsqlTargetGroup'
+      Port: 8889
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '300'
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VpcIdParameterKey
+  BdsqlTargetGroupHTTPS:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub '${MDLInstanceName}-BdsqlTargetGroup'
+      Port: 5439
+      Protocol: HTTPS
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '300'
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VpcIdParameterKey
+  BdsqlALBListenerCertificate:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerCertificate'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      ListenerArn: !Ref BdsqlListenerHTTPS
+  BdsqlListenerHTTPS:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BdsqlTargetGroupHTTPS
+      LoadBalancerArn: !Ref BdsqlLoadBalancer
+      Port: '443'
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+  BdsqlListenerHTTP:
+    Condition: DisableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BdsqlTargetGroupHTTP
+      LoadBalancerArn: !Ref BdsqlLoadBalancer
+      Port: 80
+      Protocol: HTTP
+  BdsqlLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Scheme: internet-facing
+      Name: !Sub 'AWSALB${MDLInstanceName}Bdsql${Environment}'
+      Subnets: !Split
+        - ','
+        - !Ref PublicSubnetsParameterKey
+      SecurityGroups:
+        - !Ref BdsqlALBSecurityGroup
+  BdsqlEMRPrestoCluster:
+    Properties:
+      Applications:
+        - Name: Hive
+        - Name: Hadoop
+        - Name: Tez
+        - Name: Presto
+      BootstrapActions:
+        - Name: Bootstrap Actions
+          ScriptBootstrapAction:
+            Path: !Sub 's3://${DeploymentBucketName}/${ReleaseVersion}/bootstrap/prestoEMRBootstrap.sh'
+            Args:
+              - !Ref MDLInstanceName
+              - !Ref Environment
+              - !Ref MDLStagingBucketName
+              - !Ref JavaKeyStoreFile
+              - !Ref 'AWS::Region'
+      Configurations:
+        - Classification: emrfs-site
+          ConfigurationProperties:
+            fs.s3.enableServerSideEncryption: 'true'
+            fs.s3.serverSideEncryptionAlgorithm: AES256
+        - Classification: hive-site
+          ConfigurationProperties:
+            hive.metastore.schema.verification: 'false'
+            hive.warehouse.subdir.inherit.perms: 'true'
+            hive.stats.dbclass: 'jdbc:mysql'
+            hive.stats.jdbcdriver: org.mariadb.jdbc.Driver
+            hive.metastore.client.socket.timeout: '3600'
+            hive.metastore.execute.setugi: 'true'
+            hive.stats.autogather: 'false'
+            javax.jdo.option.ConnectionUserName: 'MS_Hive_0_13'
+            javax.jdo.option.ConnectionPassword: '{{HIVE_PASSWORD}}'
+            hive.metastore.schema.verification: false
+            javax.jdo.option.ConnectionURL: !Sub 'jdbc:mysql://${MetastorDBHostName}:3306/metastor?trustServerCertificate=true&createDatabaseIfNotExist=false&useSSL=true&requireSSL=true'
+            hive.metastore.warehouse.dir: !Join
+              - ''
+              - - 's3://'
+                - !Ref MDLStagingBucketName
+                - /METASTOR/
+            hive.execution.engine: tez
+            hive.security.authorization.enabled: true
+            hive.server2.enable.doAs: false
+            hive.users.in.admin.role: !Ref LdapMdlAppUsername
+            hive.security.authenticator.manager: "org.apache.hadoop.hive.ql.security.SessionStateUserAuthenticator"
+            hive.security.authorization.manager: "org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdHiveAuthorizerFactory"
+            hive.security.metastore.authorization.manager: "org.apache.hadoop.hive.ql.security.authorization.StorageBasedAuthorizationProvider,org.apache.hadoop.hive.ql.security.authorization.MetaStoreAuthzAPIAuthorizerEmbedOnly"
+            hive.security.authorization.createtable.owner.grants: ALL
+        - Classification: tez-site
+          ConfigurationProperties:
+            tez.am.resource.memory.mb: '9728'
+            tez.session.client.timeout.secs: '600'
+            tez.am.container.reuse.enabled: 'true'
+            tez.am.java.opts: '-server -Xmx8192m -Djava.net.preferIPv4Stack=true'
+            tez.am.log.level: DEBUG
+        - Classification: presto-connector-hive
+          ConfigurationProperties:
+            hive.recursive-directories: 'true'
+            hive.allow-drop-table: 'true'
+            hive.s3.sse.enabled: 'true'
+            hive.s3.staging-directory: /mnt/tmp/hive.s3.staging-directory
+            hive.metastore-cache-ttl: 5s
+            hive.metastore-refresh-interval: 5s
+            hive.s3.socket-timeout: 6m
+            hive.max-split-size: 16MB
+            hive.security: !If [EnableSSLAndAuth, sql-standard, legacy]
+        - Classification: presto-config
+          ConfigurationProperties:
+            http-server.http.enabled: 'true'
+            http-server.http.port: '8889'
+            query.max-history: '100'
+            query.max-memory-per-node: 10GB
+            query.max-memory: 40GB
+            query.initial-hash-partitions: '4'
+            query.client.timeout: 20m
+            task.concurrency: '4'
+      Instances:
+        CoreInstanceGroup:
+          EbsConfiguration:
+            EbsBlockDeviceConfigs:
+              - VolumeSpecification:
+                  SizeInGB: '10'
+                  VolumeType: gp2
+                VolumesPerInstance: '1'
+            EbsOptimized: 'true'
+          InstanceCount: !Ref NumberOfBdsqlCoreInstances
+          InstanceType: !Ref BdsqlCoreInstanceType
+          Market: ON_DEMAND
+          Name: Core
+        Ec2KeyName: !Ref KeypairName
+        Ec2SubnetId: !Select
+          - '0'
+          - !Split
+            - ','
+            - !Ref PrivateSubnetsParameterKey
+        MasterInstanceGroup:
+          InstanceCount: '1'
+          InstanceType: !Ref BdsqlMasterInstanceType
+          Market: ON_DEMAND
+          Name: Master Instance
+      LogUri: !Join
+        - ''
+        - - 's3://'
+          - !Ref MDLStagingBucketName
+          - /emrlogs/
+      JobFlowRole: !Ref MDLInstanceProfile
+      Name: !Sub 'MDL-PRESTO-${Environment}-${MDLInstanceName}'
+      ReleaseLabel: !Ref EmrReleaseLabel
+      ServiceRole: !Ref MDLEMRServiceRole
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL-PRESTO-${Environment}-${MDLInstanceName}'
+        - Key: Purpose
+          Value: !Ref MDLInstanceName
+      VisibleToAllUsers: 'true'
+    Type: 'AWS::EMR::Cluster'
+  BDSQLConfigStep:
+    Properties:
+      ActionOnFailure: CONTINUE
+      HadoopJarStep:
+        Args:
+          - !Sub 's3://${DeploymentBucketName}/${ReleaseVersion}/bootstrap/configurePresto.sh'
+          - !Ref DeploymentBucketName
+          - !Ref ReleaseVersion
+          - !Ref 'AWS::Region'
+          - !Ref BdsqlWaitHandle
+          - !Join
+            - ''
+            - - 's3://'
+              - !Ref MDLStagingBucketName
+              - /deploy/metastor/deploy.props
+        Jar: 's3://elasticmapreduce/libs/script-runner/script-runner.jar'
+      JobFlowId: !Ref BdsqlEMRPrestoCluster
+      Name: !Sub '${MDLInstanceName}-BDSQLConfigStep'
+    Type: 'AWS::EMR::Step'
+  Route53ForBdsql:
+    Type: AWS::Route53::RecordSetGroup
+    DependsOn: BdsqlLoadBalancer
+    Condition: EnableSSLAndAuth
+    Properties:
+      HostedZoneName:
+        Ref: HostedZoneName
+      RecordSets:
+      - Name: !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]]
+        Type: CNAME
+        TTL: '900'
+        ResourceRecords: [!GetAtt [BdsqlLoadBalancer, DNSName]]
+Outputs:
+  BdsqlLoadBalancerURL:
+    Value: !Join
+      - ''
+      - - 'jdbc:presto://'
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]], !GetAtt [BdsqlLoadBalancer, DNSName]]
+        - !If [EnableSSLAndAuth, ':443/hive', ':80/hive']
+    Description: Application load balancer URL for Bdsql cluster
+  BdsqlLoadBalancerDNSURL:
+    Value: !Join
+      - ''
+      - - 'jdbc:presto://'
+        - !GetAtt
+          - BdsqlLoadBalancer
+          - DNSName
+        - !If [EnableSSLAndAuth, ':443/hive', ':80/hive']
+    Description: Application load balancer URL for Bdsql cluster
+  BdsqlLoadBalancerDNSName:
+    Value: !GetAtt
+      - BdsqlLoadBalancer
+      - DNSName
+    Description: Application load balancer DNS name for Bdsql Cluster
+  BdsqlEMRPrestoCluster:
+    Value: !Ref BdsqlEMRPrestoCluster
+    Description: EMR Cluster Information
+

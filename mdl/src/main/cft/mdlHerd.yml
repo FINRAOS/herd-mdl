@@ -1,0 +1,558 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Herd - Webserver Installation Template
+Parameters:
+  HerdVersion:
+    Description: Herd version to use.
+    Type: String
+    Default: '0.70.0'
+  HerdALBSecurityGroup:
+    Description: Herd ALB Security Group Name
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLServerDeploymentRole:
+    Description: Herd Deployment Service Role
+    Type: AWS::SSM::Parameter::Value<String>
+  HerdBucketName:
+    Description: 'Herd s3 bucket URL '
+    Type: AWS::SSM::Parameter::Value<String>
+  CreateSQS:
+    Description: Create SQS - true || false
+    Type: AWS::SSM::Parameter::Value<String>
+  ShepherdWebSiteBucketUrl:
+    Description: Shepherd website URL
+    Type: AWS::SSM::Parameter::Value<String>
+  HerdQueueInName:
+    Description: Herd SQS Name
+    Type: AWS::SSM::Parameter::Value<String>
+  SearchIndexUpdateSqsQueueName:
+    Description: Herd ES SQS Name
+    Type: AWS::SSM::Parameter::Value<String>
+  MDLInstanceProfile:
+    Description: Herd Instance Profile Name
+    Type: AWS::SSM::Parameter::Value<String>
+  HerdSecurityGroup:
+    Description: Herd Security Group Name
+    Type: AWS::SSM::Parameter::Value<String>
+  ShepherdDomainName:
+    Description: Domain name for Shepherd
+    Type: String
+  ShepherdWebSiteBucketUrl:
+    Description: Domain name for Shepherd S3 bucket web site url
+    Type: AWS::SSM::Parameter::Value<String>
+  CertificateArn:
+    Description: Certificate Arn
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+  HerdInstanceType:
+    Description: Herd Application EC2 instance type
+    Type: String
+    Default: m4.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  HerdDBHostName:
+    Description: The database host name
+    Type: AWS::SSM::Parameter::Value<String>
+  ImageId:
+    Default: ami-1853ac65
+    Description: AMI id for EC2 instances
+    Type: String
+  RefreshDatabase:
+    Description: Refresh database or not
+    Default: 'false'
+    Type: String
+  DeploymentBucketName:
+    Description: Deployment bucket where the code resides
+    Type: String
+  KeypairName:
+    Description: The name of the keypair in parameter store.
+    Type: AWS::SSM::Parameter::Value<String>
+  VpcIdParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  PrivateSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  PublicSubnetsParameterKey:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  LdapHostName:
+    Description: LDAP Hostname for authentication
+    Type: AWS::SSM::Parameter::Value<String>
+  LdapBaseDN:
+    Description: LDAP base dn for authentication
+    Type: AWS::SSM::Parameter::Value<String>
+  LdapMdlAppUsername:
+    Description: open ldap app user for MDL
+    Type: AWS::SSM::Parameter::Value<String>
+  LdapMdlAppUserPasswordParameterKey:
+    Description: LDAP app user password key (Secure String in SSM Parameter store)
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'true'
+    Description: Whether to enable Authentication/SSL
+    Type: String
+  MDLStagingBucketName:
+    Description: 'Metastor S3 Bucket '
+    Type: AWS::SSM::Parameter::Value<String>
+  CreateDemoObjects:
+    Default: 'true'
+    Description: Whether to configure Herd/Metastor with demo objects and data
+    AllowedValues:
+      - 'true'
+      - 'false'
+    ConstraintDescription: Must specify true or false
+    Type: String
+  CertificateInfo:
+    Default: 'CN=finra.org,OU=ID,O=FINRA,L=WASHINGTON,S=DC,C=US'
+    Description: Self Signed Certificate Information
+    Type: String
+  ElastisearchHostname:
+    Description: Host where elasticsearch is running
+    Type: String
+  MDLInstanceName:
+    Description: MDLInstanceName name
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+Conditions:
+  EnableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'true'
+  DisableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'false'
+Resources:
+  HerdWaitHandle:
+    Type: 'AWS::CloudFormation::WaitConditionHandle'
+    Properties: {}
+  HerdWaitCondition:
+    Type: 'AWS::CloudFormation::WaitCondition'
+    DependsOn: HerdScalingGroup
+    Properties:
+      Count: 1
+      Handle: !Ref HerdWaitHandle
+      Timeout: '900'
+  HerdTargetGroupPlainTXT:
+    Condition: DisableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub '${MDLInstanceName}-HerdTargetGroup'
+      Port: 443
+      Protocol: HTTPS
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '300'
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VpcIdParameterKey
+  HerdTargetGroupSSL:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub '${MDLInstanceName}-HerdTargetGroup'
+      Port: 443
+      Protocol: HTTPS
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: '300'
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref VpcIdParameterKey
+  HerdALBListenerCertificate:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerCertificate'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      ListenerArn: !Ref HerdListenerSSL
+  HerdListenerSSL:
+    Condition: EnableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref HerdTargetGroupSSL
+      LoadBalancerArn: !Ref HerdLoadBalancer
+      Port: '443'
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+  HerdListenerPlainTXT:
+    Condition: DisableSSLAndAuth
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref HerdTargetGroupPlainTXT
+      LoadBalancerArn: !Ref HerdLoadBalancer
+      Port: '80'
+      Protocol: HTTP
+  HerdLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Scheme: internet-facing
+      Name: !Sub 'AWSALB${MDLInstanceName}Herd${Environment}'
+      Subnets: !Split
+        - ','
+        - !Ref PublicSubnetsParameterKey
+      SecurityGroups:
+        - !Ref HerdALBSecurityGroup
+  MDLHerdApplication:
+    Type: 'AWS::CodeDeploy::Application'
+    Properties:
+      ApplicationName: !Sub '${MDLInstanceName}-Herd'
+  DeployGroupASGroup:
+    Type: 'AWS::CodeDeploy::DeploymentGroup'
+    DependsOn: MDLHerdApplication
+    Properties:
+      ApplicationName: !Sub '${MDLInstanceName}-Herd'
+      DeploymentGroupName: !Sub '${MDLInstanceName}-HerdDeployGroup'
+      DeploymentConfigName: CodeDeployDefault.AllAtOnce
+      ServiceRoleArn: !Ref MDLServerDeploymentRole
+      AutoScalingGroups:
+        - !Ref HerdScalingGroup
+  HerdScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      DesiredCapacity: '1'
+      HealthCheckGracePeriod: 600
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref HerdLaunchConfig
+      MaxSize: '1'
+      MinSize: '1'
+      VPCZoneIdentifier: !Split
+        - ','
+        - !Ref PrivateSubnetsParameterKey
+      Tags:
+        - Key: Name
+          Value: !Sub 'AWSLX${MDLInstanceName}-Herd-${Environment}'
+          PropagateAtLaunch: 'true'
+  HerdLaunchConfig:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Metadata:
+      Comment: Install Herd
+      'AWS::CloudFormation::Init':
+        configSets:
+          PreInstallAndInstall:
+            - PreInstall
+            - Install
+        PreInstall:
+          commands:
+            1-setup-codedeploy:
+              command: !Join
+                - ''
+                - - |
+                    function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
+                  - |
+                    function execute_cmd {         cmd="${1}";         retry="${2}";         echo $cmd;         eval $cmd;         returnCode=${PIPESTATUS[0]};         if [ ${returnCode} -ne 0 ] ; then             if [ ${retry} = "RETRY" ] ; then                 sleep 2m;                 eval $cmd;                 check_error ${PIPESTATUS[0]} "$cmd";             fi;         else             check_error ${returnCode} "$cmd";         fi;          }
+                  - |
+                    user=mdladmin
+                  - |
+                    password=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
+                  - |
+                    execute_cmd "useradd -m -d /home/${user} ${user}"
+                  - |
+                    echo ${user}:${password} | chpasswd
+                  - |
+                    echo "${user} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+                  - |
+                    cd /home/${user}
+                  - |
+                    execute_cmd "curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install" "RETRY" 2>&1
+                  - |
+                    execute_cmd "chmod +x ./install"
+                  - |
+                    execute_cmd "./install auto" "RETRY" 2>&1
+                  - |
+                    execute_cmd "sudo service codedeploy-agent status"
+                  - |
+                    echo 'Code deploy setup complete, sleeping for 2 mins'
+                  - |
+                    sleep 2m
+        Install:
+          packages:
+            yum:
+              java-1.8.0-openjdk: []
+              postgresql9*: []
+              tomcat8: []
+              ruby: []
+              jq: []
+          commands:
+            1-remove-java7:
+              command: yum remove -y java-1.7.0-openjdk
+            2-deploy:
+              command: !Join
+                - ''
+                - - |
+                    chown -R mdladmin:mdladmin /home/mdladmin/deploy
+                  - |
+                  - 'aws deploy create-deployment --application-name '
+                  - !Sub '${MDLInstanceName}-Herd'
+                  - ' --deployment-config-name CodeDeployDefault.OneAtATime'
+                  - ' --deployment-group-name '
+                  - !Sub '${MDLInstanceName}-HerdDeployGroup'
+                  - ' --s3-location bucket='
+                  - !Ref DeploymentBucketName
+                  - ',bundleType=zip,key='
+                  - !Ref ReleaseVersion
+                  - '/herd/herd.zip '
+                  - '         --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+          files:
+            /home/mdladmin/deploy/mdl/conf/deploy.props:
+              content: !Join
+                - ''
+                - - waitHandleForHerd="
+                  - !Ref HerdWaitHandle
+                  - |-
+                    "
+                    httpProtocol=
+                  - !If [EnableSSLAndAuth, https, http]
+                  - |-
+
+                    herdDatabaseName=
+                  - !Sub '${MDLInstanceName}${Environment}Herd'
+                  - |-
+
+                    herdDatabaseUser=herd
+                  - |-
+
+                    herdDatabaseNonRootUser=dmrowner
+                  - |-
+
+                    herdDBInstance=
+                  - !Sub '${MDLInstanceName}-${Environment}-Herd'
+                  - |-
+
+                    mdlInstanceName=
+                  - !Ref MDLInstanceName
+                  - |-
+
+                    environment=
+                  - !Ref Environment
+                  - |-
+
+                    herdVersion=
+                  - !Ref HerdVersion
+                  - |-
+
+                    stackName=
+                  - !Ref 'AWS::StackName'
+                  - |-
+
+                    region=
+                  - !Ref 'AWS::Region'
+                  - |-
+
+                    herdS3BucketName=
+                  - !Ref HerdBucketName
+                  - |-
+
+                    shepherdDomainName=
+                  - !Ref ShepherdDomainName
+                  - |-
+
+                    shepherdWebSiteBucketUrl=
+                  - !Ref ShepherdWebSiteBucketUrl
+                  - |-
+
+                    CreateSQS=
+                  - !Ref CreateSQS
+                  - |-
+
+                    herdQueueInName=
+                  - !Ref HerdQueueInName
+                  - |-
+
+                    searchIndexUpdateSqsQueueName=
+                  - !Ref SearchIndexUpdateSqsQueueName
+                  - |-
+
+                    herdDatabaseHost=
+                  - !Ref HerdDBHostName
+                  - |-
+
+                    mdlStagingBucketName=
+                  - !Ref MDLStagingBucketName
+                  - |-
+
+                    refreshDatabase=
+                  - !Ref RefreshDatabase
+                  - |-
+
+                    enableSSLAndAuth=
+                  - !Ref EnableSSLAndAuth
+                  - |-
+
+                    certificateInfo=
+                  - !Ref CertificateInfo
+                  - |-
+
+                    createDemoObjects=
+                  - !Ref CreateDemoObjects
+                  - |-
+
+                    herdLoadBalancerDNSName=
+                  - !GetAtt
+                    - HerdLoadBalancer
+                    - DNSName
+                  - |-
+
+                    elasticsearchHostname=
+                  - !Ref ElastisearchHostname
+                  - |-
+
+                    ldapHostName=
+                  - !Ref LdapHostName
+                  - |-
+
+                    ldapMdlAppUsername=
+                  - !Ref LdapMdlAppUsername
+                  - |-
+
+                    ldapBaseDN=
+                  - !Ref LdapBaseDN
+                  - |-
+
+                    ldapMdlAppUserPasswordParameterKey=
+                  - !Ref LdapMdlAppUserPasswordParameterKey
+                  - |-
+
+                    deployLocation=/home/mdladmin/deploy/mdl
+                  - |+
+
+              mode: '000400'
+              owner: mdladmin
+              group: mdladmin
+            /etc/cfn/cfn-hup.conf:
+              content: !Join
+                - ''
+                - - |
+                    [main]
+                  - stack=
+                  - !Ref 'AWS::StackId'
+                  - |+
+
+                  - region=
+                  - !Ref 'AWS::Region'
+                  - |+
+
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join
+                - ''
+                - - |
+                    [cfn-auto-reloader-hook]
+                  - |
+                    triggers=post.update
+                  - >
+                    path=Resources.HerdLaunchConfig.Metadata.AWS::CloudFormation::Init
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '         --stack '
+                  - !Ref 'AWS::StackName'
+                  - '         --resource HerdLaunchConfig '
+                  - '         --configsets PreInstallAndInstall '
+                  - '         --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    runas=root
+          services:
+            sysvinit:
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+    Properties:
+      IamInstanceProfile: !Ref MDLInstanceProfile
+      ImageId: !Ref ImageId
+      InstanceType: !Ref HerdInstanceType
+      KeyName: !Ref KeypairName
+      SecurityGroups:
+        - !Ref HerdSecurityGroup
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - '/opt/aws/bin/cfn-init -v '
+            - '         --stack '
+            - !Ref 'AWS::StackName'
+            - '         --resource HerdLaunchConfig '
+            - '         --configsets PreInstallAndInstall '
+            - '         --region '
+            - !Ref 'AWS::Region'
+            - |+
+  Route53ForHerd:
+    Type: AWS::Route53::RecordSetGroup
+    DependsOn: HerdLoadBalancer
+    Condition: EnableSSLAndAuth
+    Properties:
+      HostedZoneName:
+        Ref: HostedZoneName
+      RecordSets:
+      - Name: !Join ['', [!Ref MDLInstanceName, 'herd.', !Ref DomainNameSuffix]]
+        Type: CNAME
+        TTL: '900'
+        ResourceRecords: [!GetAtt [HerdLoadBalancer, DNSName]]
+Outputs:
+  HerdLoadBalancerURL:
+    Value: !Join
+      - ''
+      - - !If [EnableSSLAndAuth, 'https://', 'http://']
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'herd.', !Ref DomainNameSuffix]], !GetAtt [HerdLoadBalancer, DNSName]]
+        - /herd-app/rest/buildInfo
+    Description: Application load balancer URL for Herd web servers
+  HerdLoadBalancerDNSURL:
+    Value: !Join
+      - ''
+      - - !If [EnableSSLAndAuth, 'https://', 'http://']
+        - !GetAtt
+          - HerdLoadBalancer
+          - DNSName
+        - '/herd-app/rest/buildInfo'
+    Description: Application load balancer URL for Herd web servers
+  HerdLoadBalancerDNSName:
+    Value: !GetAtt
+      - HerdLoadBalancer
+      - DNSName
+    Description: Application load balancer DNS name for Herd web servers

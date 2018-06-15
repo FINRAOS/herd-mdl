@@ -1,0 +1,44 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+language: java
+
+jdk:
+- oraclejdk8
+
+cache:
+  directories:
+  - "~/.m2"
+
+script:
+- mvn clean install --batch-mode -DskipTests=true
+
+before_deploy:
+- mvn help:evaluate -Dexpression=project.version | grep -e '^[^\[]'
+- export project_version=$(mvn help:evaluate -Dexpression=project.version | grep -e '^[^\[]')
+- git tag "v${project_version}"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: jNXgRurm8gs6IGAc9zoUYsSAF0o3VmVQuaE5DxB8LEkmVsCEWQNEWU9eEFm/hyVqV1kBMdPVpH0jMfpeYvRfsJNMrcxr3gij2Unage7UQb4tFMcjpCIhMHm0UizutFWLhUNvxuLBUgMeNaQricPbaoC3OttUFlpavHKXLmd3Cb7CybMZj7fKIjNKRf6mBqD1BMFPJDF2CixAbXurg6730xBDR4GWI3HDYgy8dzMN4zAe35pqvA3BjArE3ziV4zQubor/INISVkjdJlZhg+Q0qUnriBI9ybTUl7bFL97NFTUB1s2A9Opk/xcajCvC7u54N3pTsOk0TexGsSzC/QhxmJRZJFE8T71bAbmxDQC8OIPdhz647Ge/IcL2TnBl1vJBxbh0JkRffT8vshFo3OokPNRoTih/GJpbDOS105T+F6FlYBUMVKo3FGWxgwm+QPblRo4N32tOnKBR7H8syz88yqoOO5bVEorXaqFdYOEviCLZhV4kebpopnn5QdDE7JCjj80yI4Rwcw4I4/ROTcSCvnZhQbMk4nvPzuaO3Hbq5Sc1iPKlB6M+jlHiTzEF+WDu5yw0v8xk0Hr+9LsHY44psLALqQcHLf/H34QCiXhzT0vPMngI9ZjTHKc+EyqeHYVJ17cEFTlLN/lLYIQl1zvj5ITM0ruyuCyOu0pG0YwLOW0=
+  file: mdl/target/herd-mdl-${project_version}.zip
+  skip_cleanup: true
+  on:
+    repo: FINRAOS/herd-mdl
+    branch: master
+    condition: $RELEASE_MDL = true
+  name: ${project_version}
+
