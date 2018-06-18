@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2018 herd-mdl contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<businessObjectFormatCreateRequest>
+    <namespace>SEC_MARKET_DATA</namespace>
+    <businessObjectDefinitionName>MoneyMarketData</businessObjectDefinitionName>
+    <businessObjectFormatUsage>MDL</businessObjectFormatUsage>
+    <businessObjectFormatFileType>TXT</businessObjectFormatFileType>
+    <partitionKey>TDATE</partitionKey>
+    <schema>
+        <columns>
+            <column>
+                <name>reporting_period</name>
+                <type>DATE</type>
+                <required>true</required>
+                <description>This is the date as of which the money market fund’s information is current. Each filer determines whether to use the last calendar day of a month or the last business day of a month.</description>
+            </column>
+            <column>
+                <name>registrant_cik</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>The Central Index Key (CIK) is a ten digit number assigned by the SEC to each entity that submits filings.</description>
+            </column>
+            <column>
+                <name>registrant_name</name>
+                <type>INT</type>
+                <required>true</required>
+                <description>This corresponds to the name of the legal entity registered under the Investment Company Act of 1940. The name of the Registrant may be different from the name of the actual fund, which will be the Series Name.  A Registrant may have one or more series (funds).</description>
+            </column>
+            <column>
+                <name>series_name</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>Series Name is the name investors would most likely recognize as being the name of the fund. A Registrant may include one or more Series and a Series may have one or more Classes (see below). (Entered by filer and may not correspond to the exact legal name of the class).</description>
+            </column>
+            <column>
+                <name>series_id</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>This is the name of the category that the fund filer listed as most closely describing the type of fund for which the information is given. The choices are: Government/Agency Fund, Treasury Fund, Prime Fund, Single State Fund, and Other Tax Exempt Fund.</description>
+            </column>
+            <column>
+                <name>series_category_name</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>This is the name of the category that the fund filer listed as most closely describing the type of fund for which the information is given. The choices are: Government/Agency Fund, Treasury Fund, Prime Fund, Single State Fund, and Other Tax Exempt Fund.</description>
+            </column>
+            <column>
+                <name>class_name</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>This is the name of the specific class within the series. A Registrants Series may include one or more share classes with differing sales charges and expenses.</description>
+            </column>
+            <column>
+                <name>class_id</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>This is the EDGAR class identifier associated with each class within a series. The format is a C followed by nine digits.</description>
+            </column>
+            <column>
+                <name>investment_advisor</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>This is the name of the entity that has registered itself with the SEC, under the Investment Advisers Act of 1940, as the adviser to the Registrant.</description>
+            </column>
+            <column>
+                <name>class_ticker_symbol</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>The stock market symbol (if any) for a Class. This is not a required field and will not be available for every registrant.</description>
+            </column>
+            <column>
+                <name>sub_advisor</name>
+                <type>STRING</type>
+                <required>true</required>
+                <description>In some cases, an investment adviser has delegated the day-to-day management of a fund to a Sub-Adviser, but the Investment Adviser retains ultimate responsibility for the fund.</description>
+            </column>
+        </columns>
+        <partitions>
+            <column>
+                <name>TDATE</name>
+                <type>DATE</type>
+                <required>true</required>
+                <description>reporting period.</description>
+            </column>
+        </partitions>
+        <nullValue></nullValue>
+        <delimiter>,</delimiter>
+        <escapeCharacter>\</escapeCharacter>
+        <partitionKeyGroup>TDATE</partitionKeyGroup>
+    </schema>
+</businessObjectFormatCreateRequest>
+

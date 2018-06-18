@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2018 herd-mdl contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.finra.herd-mdl</groupId>
+    <artifactId>herd-mdl</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0</version>
+
+    <description>This is the base pom for the herd-mdl project.</description>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:https://github.com/FINRAOS/herd-mdl.git</connection>
+        <url>https://github.com/FINRAOS/herd-mdl</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>nateiam</id>
+            <name>Nate Weisz</name>
+            <email>nateiam@gmail.com</email>
+            <url>https://github.com/nateiam</url>
+            <organization>FINRA</organization>
+            <organizationUrl>https://www.linkedin.com/in/nateweisz</organizationUrl>
+            <roles>
+                <role>product manager</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>sbalkee</id>
+            <name>Balakumar Sundaramoorty</name>
+            <email>sbalkee@gmail.com</email>
+            <organization>FINRA</organization>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>kusid</id>
+            <name>Kumar Siddhartha</name>
+            <email>kumar.siddhartha@aol.com</email>
+            <url>https://github.com/kusid</url>
+            <organization>FINRA</organization>
+            <organizationUrl>https://www.linkedin.com/in/kusid/</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>rongwang0930</id>
+            <name>Maggie Wang</name>
+            <email>rongwang0930@gmail.com</email>
+            <url>https://github.com/rongwang0930</url>
+            <organization>FINRA</organization>
+            <organizationUrl>https://www.linkedin.com/in/rongwang0930/</organizationUrl>
+            <roles>
+                <role>developer</role>
+                <role>tester</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>binaryechoes</id>
+            <name>Justin Mitchell</name>
+            <email>tcpandip@gmail.com</email>
+            <url>https://github.com/binaryechoes</url>
+            <organization>FINRA</organization>
+            <organizationUrl>https://www.linkedin.com/in/binaryechoes</organizationUrl>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <modules>
+        <module>metastor</module>
+        <module>mdl</module>
+        <module>bdsql</module>
+    </modules>
+
+</project>

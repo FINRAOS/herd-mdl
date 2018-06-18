@@ -1,0 +1,304 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - IAM Roles - Installation Template
+Parameters:
+  MDLInstanceName:
+    Description: MDLInstanceName name
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+Resources:
+  MDLServerDeploymentRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'APP_${MDLInstanceName}_Deployment'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codedeploy.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'autoscaling:CompleteLifecycleAction'
+                  - 'autoscaling:DeleteLifecycleHook'
+                  - 'autoscaling:DescribeAutoScalingGroups'
+                  - 'autoscaling:DescribeLifecycleHooks'
+                  - 'autoscaling:PutLifecycleHook'
+                  - 'autoscaling:RecordLifecycleActionHeartbeat'
+                  - 'ec2:DescribeInstances'
+                  - 'ec2:DescribeInstanceStatus'
+                  - 'tag:GetResources'
+                  - 'sns:Publish'
+                Effect: Allow
+                Resource: '*'
+  MDLInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'APP_${MDLInstanceName}_Instance'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'ec2:Describe*'
+                  - 'elasticmapreduce:*'
+                  - 'iam:PassRole'
+                  - 'acm:Import*'
+                  - 'acm:Describe*'
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplication'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:GetDeploymentGroup'
+                  - 'codedeploy:GetDeploymentInstance'
+                  - 'codedeploy:GetOnPremisesInstance'
+                  - 'codedeploy:ListApplicationRevisions'
+                  - 'codedeploy:ListApplications'
+                  - 'codedeploy:ListDeploymentConfigs'
+                  - 'codedeploy:ListDeploymentGroups'
+                  - 'codedeploy:ListDeploymentInstances'
+                  - 'codedeploy:ListDeployments'
+                  - 'codedeploy:ListOnPremisesInstances'
+                  - 'codedeploy:RegisterApplicationRevision'
+                  - 'codedeploy:RegisterOnPremisesInstance'
+                  - 'codedeploy:StopDeployment'
+                  - 'codedeploy:UpdateApplication'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:DescribeStream'
+                  - 'dynamodb:DescribeTable'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:GetRecords'
+                  - 'dynamodb:ListStreams'
+                  - 'dynamodb:ListTables'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:Scan'
+                  - 'elasticloadbalancing:DescribeTargetGroupAttributes'
+                  - 'elasticloadbalancing:DescribeTargetGroups'
+                  - 'elasticloadbalancing:ModifyRule'
+                  - 'elasticloadbalancing:ModifyTargetGroup'
+                  - 'elasticloadbalancing:ModifyTargetGroupAttributes'
+                  - 'elasticloadbalancing:RegisterTargets'
+                  - 'kms:Decrypt'
+                  - 'kms:DescribeKey'
+                  - 'kms:Encrypt'
+                  - 'kms:GenerateDataKey'
+                  - 'kms:GenerateRandom'
+                  - 'kms:TagResource'
+                  - 'rds:ModifyDBInstance'
+                  - 'route53:CreateHostedZone'
+                  - 'route53:UpdateHostedZoneComment'
+                  - 'route53:GetHostedZone'
+                  - 'route53:ListHostedZones'
+                  - 'route53:DeleteHostedZone'
+                  - 'route53:ChangeResourceRecordSets'
+                  - 'route53:ListResourceRecordSets'
+                  - 'route53:GetHostedZoneCount'
+                  - 'route53:ListHostedZonesByName'
+                  - 's3:Get*'
+                  - 's3:List*'
+                  - 's3:Put*'
+                  - 's3:DeleteObject'
+                  - 'sqs:ChangeMessageVisibility'
+                  - 'sqs:GetQueueAttributes'
+                  - 'sqs:GetQueueUrl'
+                  - 'sqs:ListQueues'
+                  - 'sqs:PurgeQueue'
+                  - 'sqs:ReceiveMessage'
+                  - 'sqs:SendMessage'
+                  - 'sqs:SetQueueAttributes'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:TagQueue'
+                  - 'cloudformation:DescribeStacks'
+                  - 'ec2messages:GetMessages'
+                  - 'ssm:ListInstanceAssociations'
+                  - 'ssm:ListAssociations'
+                  - 'ssm:UpdateInstanceInformation'
+                  - 'ssm:GetParameter'
+                  - 'ssm:PutParameter'
+                  - 'ssm:GetParameters'
+                  - 'ssm:DeleteParameter'
+                Effect: Allow
+                Resource: '*'
+  MDLInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: !Sub '${MDLInstanceName}-MDLInstanceProfile'
+      Path: /
+      Roles:
+        - !Ref MDLInstanceRole
+  MDLEMRServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Sub 'APP_${MDLInstanceName}_EMR'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - elasticmapreduce.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'ec2:AuthorizeSecurityGroupEgress'
+                  - 'ec2:AuthorizeSecurityGroupIngress'
+                  - 'ec2:CancelSpotInstanceRequests'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:CreateSecurityGroup'
+                  - 'ec2:CreateTags'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DeleteSecurityGroup'
+                  - 'ec2:DeleteTags'
+                  - 'ec2:Describe*'
+                  - 'ec2:DetachNetworkInterface'
+                  - 'ec2:ModifyImageAttribute'
+                  - 'ec2:ModifyInstanceAttribute'
+                  - 'ec2:RequestSpotInstances'
+                  - 'ec2:RevokeSecurityGroupEgress'
+                  - 'ec2:RunInstances'
+                  - 'ec2:TerminateInstances'
+                  - 'ec2:DeleteVolume'
+                  - 'ec2:DescribeVolumeStatus'
+                  - 'ec2:DescribeVolumes'
+                  - 'ec2:DetachVolume'
+                  - 'iam:GetRole'
+                  - 'iam:GetRolePolicy'
+                  - 'iam:ListInstanceProfiles'
+                  - 'iam:ListRolePolicies'
+                  - 'iam:PassRole'
+                  - 's3:CreateBucket'
+                  - 's3:Get*'
+                  - 's3:List*'
+                  - 'sdb:BatchPutAttributes'
+                  - 'sdb:Select'
+                  - 'sqs:CreateQueue'
+                  - 'sqs:Delete*'
+                  - 'sqs:GetQueue*'
+                  - 'sqs:PurgeQueue'
+                  - 'sqs:ReceiveMessage'
+                  - 'cloudwatch:PutMetricAlarm'
+                  - 'cloudwatch:DescribeAlarms'
+                  - 'cloudwatch:DeleteAlarms'
+                  - 'application-autoscaling:RegisterScalableTarget'
+                  - 'application-autoscaling:DeregisterScalableTarget'
+                  - 'application-autoscaling:PutScalingPolicy'
+                  - 'application-autoscaling:DeleteScalingPolicy'
+                  - 'application-autoscaling:Describe*'
+                  - 's3:Get*'
+                  - 's3:List*'
+                Effect: Allow
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:CreateServiceLinkedRole'
+                  - 'iam:UpdateRoleDescription'
+                  - 'iam:PutRolePolicy'
+                Resource: >-
+                  arn:aws:iam::*:role/aws-service-role/elasticmapreduce.amazonaws.com/AWSServiceRoleForEMRCleanup*
+                Condition:
+                  StringLike:
+                    'iam:AWSServiceName': elasticmapreduce.amazonaws.com
+  MDLEMRServiceRoleParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /IAM/MDLEMRServiceRole
+      Type: String
+      Value: !Ref MDLEMRServiceRole
+      Description: Name of MDL EMR Service Role
+  MDLInstanceProfileParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /IAM/MDLInstanceProfile
+      Type: String
+      Value: !Ref MDLInstanceProfile
+      Description: 'Name of MDL instance profile '
+  MDLInstanceRoleParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /IAM/MDLInstanceRole
+      Type: String
+      Value: !GetAtt
+        - MDLInstanceRole
+        - Arn
+      Description: Name of MDL instance service role
+  MDLServerDeploymentRoleParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /IAM/MDLServerDeploymentRole
+      Type: String
+      Value: !GetAtt
+        - MDLServerDeploymentRole
+        - Arn
+      Description: Name of MDL server deployment service role

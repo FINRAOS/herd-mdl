@@ -1,0 +1,37 @@
+[{
+	"name": "Test Herd Connection",
+	"description": "Test if shepherd can talk to herd",
+	"testCase" : {
+		"type": "shell",
+		"workingDirectory":"/home/ec2-user",
+		"command": "casperjs",
+		"arguments": [
+	   		"--web-security=no",
+			"--ssl-protocol=any",
+			"--ignore-ssl-errors=yes",
+			"${InputFilePath}",
+			"--url=${ShepherdWebSiteBucketUrl}/shepherd-test.html?${HerdLoadBalancerDNSName}"
+	     ],
+		"environment": {
+			"InputFilePath": "./mdlt/inputs/casper-test.js"
+		}
+	},
+	"assert": "SUCCESS:"
+},
+  {
+    "name": "Happy path test for shepherd",
+    "description": "Happy path test for shepherd",
+    "testCase": {
+      "type": "shell",
+      "workingDirectory": "/home/ec2-user",
+      "command": "/usr/bin/curl",
+      "arguments": [
+        "--max-time 30 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
+        "-X GET",
+        "-H 'Content-Type: application/xml'",
+        "-u ${ldapAppUser}:${ldapAppPassword}",
+        "--url ${ShepherdWebSiteBucketUrl}/shepherd-test.html?${HerdLoadBalancerDNSName}"
+      ]
+    },
+    "assert": "status code is 200"
+  }]

@@ -1,0 +1,290 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - VPC/Subnets Installation template
+Parameters:
+  MDLInstanceName:
+    Description: 'MDL Instance Name, lowercase letters and numbers with max length 15'
+    Type: String
+    Default: mdl
+    AllowedPattern: '[a-z0-9]*'
+    MaxLength: 15
+  Environment:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+    Default: Dev
+  CustomTagName:
+    Description: Custom tag name to be applied to all the resources
+    Type: String
+  CustomTagValue:
+    Description: Custom tag value to be applied to all the resources
+    Type: String
+  VpcCIDR:
+    Description: Please enter the IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.0.0.0/16
+    AllowedValues:
+      - 10.0.0.0/16
+      - 10.1.0.0/16
+      - 10.2.0.0/16
+      - 172.16.0.0/16
+      - 172.17.0.0/16
+      - 172.18.0.0/16
+      - 192.168.0.0/16
+      - 192.169.0.0/16
+      - 192.170.0.0/16
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: 'Must be a valid CIDR range of the form x.x.x.x/x'
+Resources:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: !Sub 'MDL ${Environment}'
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment}'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  InternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Join
+        - '.'
+        - - !Select [0, !Split [".", !Ref VpcCIDR]]
+          - !Select [1, !Split [".", !Ref VpcCIDR]]
+          - '10.0/24'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Public Subnet (AZ1)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  PublicSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Join
+        - '.'
+        - - !Select [0, !Split [".", !Ref VpcCIDR]]
+          - !Select [1, !Split [".", !Ref VpcCIDR]]
+          - '11.0/24'
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Public Subnet (AZ2)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  PrivateSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Join
+        - '.'
+        - - !Select [0, !Split [".", !Ref VpcCIDR]]
+          - !Select [1, !Split [".", !Ref VpcCIDR]]
+          - '20.0/24'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Private Subnet (AZ1)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  PrivateSubnet2:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Join
+        - '.'
+        - - !Select [0, !Split [".", !Ref VpcCIDR]]
+          - !Select [1, !Split [".", !Ref VpcCIDR]]
+          - '21.0/24'
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Private Subnet (AZ2)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  NatGateway1EIP:
+    Type: 'AWS::EC2::EIP'
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway2EIP:
+    Type: 'AWS::EC2::EIP'
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway1:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+  NatGateway2:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment} Public Routes'
+  DefaultPublicRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PublicSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+  PublicSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet2
+  PrivateRouteTable1:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Private Routes (AZ1)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPrivateRoute1:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+  PrivateSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+  PrivateRouteTable2:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'MDL ${Environment} Private Routes (AZ2)'
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  DefaultPrivateRoute2:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+  PrivateSubnet2RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+  VPCParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+      Type: String
+      Value: !Ref VPC
+      Description: VPC id for MDL
+  PrivateSubnetsParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+      Type: String
+      Value: !Join
+        - ','
+        - - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
+      Description: Private subnet id for MDL
+  PublicSubnetsParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+      Type: String
+      Value: !Join
+        - ','
+        - - !Ref PublicSubnet1
+          - !Ref PublicSubnet2
+      Description: Public subnet id for MDL
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join
+      - ','
+      - - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join
+      - ','
+      - - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2

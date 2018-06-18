@@ -1,0 +1,112 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Lambda backed Custom Resource template to generate a Keypair.
+Parameters:
+  MDLInstanceName:
+    Description: MDL instance name
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+  LambdaRuntime:
+    Description: The Lambda runtime to use
+    Type: String
+    Default: python3.6
+  DeploymentBucketName:
+    Description: Deployment bucket parameter key name in system store
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+    Default: RC
+  HandlerName:
+    Description: The name of the lambda handler
+    Type: String
+    Default: keypair_generator_lambda.handler
+  KeypairSsmKeyName:
+    Description: SSM Parameter name which stores the keypair name
+    Type: String
+Resources:
+  KeypairGeneratorLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: !Ref 'HandlerName'
+      Code:
+        S3Bucket: !Ref DeploymentBucketName
+        S3Key: !Join
+          - ''
+          - - !Ref ReleaseVersion
+            - /lambda/keypair_generator_lambda.zip
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: !Ref 'LambdaRuntime'
+      Timeout: '30'
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeImages
+                  - ec2:CreateKeyPair
+                  - ec2:DeleteKeyPair
+                  - ec2:DescribeKeyPairs
+                  - ec2messages:GetMessages
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:ListInstanceAssociations
+                  - ssm:ListAssociations
+                  - ssm:UpdateInstanceInformation
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                  - ssm:GetParameters
+                  - ssm:DeleteParameter
+                Resource: '*'
+  CustomResource:
+    Type: Custom::KeyPairGeneratorResource
+    Properties:
+      ServiceToken: !GetAtt 'KeypairGeneratorLambdaFunction.Arn'
+      MDLInstanceName: !Ref MDLInstanceName
+      Environment: !Ref Environment
+      KeypairSsmKeyName: !Ref KeypairSsmKeyName
+Outputs:
+  Message:
+    Description: The message from the custom resource.
+    Value: !GetAtt 'CustomResource.Message'
+  CustomFunctionArn:
+    Description: The arn of the custom resource function.
+    Value: !GetAtt 'KeypairGeneratorLambdaFunction.Arn'

@@ -1,0 +1,398 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Installation template
+Parameters:
+  DeployComponents:
+    Type: String
+    AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
+    Description: Choose individual MDL components to deploy. Default is All, which will deploy all components.
+  CertificateInfo:
+    Description: Format - CN=<>,OU=<>,O=<>,L=<>,ST=<>,C=<>
+    Type: String
+  MDLInstanceName:
+    Description: MDL Instance Name, lowercase letters and numbers with max length 15
+    Type: String
+    AllowedPattern: '[a-z0-9_]*'
+    MaxLength: 15
+  CreateIAMRoles:
+    Description: Create IAM Roles - true || false
+    AllowedValues: [true, false]
+    Type: String
+  HerdDBClass:
+    Description: Database instance class for Herd
+    Type: String
+  MetastorDBClass:
+    Description: Database instance class for Metastor
+    Type: String
+  HerdDBSize:
+    Description: The size of the database (GB) for Herd
+    Type: Number
+  MetastorDBSize:
+    Description: The size of the database (GB) for Metastor
+    Type: Number
+  CreateRDSInstances:
+    Description: Create RDS instances - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateS3Buckets:
+    Description: Create S3 buckets - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateSecurityGroups:
+    Description: Create Security Groups - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateSQS:
+    Description: Create SQS - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateOpenLDAP:
+    Description: Create OpenLDAP for Authentication - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateKeypair:
+    Type: String
+    Description: Create Keypair - true || false
+    AllowedValues: [true, false]
+  LdapDN:
+    AllowedPattern: ^(dc=[^=]+,)*(dc=[^=]+)$
+    ConstraintDescription: Must be 1 or more dc= statements separated by commas. all
+      lowercase, no spaces.
+    Description: 'The DN of the LDAP domain. example: dc=mdl,dc=org'
+    Type: String
+  CreateVPC:
+    Description: Create VPC - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CreateCloudFrontDistribution:
+    Description: Create Cloudfront distribution for Shepherd - true || false
+    AllowedValues: [true, false]
+    Type: String
+  CertificateArn:
+    Description: Certificate Arn for MDL
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+  ImageId:
+    Description: AMI id for EC2 instances
+    Type: String
+  CreateDemoObjects:
+    Description: Whether to configure Herd/Metastor with demo objects and data
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  RefreshDatabase:
+    Description: Whether to refresh database
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  EnableSSLAndAuth:
+    Description: Whether to enable SSL for Load Balancers
+    AllowedValues: [true, false]
+    ConstraintDescription: Must specify true or false
+    Type: String
+  DeploymentBucketName:
+    Description: Deployment bucket name
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+  CustomTagName:
+    Description: Custom tag name to be applied to all the resources
+    Type: String
+  CustomTagValue:
+    Description: Custom tag value to be applied to all the resources
+    Type: String
+  EsInstanceType:
+    Description: Elasticsearch EC2 node instance type
+    Type: String
+  HerdInstanceType:
+    Description: Herd Application EC2 instance type
+    Type: String
+    ConstraintDescription: must be a valid EC2 instance type.
+  MetastorInstanceType:
+    Description: Metastor Application EC2 instance type
+    Type: String
+    ConstraintDescription: must be a valid EC2 instance type.
+  BdsqlMasterInstanceType:
+    Description: Bdsql Application EMR Master instance type
+    Type: String
+  BdsqlCoreInstanceType:
+    Description: Bdsql Application EMR Core instance type
+    Type: String
+  LdapInstanceType:
+    Description: ldap EC2 instance type
+    Type: String
+  NumberOfBdsqlCoreInstances:
+    Description: Number of Core Instances for the EMR cluster
+    Type: String
+  JavaKeyStoreFile:
+    Description: S3 location of JKS file for the given certificate
+    Type: String
+Conditions:
+  DeployPrereqs: !Or [!Equals [!Ref DeployComponents, Prereqs Only], !Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  DeployHerd: !Or [!Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  DeployMetastor: !Or [!Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  DeployBDSQL: !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  CreateCloudFrontDistributionCondition: !Equals [!Ref CreateCloudFrontDistribution, true]
+  EnableSSLAndAuth: !Equals [!Ref EnableSSLAndAuth, true]
+  UseS3staticWebPages: !And [!Equals [!Ref EnableSSLAndAuth, false], !Equals [!Ref CreateS3Buckets, true]]
+  CreateRoute53ForCloudfront: !And [!Equals [!Ref EnableSSLAndAuth, true], !Equals [!Ref CreateS3Buckets, true], !Equals [!Ref CreateCloudFrontDistribution, true]]
+Resources:
+  PrerequisitesPrimaryStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployPrereqs
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlPrerequisitesPrimary.yml]]
+      Parameters:
+        CreateS3Buckets: !Ref CreateS3Buckets
+        CreateIAMRoles: !Ref CreateIAMRoles
+        CreateSecurityGroups: !Ref CreateSecurityGroups
+        CreateSQS: !Ref CreateSQS
+        CreateVPC: !Ref CreateVPC
+        CreateKeypair: !Ref CreateKeypair
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        CustomTagName: !Ref CustomTagName
+        CustomTagValue: !Ref CustomTagValue
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  PrerequisitesSecondaryStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployPrereqs
+    DependsOn:
+      - PrerequisitesPrimaryStack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlPrerequisitesSecondary.yml]]
+      Parameters:
+        CertificateArn: !Ref CertificateArn
+        DomainNameSuffix: !Ref DomainNameSuffix
+        CreateRDSInstances: !Ref CreateRDSInstances
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        CreateOpenLDAP: !Ref CreateOpenLDAP
+        KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
+        LdapInstanceType: !Ref LdapInstanceType
+        LdapDN: !Ref LdapDN
+        ImageId: !Ref ImageId
+        CreateCloudFrontDistribution: !Ref CreateCloudFrontDistribution
+        HerdDBClass: !Ref HerdDBClass
+        MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
+        MetastorDBClass: !Ref MetastorDBClass
+        HerdDBSize: !Ref HerdDBSize
+        MetastorDBSize: !Ref MetastorDBSize
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        HostedZoneName: !Ref HostedZoneName
+        VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+        PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  ElasticSearchEC2Stack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployHerd
+    DependsOn:
+      - PrerequisitesSecondaryStack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlElasticsearch.yml]]
+      Parameters:
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        ImageId: !Ref ImageId
+        KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
+        EsSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/ElasticSearch]]
+        MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
+        MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
+        DomainNameSuffix: !Ref DomainNameSuffix
+        CertificateInfo: !Ref CertificateInfo
+        CertificateArn: !Ref CertificateArn
+        EsInstanceType: !Ref EsInstanceType
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
+        LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  HerdEC2Stack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployHerd
+    DependsOn:
+      - ElasticSearchEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlHerd.yml]]
+      Parameters:
+        ShepherdDomainName: !Join
+          - ''
+          - - !Ref MDLInstanceName
+            - .
+            - !Ref DomainNameSuffix
+        HerdALBSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/HerdALB]]
+        MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        CreateSQS: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SQS/CreatedByMDL]]
+        HerdQueueInName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SQS/HerdQueueIn]]
+        SearchIndexUpdateSqsQueueName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SQS/SearchIndexUpdateSqsQueue]]
+        HerdSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/Herd]]
+        MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
+        CertificateArn: !Ref CertificateArn
+        ShepherdWebSiteBucketUrl: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/URL/Shepherd]]
+        HerdBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Herd]]
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        HerdDBHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /RDS/HerdDBHostName]]
+        ShepherdWebSiteBucketUrl: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/URL/Shepherd]]
+        MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
+        ImageId: !Ref ImageId
+        LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
+        LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        HerdInstanceType: !Ref HerdInstanceType
+        RefreshDatabase: !Ref RefreshDatabase
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
+        CreateDemoObjects: !Ref CreateDemoObjects
+        DomainNameSuffix: !Ref DomainNameSuffix
+        HostedZoneName: !Ref HostedZoneName
+        ElastisearchHostname: !GetAtt
+          - ElasticSearchEC2Stack
+          - Outputs.EsEc2DNS
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+        PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  MetastorStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployMetastor
+    DependsOn:
+      - HerdEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlMetastor.yml]]
+      Parameters:
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        MetastorDBHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /RDS/MetastorDBHostName]]
+        HerdLoadBalancerDNSName: !GetAtt [HerdEC2Stack, Outputs.HerdLoadBalancerDNSName]
+        HerdBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Herd]]
+        ShepherdWebSiteBucketUrl: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/URL/Shepherd]]
+        MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
+        MetastorSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/Metastor]]
+        MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        MetastorEMRSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/MetastorEMR]]
+        MDLEMRServiceRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLEMRServiceRole]]
+        MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
+        ShepherdS3BucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Shepherd]]
+        CreateDemoObjects: !Ref CreateDemoObjects
+        ImageId: !Ref ImageId
+        LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
+        LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        RefreshDatabase: !Ref RefreshDatabase
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        MetastorInstanceType: !Ref MetastorInstanceType
+        DomainNameSuffix: !Ref DomainNameSuffix
+        PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+  BdsqlEmrStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployBDSQL
+    DependsOn: MetastorStack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlBdsql.yml]]
+      Parameters:
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
+        MetastorDBHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /RDS/MetastorDBHostName]]
+        KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
+        MDLEMRServiceRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLEMRServiceRole]]
+        MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
+        MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
+        MDLInstanceName: !Ref MDLInstanceName
+        CertificateArn: !Ref CertificateArn
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        Environment: !Ref Environment
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        BdsqlMasterInstanceType: !Ref BdsqlMasterInstanceType
+        BdsqlCoreInstanceType: !Ref BdsqlCoreInstanceType
+        NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
+        DomainNameSuffix: !Ref DomainNameSuffix
+        JavaKeyStoreFile: !Ref JavaKeyStoreFile
+        HostedZoneName: !Ref HostedZoneName
+        BdsqlALBSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/BdsqlALB]]
+        VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
+        PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+      Tags:
+        - Key: !Ref CustomTagName
+          Value: !Ref CustomTagValue
+        - Key: Environment
+          Value: !Ref Environment
+Outputs:
+  HerdURL:
+    Value: !GetAtt [HerdEC2Stack, Outputs.HerdLoadBalancerURL]
+    Description: URL to access Herd instance
+    Condition: DeployHerd
+  ShepherdURL:
+    Value: !If [UseS3staticWebPages, !GetAtt [PrerequisitesPrimaryStack, Outputs.ShepherdWebSiteBucketUrl], !GetAtt [PrerequisitesSecondaryStack, Outputs.ShepherdURL]]
+    Description: URL to access Shepherd
+    Condition: CreateCloudFrontDistributionCondition
+  BdsqlURL:
+    Value: !GetAtt
+      - BdsqlEmrStack
+      - Outputs.BdsqlLoadBalancerURL
+    Description: URL for Bdsql cluster
+    Condition: DeployBDSQL

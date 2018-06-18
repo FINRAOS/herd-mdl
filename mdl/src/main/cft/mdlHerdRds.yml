@@ -1,0 +1,218 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Herd - RDS Installation Template
+Parameters:
+  HerdRDSSecurityGroup:
+    Description: RDS Security Group for Herd
+    Type: AWS::SSM::Parameter::Value<String>
+  HerdRdsMasterUsername:
+    Description: The database admin account username
+    Type: String
+    Default: herd
+    AllowedPattern: '[a-zA-Z_][a-zA-Z0-9_]*'
+    ConstraintDescription: must begin with a letter and contain alphanumeric characters and _.
+  HerdDBClass:
+    Default: db.m4.large
+    Description: Database instance class
+    Type: String
+  HerdDBEngine:
+    Default: postgres
+    Description: Postgres RDS database Engine
+    Type: String
+  HerdDBEngineVersion:
+    Default: 9.5.4
+    Description: Postgres database version
+    Type: String
+  HerdDBSize:
+    Default: '10'
+    Description: The size of the database (GB)
+    Type: Number
+    MinValue: '5'
+    MaxValue: '5120'
+    ConstraintDescription: Must be between 5 and 5120 GB
+  DBLicenseModel:
+    Default: postgresql-license
+    Description: Postgres RDS database license model
+    Type: String
+  HerdDBBackupRetentionPeriod:
+    Description: 'Number of days to retain DB backup: Non-prod: 7 days & Prod: 14 days'
+    Type: String
+    Default: '7'
+  HerdDBPreferredBackupWindow:
+    Default: '05:00-07:00'
+    Description: Postgres backup window
+    Type: String
+  HerdDBPreferredMaintenanceWindow:
+    Default: 'Sun:09:00-Sun:11:00'
+    Description: Postgres maintenance window
+    Type: String
+  HerdMultiAZDeployment:
+    Default: 'true'
+    Description: 'Create Multi-AZ Postgres RDS database instance: Non-prod: No & Prod: Yes'
+    Type: String
+    AllowedValues:
+      - 'true'
+      - 'false'
+    ConstraintDescription: Must be either true or false.
+  HerdDBStorageType:
+    Default: gp2
+    Description: Postgres RDS Instance Storage Type
+    Type: String
+    AllowedValues:
+      - gp2
+      - io1
+    ConstraintDescription: Must select a valid DB Storage Type.
+  HerdDBStorageEncrypted:
+    Default: 'true'
+    Description: Encrypted Postgres RDS database instance
+    Type: String
+    ConstraintDescription: Must be either true or false.
+  HerdPort:
+    Default: '5432'
+    Description: Port for Herd RDS DB
+    Type: String
+  VpcIdParameterKey:
+    Description: VPC Parameter key
+    Type: String
+  PrivateSubnetsParameterKey:
+    Description: VPC Parameter key
+    Type: String
+  PublicSubnetsParameterKey:
+    Description: VPC Parameter key
+    Type: String
+  HerdPublicAccessibility:
+    Default: 'false'
+    Description: Postgres RDS Instance Public Accessibility
+    Type: String
+    ConstraintDescription: Must be false.
+  CopyInstTagsToSnapshot:
+    Default: 'true'
+    Description: Copy Postgres RDS database instance Tags To Snapshot
+    Type: String
+    ConstraintDescription: Must be true
+  AutoInstMinorVersionUpgrade:
+    Description: 'Automatic Minor Version Upgrade. Non-prod: Yes & Prod: No'
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    ConstraintDescription: Must be either true or false.
+  Iops:
+    Description: Iops to be specified when storage type is IO1
+    Type: Number
+    Default: 0
+  HerdDescriptionParameterGroup:
+    Description: Description for parameter group
+    Type: String
+    Default: Herd param group
+  LogStatement:
+    Default: ddl
+    Description: Log statement in parameter group
+    Type: String
+  LogMinErrorStatement:
+    Default: panic
+    Description: Log statement in parameter group
+    Type: String
+  MDLInstanceName:
+    Description: MDLInstanceName name
+    Type: String
+  Environment:
+    Description: Application environment
+    Type: String
+Resources:
+  HerdDbSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: Herd Group
+      SubnetIds: !Split
+        - ','
+        - !Ref PrivateSubnetsParameterKey
+  HerdDBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: Herd DB param group
+      Family: postgres9.5
+      Parameters:
+        rds.force_ssl: '1'
+  PostgresDB:
+    Type: 'AWS::RDS::DBInstance'
+    DeletionPolicy: Snapshot
+    Properties:
+      DBName: !Sub '${MDLInstanceName}${Environment}Herd'
+      DBSnapshotIdentifier: !Ref 'AWS::NoValue'
+      Iops: !Ref Iops
+      AllocatedStorage: !Ref HerdDBSize
+      DBInstanceClass: !Ref HerdDBClass
+      Engine: !Ref HerdDBEngine
+      EngineVersion: !Ref HerdDBEngineVersion
+      LicenseModel: !Ref DBLicenseModel
+      MasterUsername: !Ref HerdRdsMasterUsername
+      MasterUserPassword: changeit
+      DBInstanceIdentifier: !Sub '${MDLInstanceName}-${Environment}-Herd'
+      DBSubnetGroupName: !Ref HerdDbSubnetGroup
+      DBParameterGroupName: !Ref HerdDBParameterGroup
+      Port: !Ref HerdPort
+      PubliclyAccessible: !Ref HerdPublicAccessibility
+      VPCSecurityGroups:
+        - !Ref HerdRDSSecurityGroup
+      BackupRetentionPeriod: !Ref HerdDBBackupRetentionPeriod
+      PreferredBackupWindow: !Ref HerdDBPreferredBackupWindow
+      PreferredMaintenanceWindow: !Ref HerdDBPreferredMaintenanceWindow
+      MultiAZ: !Ref HerdMultiAZDeployment
+      StorageType: !Ref HerdDBStorageType
+      StorageEncrypted: !Ref HerdDBStorageEncrypted
+      CopyTagsToSnapshot: !Ref CopyInstTagsToSnapshot
+      AutoMinorVersionUpgrade: !Ref AutoInstMinorVersionUpgrade
+      Tags:
+        - Key: MDLInstance
+          Value: !Ref MDLInstanceName
+  HerdDBHostName:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /RDS/HerdDBHostName
+      Type: String
+      Value: !GetAtt
+        - PostgresDB
+        - Endpoint.Address
+      Description: Name of Herd RDS Host name
+Outputs:
+  JDBCConnectionString:
+    Description: JDBC connection string for database
+    Value: !Join
+      - ''
+      - - 'jdbc:Postgres://'
+        - !GetAtt
+          - PostgresDB
+          - Endpoint.Address
+        - ':'
+        - !GetAtt
+          - PostgresDB
+          - Endpoint.Port
+        - /
+        - !Sub '${MDLInstanceName}${Environment}Herd'
+  HerdDBHost:
+    Description: Herd DB host name
+    Value: !GetAtt
+      - PostgresDB
+      - Endpoint.Address

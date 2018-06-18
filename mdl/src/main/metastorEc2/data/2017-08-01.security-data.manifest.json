@@ -1,0 +1,19 @@
+{
+  "namespace": "SEC_MARKET_DATA",
+  "businessObjectDefinitionName": "SecurityData",
+  "businessObjectFormatUsage": "MDL",
+  "businessObjectFormatFileType": "TXT",
+  "businessObjectFormatVersion": "0",
+  "partitionKey": "TDATE",
+  "partitionValue": "2017-08-01",
+  "manifestFiles" : [{
+    "fileName" : "2017-08-01-1.security-data.txt",
+    "rowCount" : 2
+  },{
+    "fileName" : "2017-08-01-2.security-data.txt",
+    "rowCount" : 2
+  },{
+    "fileName" : "2017-08-01-3.security-data.txt",
+    "rowCount" : 500
+  }]
+}
