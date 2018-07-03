@@ -16,6 +16,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: MDL - Metastor - Server Installation Template
 Parameters:
+  HerdVersion:
+    Description: Herd release version to use.
+    Type: String
+  MetastorVersion:
+    Description: Metastor release version to use.
+    Type: String
+    Default: '1.0.0'
   ReleaseVersion:
     Description: Release version
     Type: String
@@ -265,6 +272,14 @@ Resources:
 
                     environment=
                   - !Ref Environment
+                  - |-
+
+                    herdVersion=
+                  - !Ref HerdVersion
+                  - |-
+
+                    metastorVersion=
+                  - !Ref MetastorVersion
                   - |-
 
                     refreshDatabase=

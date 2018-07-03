@@ -41,6 +41,9 @@ hooks:
     - location: scripts/installDBForHerd.sh
       timeout: 600
       runas: mdladmin
+    - location: scripts/installShepherd.sh
+      timeout: 300
+      runas: mdladmin
   ApplicationStart:
     - location: scripts/configureAndStartHerd.sh
       timeout: 300

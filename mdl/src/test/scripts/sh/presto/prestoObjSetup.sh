@@ -50,7 +50,7 @@ function execute_curl_cmd {
 }
 
 function execute_uploader_cmd {
-        cmd="java -jar ./mdl/build/lib/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60"
+        cmd="java -jar ./mdl/herd/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60"
         echo $cmd
         cmdWithCredentials="${cmd} -u ${ldapAppUsername} -w ${ldapAppPassword}"
         eval $cmdWithCredentials
@@ -85,8 +85,8 @@ fi
 . ${testConfigFile}
 
 PrestoClusterId=${BdsqlEMRPrestoCluster}
-ldapAppUserSsmKey="/mdl/ldap/app_user"
-ldapAppUserPwdSsmKey="/mdl/ldap/app_pass"
+ldapAppUserSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername"
+ldapAppUserPwdSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword"
 
 execute_cmd "cd /home/ec2-user"
 execute_cmd "aws configure set default.region ${RegionName}"
@@ -104,19 +104,19 @@ fi
 #create namespace
 if [ "${createNamespace}" = "true" ] ; then
     replaceXmlFile "namespaceRegistration.xml"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdLoadBalancerURL}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdHostname}/herd-app/rest/namespaces --insecure"
 fi
 
 #create herd test Object definition & format under existing namespace: SEC_MARKET_DATA
 replaceXmlFile "testDataObjectRegistration.xml"
-execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdLoadBalancerURL}/herd-app/rest/businessObjectDefinitions --insecure"
+execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdHostname}/herd-app/rest/businessObjectDefinitions --insecure"
 
 replaceXmlFile "testDataFormatRegistration.xml"
-execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdLoadBalancerURL}/herd-app/rest/businessObjectFormats --insecure"
+execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdHostname}/herd-app/rest/businessObjectFormats --insecure"
 
 #register Herd Notification to notify hiveCluster
 replaceXmlFile "testDataObjectNotificationRegistration.xml"
-execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdLoadBalancerURL}/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations --insecure"
+execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @body.xml -X POST ${HerdHostname}/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations --insecure"
 
 #upload herd data, this will auto create hive cluster
 replaceManifestFile "2017-08-01.manifest.json"
@@ -130,6 +130,6 @@ namespace="MDL"
 emrClusterDefinitionName="MDLMetastorHiveCluster"
 emrClusterName="${MDLInstanceName}_Cluster"
 #herd call to get hiveClusterId using cluster Name
-execute_curl_cmd "curl -H 'Content-Type: application/xml' -X GET ${HerdLoadBalancerURL}/herd-app/rest/emrClusters/namespaces/${namespace}/emrClusterDefinitionNames/${emrClusterDefinitionName}/emrClusterNames/${emrClusterName} --insecure"
+execute_curl_cmd "curl -H 'Content-Type: application/xml' -X GET ${HerdHostname}/herd-app/rest/emrClusters/namespaces/${namespace}/emrClusterDefinitionNames/${emrClusterDefinitionName}/emrClusterNames/${emrClusterName} --insecure"
 hiveClusterId=`cat /tmp/curlCmdOutput | sed -e 's/HTTP_CODE\:.*//g' | grep -o -P '(?<=\<id>)[^\/]*(?=\<\/id>)' | head -n 1`
 execute_cmd "aws emr wait cluster-running --cluster-id ${hiveClusterId}"

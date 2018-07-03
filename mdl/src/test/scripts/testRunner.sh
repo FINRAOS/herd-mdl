@@ -27,11 +27,11 @@ function check_error {
         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code"
         /opt/aws/bin/cfn-signal -e 1 -r "MDLT deploy and execution failed " ${DeployHostWaitHandle}
 
-        # Upload the log files
-        aws s3 cp /var/log/mdl-setup.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/
-        aws s3 cp /var/log/mdl-func-test.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/
-        aws s3 cp --recursive /tmp/sam s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/
-        aws s3 cp /var/log/mdl-shutdown-test.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/
+        # Upload the all log files if mdlt failed in the middle
+        aws s3 cp /var/log/mdl-setup.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/
+        aws s3 cp /var/log/mdl-func-test.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/
+        aws s3 cp --recursive /tmp/sam s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/
+        aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/
         exit 1
     fi
 }
@@ -52,33 +52,42 @@ deployPropertiesFile=$1
 
 #setup the workspace
 execute_cmd "cd /home/ec2-user"
-execute_cmd "rm -rf mdl"
-execute_cmd "mkdir -p mdl/build"
-execute_cmd "aws s3 cp --only-show-errors s3://$MDLDeploymentBucket/mdl-bucket-deploy/$MDLRelease/herd/mdl.zip ."
-execute_cmd "unzip -q mdl.zip -d ./mdl/build/"
-execute_cmd "rm -rf mdl.zip"
-execute_cmd "aws s3 cp s3://$MDLBuildBucket/mdlt/build/$MDLTBranch/scripts/test.sh ./test_mdl.sh"
-execute_cmd "chmod 755 ./test_mdl.sh"
+
+#Copy runtime libs to ec2
 execute_cmd "rm -rf lib"
 execute_cmd "mkdir lib"
-execute_cmd "aws s3 cp --only-show-errors --recursive s3://$MDLBuildBucket/mdlt/build/$MDLTBranch/lib/runtime/ ./lib"
+execute_cmd "aws s3 cp --only-show-errors --recursive s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/lib/runtime/ ./lib"
+
+#Copy mdlt scripts, inputs and conf folder to deployHost ec2
+execute_cmd "rm -rf mdlt"
+execute_cmd "mkdir mdlt"
+execute_cmd "cd mdlt"
+execute_cmd "aws s3 cp --recursive --exclude \"*testRunner.sh\" --exclude \"*/runtime/*.jar\" s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/ ."
+execute_cmd "cd .."
+execute_cmd "chmod 755 -R ./mdlt/scripts/sh"
+
+#Download mdl installMdl yaml file and save to mdlt s3
+wrapperStackYml="installWrapperStack.yml"
+execute_cmd "wget ${InstallMdlYmlLUrl} -O ${wrapperStackYml}"
+#no need to save to mdlt, can create stack using ec2 local file
+execute_cmd "aws s3 cp ${wrapperStackYml} s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/scripts/cft/InstallMDL.yml"
+execute_cmd "rm -f ${wrapperStackYml}"
 
 #execute test steps, copy logs and test results
-execute_cmd "./test_mdl.sh setup $deployPropertiesFile &> /var/log/mdl-setup.log"
-execute_cmd "./test_mdl.sh execute $deployPropertiesFile &> /var/log/mdl-func-test.log"
+execute_cmd "./mdlt/scripts/sh/testSetup.sh $deployPropertiesFile &> /var/log/mdl-setup.log"
+execute_cmd "./mdlt/scripts/sh/testExecute.sh $deployPropertiesFile &> /var/log/mdl-func-test.log"
 
-# Upload the log files
-execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/"
-execute_cmd "aws s3 cp /var/log/mdl-func-test.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/"
-execute_cmd "aws s3 cp --recursive /tmp/sam s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/"
+# Upload test log files
+execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/"
+execute_cmd "aws s3 cp /var/log/mdl-func-test.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/"
+execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/"
 
-# execute_cmd "sleep 8h"
-
+#shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
     # echo "Sleep for 60 minutes before cleaning up the stack"
     execute_cmd "sleep 60m"
-    execute_cmd "./test_mdl.sh shutdown $deployPropertiesFile &> /var/log/mdl-shutdown-test.log"
-    execute_cmd "aws s3 cp /var/log/mdl-shutdown-test.log s3://$MDLDeploymentBucket/test-results/${StackName}_${timestamp}/"
+    execute_cmd "./mdlt/scripts/sh/testShutdown.sh ${deployPropertiesFile} &> /var/log/mdl-shutdown-test.log"
+    execute_cmd "aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltBucketName}/test-results/${StackName}_${timestamp}/"
     execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" ${DeployHostWaitHandle}"
     # Tests are done. Delete the deploy host
     execute_cmd "aws cloudformation delete-stack --stack-name ${StackName} --region ${RegionName}"

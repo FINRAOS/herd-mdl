@@ -22,8 +22,8 @@ Parameters:
   Environment:
     Description: Application environment
     Type: String
-  EnableHTTPS:
-    Description: Whether to enable HTTPS
+  EnableSSLAndAuth:
+    Description: Whether to enable HTTPS and authentication
     Type: String
   DeploymentBucketName:
     Description: Deployment bucket where the code resides
@@ -66,6 +66,7 @@ Conditions:
   CreateOpenLDAPCondition: !Equals
     - !Ref CreateOpenLDAP
     - 'true'
+  CreateSsmParametersCondition: !Or [!Equals [!Ref EnableSSLAndAuth, false], !Equals [!Ref CreateOpenLDAP, true]]
 Resources:
   MDLLdap:
     Condition: CreateOpenLDAPCondition
@@ -91,7 +92,7 @@ Resources:
     Properties:
       GroupName: !Sub '${MDLInstanceName}-${Environment}-OpenLdapInstanceSecurityGroup'
       GroupDescription: Allows ssl, http and https ingress from all sources in the VPC
-      VpcIdParameterKey: !Ref VpcIdParameterKey
+      VpcId: !Ref VpcIdParameterKey
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -273,6 +274,7 @@ Resources:
       Handle: !Ref LdapWaitHandle
       Timeout: '600'
   LdapBaseDNParameter:
+    Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -286,6 +288,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, !Ref DN, NoAuthentication]
       Description: LDAP Base DN parameter
   LdapMdlAppUsernameParameter:
+    Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -297,8 +300,23 @@ Resources:
           - /LDAP/MdlAppUsername
       Type: String
       Value: !If [CreateOpenLDAPCondition, ldap_mdl_app_user, NoAuthentication]
-      Description: MDL LDAP username parameter
+      Description: MDL LDAP application/service account username parameter
+  LdapSecAppUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/SecAppUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, ldap_sec_app_user, NoAuthentication]
+      Description: MDL LDAP sec app account username parameter
   LdapAdministratorNameParameter:
+    Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -312,6 +330,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, ldap_admin_user, NoAuthentication]
       Description: LDAP administrator name
   HostNameParameter:
+    Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -325,6 +344,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: LDAP HostName name
   MDLAppPasswordParameter:
+    Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -336,7 +356,21 @@ Resources:
           - /LDAP/MDLAppPassword
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: LDAP MDLAppPassword
+      Description: LDAP sec app account password parameter
+  SecAppPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/SecAppPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: LDAP MDLTestPassword
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition

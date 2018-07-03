@@ -1,0 +1,31 @@
+<!--
+  Copyright 2018 herd-mdl contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<jobCreateRequest>
+  <namespace>METASTOR</namespace>
+  <jobName>singletonObjectsAddPartitionWorkflow</jobName>
+
+  <parameters>
+    <parameter><name>clusterDefinitionName</name><value>{{CLUSTER_DEF_NAME}}</value></parameter>
+	<parameter><name>createNewCluster</name><value>false</value></parameter>
+	<parameter><name>MailDL</name><value>{{EMAIL_LIST_OPS}}</value></parameter>
+	<parameter><name>retry_interval</name><value>PT{{RETRY_INTERVAL}}S</value></parameter>
+	<parameter><name>maxRetries</name><value>{{NO_OF_RETRIES}}</value></parameter>
+	<parameter><name>env</name><value>{{ENV_GROUP}}</value></parameter>
+      <parameter><name>maxDBRetries</name><value>{{MAX_STATUS_RETRIES}}</value></parameter>
+      <parameter><name>s3_bucket</name><value>{{S3_APPDATA_BUCKETID}}</value></parameter>
+      <parameter><name>dburl</name><value>{{RDS_HOST}}:3306</value></parameter>
+  </parameters>
+</jobCreateRequest>

@@ -85,6 +85,7 @@
     <rule ref="rulesets/java/strictexception.xml/AvoidRethrowingException"/>
     <rule ref="rulesets/java/strictexception.xml/AvoidThrowingNewInstanceOfSameException"/>
     <rule ref="rulesets/java/strictexception.xml/AvoidThrowingNullPointerException"/>
+    <!-- TODO: discuss if we want enable this -->
     <!-- <rule ref="rulesets/java/strictexception.xml/AvoidThrowingRawExceptionTypes"/> -->
     <rule ref="rulesets/java/strictexception.xml/DoNotExtendJavaLangError"/>
     <rule ref="rulesets/java/strictexception.xml/ExceptionAsFlowControl"/>
@@ -269,6 +270,7 @@
     <rule ref="rulesets/java/logging-java.xml/AvoidPrintStackTrace"/>
     <rule ref="rulesets/java/logging-java.xml/LoggerIsNotStaticFinal"/>
     <rule ref="rulesets/java/logging-java.xml/MoreThanOneLogger"/>
+    <!-- TODO enable check after removed all issues -->
     <!-- <rule ref="rulesets/java/logging-java.xml/SystemPrintln"/> -->
     <rule ref="rulesets/java/logging-jakarta-commons.xml/ProperLogger"/>
     <rule ref="rulesets/java/logging-jakarta-commons.xml/UseCorrectExceptionLogging"/>

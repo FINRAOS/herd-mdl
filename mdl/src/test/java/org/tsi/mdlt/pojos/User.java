@@ -44,23 +44,18 @@ public class User {
     }
 
     public static User getLdapAdminUser() {
-        return new User(SsmUtil.getParameterByName(SsmParameterKeyEnum.ADMIN_USER).getValue(),
-                SsmUtil.getParameterByName(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.ADMIN_USER).getValue(),
+                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
     }
 
-    public static User getLdapAppUser() {
-        return new User(SsmUtil.getParameterByName(SsmParameterKeyEnum.APP_USER).getValue(),
-                SsmUtil.getParameterByName(SsmParameterKeyEnum.APP_PASSWORD).getValue());
+    public static User getLdapMdlAppUser() {
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.MDL_APP_USER).getValue(),
+                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.MDL_APP_PASSWORD).getValue());
     }
 
-    public static User getLdapTestUser1() {
-        return new User(SsmUtil.getParameterByName(SsmParameterKeyEnum.TEST_USER_1).getValue(),
-                SsmUtil.getParameterByName(SsmParameterKeyEnum.TEST_USER_1_PASSWORD).getValue());
-    }
-
-    public static User getLdapTestUser2() {
-        return new User(SsmUtil.getParameterByName(SsmParameterKeyEnum.TEST_USER_2).getValue(),
-                SsmUtil.getParameterByName(SsmParameterKeyEnum.TEST_USER_2_PASSWORD).getValue());
+    public static User getLdapSecAppUser() {
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.SEC_APP_USER).getValue(),
+                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.SEC_APP_PASSWORD).getValue());
     }
 
     public static User getNoAuthValidJdbcUser(){

@@ -37,6 +37,10 @@ hooks:
   BeforeInstall:
     - location: scripts/installPackagesForES.sh
       timeout: 300
+  AfterInstall:
+    - location: scripts/createCert.sh
+      timeout: 300
+      runas: mdladmin
   ApplicationStart:
     - location: scripts/configureAndStartES.sh
       timeout: 300

@@ -43,8 +43,9 @@ import org.tsi.mdlt.pojos.User;
 public class LdapUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String BASE_DN = SsmUtil.getParameterByName(SsmParameterKeyEnum.LDAP_DN).getValue();
-    private static final String HOSTNAME = SsmUtil.getParameterByName(SsmParameterKeyEnum.LDAP_HOSTNAME).getValue();
+    private static final String BASE_DN = SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.LDAP_DN).getValue();
+    private static final String HOSTNAME = SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.LDAP_HOSTNAME).getValue();
+    private static final String AUTH_GROUP = SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.AUTH_GROUP).getValue();
 
     static {
         System.setProperty("javax.net.ssl.keyStore", "/usr/lib/jvm/jre/lib/security/cacerts");
@@ -79,7 +80,7 @@ public class LdapUtil {
      * @throws NamingException
      */
     public static void deleteEntry(String userId) throws NamingException {
-        String entryDN = String.format("uid=%s,ou=People,%s", userId, BASE_DN);
+        String entryDN = constructEntryCn(userId);
         DirContext ldapContext = getLdapContext(User.getLdapAdminUser());
         ldapContext.unbind(entryDN);
     }
@@ -108,8 +109,8 @@ public class LdapUtil {
 
     private static void modifyAttributes(String userId, String groupName, int modOp) throws NamingException {
         DirContext ldapContext = getLdapContext(User.getLdapAdminUser());
-        String entryDN = String.format("uid=%s,ou=People,%s", userId, BASE_DN);
-        String groupDn = String.format("cn=%s,ou=Groups,%s", groupName, BASE_DN);
+        String entryDN = constructEntryCn(userId);
+        String groupDn = String.format("cn=%s,%s,%s", groupName, "ou=Groups", BASE_DN);
 
         BasicAttribute member = new BasicAttribute("member", entryDN);
         Attributes atts = new BasicAttributes();
@@ -137,7 +138,7 @@ public class LdapUtil {
         entry.put(userUserPassword);
         entry.put(objectClass);
 
-        String entryDN = String.format("uid=%s,ou=People,%s", user.getUsername(), BASE_DN);
+        String entryDN = constructEntryCn(user.getUsername());
         DirContext ldapContext = getLdapContext(User.getLdapAdminUser());
         ldapContext.createSubcontext(entryDN, entry);
         LOGGER.info("Added Entry :" + entryDN);
@@ -160,7 +161,7 @@ public class LdapUtil {
 
         NamingEnumeration users;
         try {
-            users = context.search("ou=People," + BASE_DN, searchFilter, controls);
+            users = context.search(AUTH_GROUP + "," + BASE_DN, searchFilter, controls);
             while (users.hasMore()) {
                 SearchResult searchResult = (SearchResult) users.next();
                 Attributes attr = searchResult.getAttributes();
@@ -175,5 +176,9 @@ public class LdapUtil {
         catch (NamingException e) {
             e.printStackTrace();
         }
+    }
+
+    private static String constructEntryCn(String uid){
+        return  String.format("uid=%s,%s,%s", uid, AUTH_GROUP, BASE_DN);
     }
 }

@@ -51,6 +51,7 @@ deployBucketKey=$2
 region=$3
 waitHandle=$4
 deployProps=$5
+bdsqlVersion=$6
 
 execute_cmd "aws configure set default.region ${region}"
 
@@ -61,7 +62,7 @@ execute_cmd "aws s3 cp ${deployProps} /home/hadoop/conf/"
 
 # Deploy the package
 execute_cmd "cd /home/hadoop"
-execute_cmd "aws s3 cp s3://${deployBucket}/${deployBucketKey}/bdsql/bdsql.zip ."
+execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${bdsqlVersion}/bdsql-${bdsqlVersion}-dist.zip -O /home/hadoop/bdsql.zip"
 execute_cmd "unzip bdsql.zip"
 execute_cmd "chmod 755 scripts/*"
 

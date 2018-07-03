@@ -40,11 +40,10 @@ public class TestWrapper {
     private static final String SETUP_CMD = "setup";
     private static final String SHUTDOWN_CMD = "shutdown";
 
-    private static final String APP_STACK_TEMPLATE_CFT = "mdl.yml";
+    private static final String APP_STACK_TEMPLATE_CFT = "InstallMDL.yml";
 
-    private static final String OUTPUT_NAME_HERD_LOAD_BALANCER_URL = "HerdLoadBalancerURL";
+    private static final String OUTPUT_NAME_HERD_HOSTNAME = "HerdHostname";
     private static final String OUTPUT_NAME_HERD_URL = "HerdURL";
-    private static final String OUTPUT_NAME_SHEPHERD_URL = "ShepherdURL";
 
     public static void main(String[] args) {
         try {
@@ -100,15 +99,22 @@ public class TestWrapper {
 
     private static Map<String, String> createStackParameters() {
         Properties testProperties = TestProperties.getProperties();
-        final String release = testProperties.getProperty(StackInputParameterKeyEnum.DEPLOY_MDL_RELEASE.getKey());
-        final String mdlInstanceName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
+        String enableSslAndAuth = testProperties.getProperty(StackInputParameterKeyEnum.ENABLE_SSL_AUTH.getKey());
 
         Map<String, String> parameters = new HashMap<>();
-        parameters.put(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey(), mdlInstanceName);
-        parameters.put(StackInputParameterKeyEnum.RELEASE_VERSION.getKey(), release);
         parameters.put(StackInputParameterKeyEnum.CREATE_DEMO_OBJECT.getKey(), "true");
-        parameters.put(StackInputParameterKeyEnum.ENABLE_SSL_AUTH.getKey(), testProperties.getProperty("EnableSSLAndAuth"));
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.MDL_INSTANCE_NAME, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENVIRONMENT, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.DEPLOY_COMPONENTS, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.RELEASE_VERSION, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENABLE_SSL_AUTH, parameters);
+        //when enableSslAndAuth is true, set parameter createOpenLdap to true
+        parameters.put(StackInputParameterKeyEnum.CREATE_OPEN_lDAP.getKey(), enableSslAndAuth);
         return parameters;
+    }
+
+    private static void addTestInputPropertyToParameterMap(StackInputParameterKeyEnum keyEnum, Map<String, String> parameters){
+        parameters.put(keyEnum.getKey(),  TestProperties.getProperties().getProperty(keyEnum.getKey()));
     }
 
     private static void saveStackOutputProperties(String instanceName) throws Exception {
@@ -155,27 +161,13 @@ public class TestWrapper {
     private static void writeEntryToWriter(Entry<String, String> entry, BufferedWriter writer)
             throws IOException {
         switch (entry.getKey()) {
-            //Note: Skip HerdLoadBalancerURL as HerdLoadBalancerURL is redundant with HerdURL
-            case OUTPUT_NAME_HERD_LOAD_BALANCER_URL:
-                break;
             case OUTPUT_NAME_HERD_URL:
                 String herdURLValue = entry.getValue();
                 writer.write(entry.getKey() + "=" + herdURLValue);
                 writer.newLine();
 
-                writer.write(OUTPUT_NAME_HERD_LOAD_BALANCER_URL + "="
+                writer.write(OUTPUT_NAME_HERD_HOSTNAME + "="
                         + herdURLValue.substring(0, herdURLValue.indexOf("/herd-app")));
-                writer.newLine();
-                break;
-            //Note: extract shepHerdS3Bucket name from output shepHerdUrl
-            case OUTPUT_NAME_SHEPHERD_URL:
-                String shepHerdURLValue = entry.getValue();
-                writer.write(entry.getKey() + "=" + shepHerdURLValue);
-                writer.newLine();
-
-                String shepHerdUrl = entry.getValue();
-                String shepHerdS3Bucket = shepHerdUrl.split("//")[1].split("\\.")[0];
-                writer.write(StackOutputKeyEnum.SHEPHERD_S3_BUCKET.getKey() + "=" + shepHerdS3Bucket);
                 writer.newLine();
                 break;
             default:

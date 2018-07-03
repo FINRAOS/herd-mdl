@@ -82,18 +82,28 @@ export hivePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/$
 # Create schema if required
 if [ "${refreshDatabase}" = "true" ] ; then
     # Ignore error in case of first time setup
-    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e " DROP DATABASE IF EXISTS metastor;"
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e "DROP DATABASE IF EXISTS metastor;"
     mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e "DROP SCHEMA IF EXISTS mshive23;"
     mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e "DROP SCHEMA IF EXISTS metastor;"
-    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e " DROP USER MS_Hive_0_13;"
-    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e " DROP USER MS_Presto;"
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e "DROP USER MS_Hive_0_13;"
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e "DROP USER MS_Presto;"
+
+    # Get RDS Scripts
+    execute_cmd "cd ${deployLocation}"
+    execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/metastoreOperations-${metastorVersion}-dist.zip -O ${deployLocation}/metastoreOperations.zip"
+    execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/managedObjectLoader-${metastorVersion}-dist.zip -O ${deployLocation}/managedObjectLoader.zip"
+    execute_cmd "unzip metastoreOperations.zip"
+    execute_cmd "unzip managedObjectLoader.zip"
 
     # Execute DB scripts for Metastor
-    sed -i "s/{{HIVE_PASSWORD}}/${hivePassword}/g" ${deployLocation}/jenkins/sql/metastorDefaultUsers.sql
-    check_error $? "sed HIVE_PASSWORD ${deployLocation}/jenkins/sql/metastorDefaultUsers.sql"
-    execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} " "< ${deployLocation}/jenkins/sql/metastorDefaultUsers.sql"
-    #execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e  \"set password for 'MS_Hive_0_13' = password('${hivePassword}');\""
-    execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} " "< ${deployLocation}/jenkins/sql/metastorSetup.sql"
+    sed -i "s/{{HIVE_PASSWORD}}/${hivePassword}/g" ${deployLocation}/metastoreOperations/rds/metastorDefaultUsers.sql
+    check_error $? "sed HIVE_PASSWORD ${deployLocation}/rds/metastorDefaultUsers.sql"
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -e "CREATE DATABASE metastor;"
+    check_error $? "create database metastor"
+    execute_cmd "cd ${deployLocation}/metastoreOperations/rds"
+    execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} -D metastor " "< ${deployLocation}/metastoreOperations/rds/metastorDefaultUsers.sql"
+    execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} -D metastor " "< ${deployLocation}/metastoreOperations/rds/metastorSetupHive23.sql"
+    execute_sql_cmd "mysql -h ${metastorDBHost} -u ${metastorDBUser} -D metastor " "< ${deployLocation}/metastoreOperations/rds/metastorSetup.sql"
 fi
 
 exit 0

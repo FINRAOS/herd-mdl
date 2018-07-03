@@ -15,22 +15,21 @@
 **/
 package org.tsi.mdlt.enums;
 
-//TODO ldap password location will be changed after open ldap ssm renamed
+import org.tsi.mdlt.util.TestProperties;
+
 public enum SsmParameterKeyEnum {
-    ADMIN_USER("ldapAppUser", "/mdl/ldap/admin_user"),
-    ADMIN_PASSWORD("ldapAppPassword", "/mdl/ldap/admin_pass"),
+    ADMIN_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/AdministratorName"),
+    ADMIN_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/AdministratorPassword"),
 
-    APP_USER("ldapAppUser", "/mdl/ldap/app_user"),
-    APP_PASSWORD("ldapAppPassword", "/mdl/ldap/app_pass"),
+    MDL_APP_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/MdlAppUsername"),
+    MDL_APP_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/MDLAppPassword"),
 
-    TEST_USER_1("ldapTestUser1", "/mdl/ldap/mdl_test_1_user"),
-    TEST_USER_1_PASSWORD("ldapTestUser1Password", "/mdl/ldap/mdl_test_1_pass"),
+    SEC_APP_USER("ldapSecUser", "/app/MDL/{instanceName}/{environment}/LDAP/SecAppUsername"),
+    SEC_APP_PASSWORD("ldapSecUserPassword", "/app/MDL/{instanceName}/{environment}/LDAP/SecAppPassword"),
 
-    TEST_USER_2("ldapTestUser2", "/mdl/ldap/mdl_test_2_user"),
-    TEST_USER_2_PASSWORD("ldapTestUser2Password", "/mdl/ldap/mdl_test_2_pass"),
-
-    LDAP_DN("ldap_dn", "/mdl/ldap/base_dn"),
-    LDAP_HOSTNAME("ldap_dn", "/mdl/ldap/hostname");
+    LDAP_DN("ldap_dn", "/app/MDL/{instanceName}/{environment}/LDAP/BaseDN"),
+    LDAP_HOSTNAME("ldap_hostname", "/app/MDL/{instanceName}/{environment}/LDAP/HostName"),
+    AUTH_GROUP("authGroup", "/app/MDL/{instanceName}/{environment}/LDAP/AuthGroup");
 
     private String variableName;
     private String parameterKey;
@@ -40,11 +39,13 @@ public enum SsmParameterKeyEnum {
         this.parameterKey = parameterKey;
     }
 
-    public String getParameterKey() {
-        return parameterKey;
-    }
-
     public String getVariableName() {
         return variableName;
     }
+
+    public String getParameterKey() {
+        return parameterKey.replace("{instanceName}", TestProperties.get(StackInputParameterKeyEnum.MDL_INSTANCE_NAME))
+            .replace("{environment}", TestProperties.get(StackInputParameterKeyEnum.ENVIRONMENT));
+    }
+
 }

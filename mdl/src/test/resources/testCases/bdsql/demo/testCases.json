@@ -26,8 +26,8 @@
 		"type": "jdbc",
 		"connectionProperties" : {
 			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
-            "user": "${ldapTestUser1}",
-            "password": "${ldapTestUser1Password}",
+            "user": "${ldapAppUser}",
+            "password": "${ldapAppPassword}",
 			"jdbcURL": "${BdsqlURL}/sec_market_data"
 		},
 		"query": [
@@ -47,8 +47,8 @@
 		"type": "jdbc",
 		"connectionProperties" : {
 			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
-            "user": "${ldapTestUser1}",
-            "password": "${ldapTestUser1Password}",
+            "user": "${ldapAppUser}",
+            "password": "${ldapAppPassword}",
 			"jdbcURL": "${BdsqlURL}/sec_market_data"
 		},
 		"query": [

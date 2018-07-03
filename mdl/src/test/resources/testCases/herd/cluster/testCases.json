@@ -11,7 +11,7 @@
 	   		"-H 'Content-Type: application/xml'",
             "-u ${ldapAppUser}:${ldapAppPassword}",
 	    	"-d @${InputFilePath}",
-	    	"${HerdLoadBalancerURL}/herd-app/rest/namespaces"
+	    	"${HerdHostname}/herd-app/rest/namespaces"
 	     ],
 	     "environment": {
 			"InputFilePath": "./mdlt/inputs/rest/herd/cluster/createNamespace.xml"
@@ -31,7 +31,7 @@
 	   		"-H 'Content-Type: application/xml'",
             "-u ${ldapAppUser}:${ldapAppPassword}",
 	    	"-d @${InputFilePath}",
-	    	"${HerdLoadBalancerURL}/herd-app/rest/emrClusterDefinitions"
+	    	"${HerdHostname}/herd-app/rest/emrClusterDefinitions"
 	     ],
 	     "environment": {
 			"InputFilePath": "./mdlt/inputs/rest/herd/cluster/createClusterDefinition.xml"
@@ -52,7 +52,7 @@
 	   		"-H 'Content-Type: application/xml'",
 	   		"-u ${ldapAppUser}:${ldapAppPassword}",
 	    	"-d @${InputFilePath}",
-	    	"${HerdLoadBalancerURL}/herd-app/rest/emrClusters"
+	    	"${HerdHostname}/herd-app/rest/emrClusters"
 	     ],
 	     "environment": {
 			"InputFilePath": "./mdlt/inputs/rest/herd/cluster/createCluster.xml"
@@ -71,7 +71,7 @@
 	   		"--retry 5 --max-time 120 --retry-delay 7 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
 	   		"-X DELETE",
             "-u ${ldapAppUser}:${ldapAppPassword}",
-	    	"${HerdLoadBalancerURL}/herd-app/rest/emrClusters/namespaces/MDLT/emrClusterDefinitionNames/MDLTTestCluster/emrClusterNames/${MDLInstanceName}_Cluster?overrideTerminationProtection=true"
+	    	"${HerdHostname}/herd-app/rest/emrClusters/namespaces/MDLT/emrClusterDefinitionNames/MDLTTestCluster/emrClusterNames/${MDLInstanceName}_Cluster?overrideTerminationProtection=true"
 	     ]
 	},
 	"assert": "status code is 200",

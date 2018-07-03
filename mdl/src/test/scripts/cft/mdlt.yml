@@ -29,9 +29,16 @@ Parameters:
     Type: String
     AllowedPattern: '[a-z0-9]*'
     MaxLength: 5
-  MDLRelease:
+  ReleaseVersion:
     Default: DEV
     Description: 'Enter the MDL release to use - RC, DEV etc'
+    Type: String
+  InstallMdlYmlLUrl:
+    Description: Url of the install mdl yml location
+    Type: String
+  MdltBucketName:
+    Description: Bucket where the latest mdlt build is available
+    Default: mdl-build-bucket
     Type: String
   MDLTBranch:
     Default: mdlt
@@ -42,14 +49,7 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: String
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  DeploymentBucketName:
-    Description: Bucket where the deployment code resides
-    Type: String
-  BuildBucketName:
-    Description: Bucket where the latest build is available
-    Default: mdl-build-bucket
-    Type: String
-  ImageIdParamterKey:
+  ImageId:
     Default: ami-1853ac65
     Description: AMI id for EC2 instances
     Type: String
@@ -65,10 +65,11 @@ Parameters:
     Default: /VPC/Primary/SubnetIDs/private
     Description: VPC Parameter key name in system store
     Type: String
-  JavaKeyStoreFile:
-    Description: S3 location of JKS file for the given certificate
+  DeployComponents:
     Type: String
-    Default: s3://mdl-build-bucket/certs/certs.jks
+    Default: All
+    AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
+    Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
 Resources:
   DeployHostHttpsWithAuth:
     Type: 'AWS::CloudFormation::Stack'
@@ -76,7 +77,7 @@ Resources:
       TemplateURL: !Join
         - ''
         - - 'https://s3.amazonaws.com/'
-          - !Ref BuildBucketName
+          - !Ref MdltBucketName
           - /mdlt/build/
           - !Ref MDLTBranch
           - /
@@ -88,23 +89,23 @@ Resources:
           - ''
           - - !Ref MDLInstanceName
             - httpsauth
-        MDLRelease: !Ref MDLRelease
-        MDLTBranch: !Ref MDLTBranch
         KeyName: !Ref KeyName
-        DeploymentBucketName: !Ref DeploymentBucketName
-        BuildBucketName: !Ref BuildBucketName
-        ImageIdParamterKey: !Ref ImageIdParamterKey
+        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        ReleaseVersion: !Ref ReleaseVersion
+        MdltBucketName: !Ref MdltBucketName
+        MDLTBranch: !Ref MDLTBranch
+        ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         VpcIdParameterKey: !Ref VpcIdParameterKey
         PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
-        JavaKeyStoreFile: !Ref JavaKeyStoreFile
+        DeployComponents: !Ref DeployComponents
   DeployHostHttpWithoutAuth:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Join
         - ''
         - - 'https://s3.amazonaws.com/'
-          - !Ref BuildBucketName
+          - !Ref MdltBucketName
           - /mdlt/build/
           - !Ref MDLTBranch
           - /
@@ -116,13 +117,13 @@ Resources:
           - ''
           - - !Ref MDLInstanceName
             - httpnauth
-        MDLRelease: !Ref MDLRelease
-        MDLTBranch: !Ref MDLTBranch
         KeyName: !Ref KeyName
-        DeploymentBucketName: !Ref DeploymentBucketName
-        BuildBucketName: !Ref BuildBucketName
-        ImageIdParamterKey: !Ref ImageIdParamterKey
+        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        ReleaseVersion: !Ref ReleaseVersion
+        MdltBucketName: !Ref MdltBucketName
+        MDLTBranch: !Ref MDLTBranch
+        ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         VpcIdParameterKey: !Ref VpcIdParameterKey
         PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
-        JavaKeyStoreFile: !Ref JavaKeyStoreFile
+        DeployComponents: !Ref DeployComponents

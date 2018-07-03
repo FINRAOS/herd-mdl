@@ -36,8 +36,8 @@ public class SsmUtil {
      * @param parameterKey parameter key
      * @return Parameter
      */
-    public static Parameter getParameterByName(SsmParameterKeyEnum parameterKey) {
-        return getParameterByName(parameterKey, false);
+    public static Parameter getPlainLdapParameter(SsmParameterKeyEnum parameterKey) {
+        return getLdapParameter(parameterKey, false);
     }
 
     /**
@@ -46,18 +46,21 @@ public class SsmUtil {
      * @param parameterKey parameter key
      * @return Parameter
      */
-    public static Parameter getDecryptedParameterByName(SsmParameterKeyEnum parameterKey) {
-        return getParameterByName(parameterKey, true);
+    public static Parameter getDecryptedLdapParameter(SsmParameterKeyEnum parameterKey) {
+        return getLdapParameter(parameterKey, true);
     }
 
-    private static Parameter getParameterByName(SsmParameterKeyEnum parameterKey,
-            boolean isEncrypted) {
+    private static Parameter getLdapParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
+        return getParameter(parameterKey.getParameterKey(), isEncrypted);
+    }
+
+    private static Parameter getParameter(String parameterKey, boolean isEncrypted) {
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
-                AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
-                        .withRegion(Regions.getCurrentRegion().getName()).build();
+            AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
+                .withRegion(Regions.getCurrentRegion().getName()).build();
         GetParameterRequest parameterRequest = new GetParameterRequest();
-        parameterRequest.withName(parameterKey.getParameterKey()).setWithDecryption(isEncrypted);
+        parameterRequest.withName(parameterKey).setWithDecryption(isEncrypted);
         GetParameterResult parameterResult = simpleSystemsManagementClient.getParameter(parameterRequest);
         return parameterResult.getParameter();
     }

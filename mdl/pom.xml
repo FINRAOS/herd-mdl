@@ -17,14 +17,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>herd-mdl</artifactId>
-    <groupId>org.finra.herd-mdl</groupId>
-    <version>1.0.0</version>
-  </parent>
+
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>mdl</artifactId>
+  <artifactId>herd-mdl</artifactId>
+  <groupId>org.finra.herd-mdl</groupId>
+  <version>1.1.0</version>
 
   <properties>
 
@@ -60,6 +58,76 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
   </properties>
+
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/FINRAOS/herd-mdl.git</connection>
+    <url>https://github.com/FINRAOS/herd-mdl</url>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>nateiam</id>
+      <name>Nate Weisz</name>
+      <email>nateiam@gmail.com</email>
+      <url>https://github.com/nateiam</url>
+      <organization>FINRA</organization>
+      <organizationUrl>https://www.linkedin.com/in/nateweisz</organizationUrl>
+      <roles>
+        <role>product manager</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>sbalkee</id>
+      <name>Balakumar Sundaramoorty</name>
+      <email>sbalkee@gmail.com</email>
+      <organization>FINRA</organization>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>kusid</id>
+      <name>Kumar Siddhartha</name>
+      <email>kumar.siddhartha@aol.com</email>
+      <url>https://github.com/kusid</url>
+      <organization>FINRA</organization>
+      <organizationUrl>https://www.linkedin.com/in/kusid/</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>rongwang0930</id>
+      <name>Maggie Wang</name>
+      <email>rongwang0930@gmail.com</email>
+      <url>https://github.com/rongwang0930</url>
+      <organization>FINRA</organization>
+      <organizationUrl>https://www.linkedin.com/in/rongwang0930/</organizationUrl>
+      <roles>
+        <role>developer</role>
+        <role>tester</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>binaryechoes</id>
+      <name>Justin Mitchell</name>
+      <email>tcpandip@gmail.com</email>
+      <url>https://github.com/binaryechoes</url>
+      <organization>FINRA</organization>
+      <organizationUrl>https://www.linkedin.com/in/binaryechoes</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
 
   <dependencies>
     <dependency>
@@ -294,7 +362,8 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/bootstrap-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/bootstrap-assembly-descriptor.xml
+                </descriptor>
               </descriptors>
               <finalName>bootstrap</finalName>
             </configuration>
@@ -324,7 +393,8 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/elasticsearch-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/elasticsearch-assembly-descriptor.xml
+                </descriptor>
               </descriptors>
               <finalName>elasticsearch</finalName>
             </configuration>
@@ -339,7 +409,8 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/metastor-emr-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/metastor-emr-assembly-descriptor.xml
+                </descriptor>
               </descriptors>
               <finalName>metastorEmr</finalName>
             </configuration>
@@ -354,7 +425,8 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/metastor-ec2-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/metastor-ec2-assembly-descriptor.xml
+                </descriptor>
               </descriptors>
               <finalName>metastorEc2</finalName>
             </configuration>
@@ -401,7 +473,7 @@
               <descriptors>
                 <descriptor>${project.basedir}/assembly/assembly-descriptor.xml</descriptor>
               </descriptors>
-              <finalName>${project.parent.artifactId}-${project.version}</finalName>
+              <finalName>${project.artifactId}-${project.version}-dist</finalName>
             </configuration>
           </execution>
         </executions>

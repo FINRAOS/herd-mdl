@@ -13,15 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-Region = us-east-1
 StackStatusPollingInterval = 60
-MDLRelease = DEV
-MDLBuildBucket = mdl-build-bucket
-MDLDeploymentBucket = {{account-number}}-us-east-1-prod-poc
-MDLCFTLocationKey = mdl-bucket-deploy
 MDLTCFTLocationKey = mdlt/build
-MDLInstanceName = mdlt
-MDLTBranch = mdlt
-EnableSSLAndAuth = true
-RollbackOnFailure = true

@@ -17,14 +17,13 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: MDL - S3 buckets - Installation Template
 Parameters:
   MDLInstanceName:
-    Description: 'MDLInstanceName name '
+    Description: 'MDLInstanceName name'
     Type: String
   Environment:
     Description: Application environment
     Default: dev
     Type: String
   EnableSSLAndAuth:
-    Default: 'true'
     Description: Whether to enable Authentication/SSL
     Type: String
 Conditions:
@@ -221,3 +220,10 @@ Outputs:
       - S3BucketForStaticPages
       - WebsiteURL
     Description: URL for website hosted on S3
+  ShepherdS3Bucket:
+    Condition: EnableSSLAndAuth
+    Value: !Ref CloudfrontS3Bucket
+    Description: Shepherd s3 bucket name
+  MDLStagingBucketName:
+    Value: !Ref MDLStagingBucket
+    Description: MDL Staging bucket name

@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -78,7 +79,7 @@ public class TagTest extends BaseTest {
 
         System.out.println("Listing all queues with prefix: " + sqsNamePrefix);
         AmazonSQS sqs = AmazonSQSClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-                .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         List<String> queueUrls = sqs.listQueues(sqsNamePrefix).getQueueUrls();
         assertEquals(2, queueUrls.size(), "2 queues are expected");
         for (String queueUrl : queueUrls) {
@@ -103,14 +104,14 @@ public class TagTest extends BaseTest {
         List<Tag> nestedStackTags = getNestedStackTags(APP_STACK_NAME);
         for (Tag tag : wrapperStackTags) {
             assertTrue(nestedStackTags.stream()
-                    .anyMatch(nestedStackTag -> nestedStackTag.getKey().equals(tag.getKey())
-                            && nestedStackTag.getValue().equals(tag.getValue())));
+                .anyMatch(nestedStackTag -> nestedStackTag.getKey().equals(tag.getKey())
+                    && nestedStackTag.getValue().equals(tag.getValue())));
         }
 
         LogVerification("Verify wrapper stack tags are copied to S3");
         String shepHerdS3BucketName = StackOutputPropertyReader.get(StackOutputKeyEnum.SHEPHERD_S3_BUCKET);
         AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-                .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         Map<String, String> s3Tags = s3.getBucketTaggingConfiguration(shepHerdS3BucketName).getTagSet().getAllTags();
 
         wrapperStackTags.forEach(tag -> {
@@ -123,29 +124,29 @@ public class TagTest extends BaseTest {
         List<com.amazonaws.services.rds.model.Tag> rdsTags = getRdsTagsWithPrefix(INSTANCE_NAME);
         for (Tag tag : wrapperStackTags) {
             assertTrue(rdsTags.stream().anyMatch(rdsTag -> rdsTag.getKey().equals(tag.getKey())
-                    && rdsTag.getValue().equals(tag.getValue())));
+                && rdsTag.getValue().equals(tag.getValue())));
         }
 
         LogVerification("Verify wrapper stack tags are copied to EC2");
         List<com.amazonaws.services.ec2.model.Tag> ec2Tags = getEc2Tags(ES_EC2_IP);
         for (Tag tag : wrapperStackTags) {
             assertTrue(ec2Tags.stream().anyMatch(ec2Tag -> ec2Tag.getKey().equals(tag.getKey())
-                    && ec2Tag.getValue().equals(tag.getValue())));
+                && ec2Tag.getValue().equals(tag.getValue())));
         }
 
         LogVerification("Verify wrapper stack tags are copied to Security Group");
         List<com.amazonaws.services.ec2.model.Tag> securityGroupTags = getSecurityGroupTagsWithPrefix(INSTANCE_NAME);
         for (Tag tag : wrapperStackTags) {
             assertTrue(securityGroupTags.stream()
-                    .anyMatch(securityGroupTag -> securityGroupTag.getKey().equals(tag.getKey())
-                            && securityGroupTag.getValue().equals(tag.getValue())));
+                .anyMatch(securityGroupTag -> securityGroupTag.getKey().equals(tag.getKey())
+                    && securityGroupTag.getValue().equals(tag.getValue())));
         }
 
         LogVerification("Verify wrapper stack tags are copied to Elastic Load Balancer");
         List<com.amazonaws.services.elasticloadbalancingv2.model.Tag> elbTags = getElbTags();
         for (Tag tag : wrapperStackTags) {
             assertTrue(elbTags.stream().anyMatch(elbTag -> elbTag.getKey().equals(tag.getKey())
-                    && elbTag.getValue().equals(tag.getValue())));
+                && elbTag.getValue().equals(tag.getValue())));
         }
     }
 
@@ -153,10 +154,10 @@ public class TagTest extends BaseTest {
         assertNotNull(rdsIdentifierPrefix);
 
         AmazonRDS rds = AmazonRDSClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-                .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         List<DBInstance> dbInstances = rds.describeDBInstances().getDBInstances().stream()
-                .filter(dbInstance -> dbInstance.getDBInstanceIdentifier().startsWith(rdsIdentifierPrefix))
-                .collect(Collectors.toList());
+            .filter(dbInstance -> dbInstance.getDBInstanceIdentifier().startsWith(rdsIdentifierPrefix))
+            .collect(Collectors.toList());
         assertNotNull(dbInstances);
         assertTrue(dbInstances.size() > 0);
         String herdRdsARN = dbInstances.get(0).getDBInstanceArn();
@@ -170,7 +171,7 @@ public class TagTest extends BaseTest {
         assertNotNull(privateEc2Ip);
 
         AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-                .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         DescribeInstancesRequest ec2Request = new DescribeInstancesRequest().withFilters(new Filter(EC_2_FILTER_PRIVATE_IP).withValues(privateEc2Ip));
         List<Reservation> reservations = ec2.describeInstances(ec2Request).getReservations();
         assert reservations != null && reservations.size() > 0;
@@ -185,11 +186,11 @@ public class TagTest extends BaseTest {
         assertNotNull(sgNamePrefix);
 
         AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-                .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         List<SecurityGroup> securityGroups = ec2.describeSecurityGroups().getSecurityGroups().stream()
-                //exclude security group created by DeployHostStack, as DeployHostStack doesn't have tag attached
-                .filter(sg -> sg.getGroupName().startsWith(sgNamePrefix) && !sg.getGroupName().trim().endsWith(DEPLOY_HOST_SG_SUFFIX))
-                .collect(Collectors.toList());
+            //exclude security group created by DeployHostStack, as DeployHostStack doesn't have tag attached
+            .filter(sg -> sg.getGroupName().startsWith(sgNamePrefix) && !sg.getGroupName().trim().endsWith(DEPLOY_HOST_SG_SUFFIX))
+            .collect(Collectors.toList());
         assert securityGroups != null && securityGroups.size() > 0;
 
         LOGGER.info("Getting SG: " + securityGroups.get(0).getGroupName());
@@ -206,21 +207,21 @@ public class TagTest extends BaseTest {
         String elbArn = getAnyElbArn();
 
         AmazonElasticLoadBalancing client = AmazonElasticLoadBalancingClientBuilder.standard()
-                .withRegion(Regions.getCurrentRegion().getName()).withCredentials(new InstanceProfileCredentialsProvider(true))
-                .build();
+            .withRegion(Regions.getCurrentRegion().getName()).withCredentials(new InstanceProfileCredentialsProvider(true))
+            .build();
         DescribeTagsRequest request = new DescribeTagsRequest().withResourceArns(elbArn);
         return client.describeTags(request).getTagDescriptions().get(0).getTags();
     }
 
     private String getAnyElbArn() {
         AmazonElasticLoadBalancing amazonElasticLoadBalancing = AmazonElasticLoadBalancingClientBuilder
-                .standard()
-                .withRegion(Regions.getCurrentRegion().getName()).withCredentials(new InstanceProfileCredentialsProvider(true))
-                .build();
-        List<LoadBalancer> elbs = amazonElasticLoadBalancing
-                .describeLoadBalancers(new DescribeLoadBalancersRequest()).getLoadBalancers()
-                .stream().filter(elb -> elb.getLoadBalancerName().contains(INSTANCE_NAME))
-                .collect(Collectors.toList());
+            .standard()
+            .withRegion(Regions.getCurrentRegion().getName()).withCredentials(new InstanceProfileCredentialsProvider(true))
+            .build();
+        String bdsqlLbArn = StackOutputPropertyReader.get(StackOutputKeyEnum.BDSQL_LB_ARN);
+        List<LoadBalancer> elbs = new ArrayList<>(
+            amazonElasticLoadBalancing.describeLoadBalancers(new DescribeLoadBalancersRequest().withLoadBalancerArns(bdsqlLbArn))
+                .getLoadBalancers());
         assert elbs != null && elbs.size() > 0;
 
         LOGGER.info("Getting ELB: " + elbs.get(0).getLoadBalancerName());

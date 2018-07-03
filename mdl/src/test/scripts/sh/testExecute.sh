@@ -41,10 +41,12 @@ deployPropertiesFile=$1
 # Source the properties
 . ${deployPropertiesFile}
 
+#Copy mdlt files(which stores mdl stack output parameters) to ec2 ?? which file
 execute_cmd "cd /home/ec2-user"
+
 export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
 
 # Execute the test cases
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -jar lib/junit-platform-console-standalone-1.0.0-M4.jar -p org.tsi.mdlt.test --details verbose --cp mdlt/lib/mdl-1.0.0-tests.jar:$APP_LIB_JARS --reports-dir /tmp/sam --disable-ansi-colors"
+execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar lib/junit-platform-console-standalone-1.0.0-M4.jar -p org.tsi.mdlt.test --details verbose --cp mdlt/lib/herd-mdl-1.0.0-tests.jar:${APP_LIB_JARS} --reports-dir /tmp/sam --disable-ansi-colors"
 
 exit 0

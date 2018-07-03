@@ -23,7 +23,7 @@ Parameters:
     Default: '1.0.0'
   DeployComponents:
     Type: String
-    Default: Herd
+    Default: All
     AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
     Description: Choose individual MDL components to deploy. Default is All, which will deploy all components.
   CertificateInfo:
@@ -123,7 +123,6 @@ Parameters:
     Description: Hosted Zone Name to create Route53 record set group for the given domain
     Type: String
   DomainNameSuffix:
-    Default: 'mdl'
     Description: Domain name suffix for MDL Domains
     Type: String
   ImageId:
@@ -190,9 +189,6 @@ Parameters:
     Description: Number of Core Instances for the EMR cluster
     Type: String
     Default: '1'
-  JavaKeyStoreFile:
-    Description: S3 location of JKS file for the given certificate
-    Type: String
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -236,7 +232,6 @@ Metadata:
           - DomainNameSuffix
           - HostedZoneName
           - CertificateInfo
-          - JavaKeyStoreFile
           - LdapDN
       - Label:
           default: EC2 Instance Parameters
@@ -254,6 +249,12 @@ Metadata:
           - CustomTagName
           - CustomTagValue
           - Environment
+Conditions:
+  DeployMetastor: !Or [!Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  DeployHerd: !Or [!Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  DeployBDSQL: !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
+  CreateCloudFrontDistributionCondition: !Equals [!Ref CreateCloudFrontDistribution, true]
+  DeployBDSQLWithAuth: !And [!Equals [!Ref EnableSSLAndAuth, true], !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]]
 Resources:
   DeployBucket:
     Type: 'AWS::S3::Bucket'
@@ -321,7 +322,7 @@ Resources:
                   try:
                       os.makedirs('/tmp/downloads/')
                       os.makedirs('/tmp/extracts/')
-                      release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/v{}/herd-mdl-{}.zip'.format(release_version, release_version)
+                      release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{}/herd-mdl-{}-dist.zip'.format(release_version, release_version)
                       local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('mdl.zip'))
                       urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
 
@@ -425,13 +426,32 @@ Resources:
         CustomTagName: !Ref CustomTagName
         CustomTagValue: !Ref CustomTagValue
         NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
-        JavaKeyStoreFile: !Ref JavaKeyStoreFile
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
         - Key: Environment
           Value: !Ref Environment
 Outputs:
+  CodeDeploymentStatus:
+    Description: MDL Code Deployment Status in current AWS account
+    Value: !GetAtt ArtifactCopyCustomResource.Message
   HerdURL:
-    Value: !GetAtt [MdlStack, Outputs.HerdURL]
-    Description: URL to access Herd
+    Value: !GetAtt MdlStack.Outputs.HerdURL
+    Description: URL to access Herd instance
+    Condition: DeployHerd
+  ShepherdURL:
+    Value: !GetAtt MdlStack.Outputs.ShepherdURL
+    Description: URL to access Shepherd
+    Condition: CreateCloudFrontDistributionCondition
+  BdsqlURL:
+    Value: !GetAtt MdlStack.Outputs.BdsqlURL
+    Description: URL for Bdsql cluster
+    Condition: DeployBDSQL
+  HerdUploaderJarURL:
+    Value: !GetAtt MdlStack.Outputs.HerdUploaderJarURL
+    Description: URL for Herd uploader jar
+    Condition: DeployHerd
+  BdsqlJksURL:
+    Value: !GetAtt MdlStack.Outputs.BdsqlJksURL
+    Description: URL for Bdsql jks file
+    Condition: DeployBDSQLWithAuth

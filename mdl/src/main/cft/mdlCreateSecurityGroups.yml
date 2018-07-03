@@ -106,6 +106,10 @@ Resources:
           ToPort: '8889'
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+            FromPort: '0'
+            ToPort: '65535'
+            CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: '3306'
           ToPort: '3306'
           SourceSecurityGroupId: !GetAtt
@@ -341,6 +345,21 @@ Resources:
         - MetastorRDSSecurityGroup
         - GroupId
       Description: Security Group ID for Metastor RDS Group
+  BdsqlEMRMasterSecurityGroupParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /SecurityGroup/BdsqlEMRMasterSecurityGroup
+      Type: String
+      Value: !GetAtt
+        - BdsqlEMRMasterSecurityGroup
+        - GroupId
+      Description: Security Group ID for BDSQL EMR Master Security Group
   BdsqlEMRServiceSecurityGroupParameter:
     Type: 'AWS::SSM::Parameter'
     Properties:

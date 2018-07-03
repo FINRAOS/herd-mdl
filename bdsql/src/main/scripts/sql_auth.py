@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import re, sys
+import re
+import sys
 import boto3
 import ldap
 import pyhs2
@@ -30,16 +31,33 @@ except Exception as e:
 
 
 def log(msg, log_level='info'):
+    """Print formatted log message to stdout"""
+
     now = datetime.datetime.now()
     print "{} - {} - {}".format(now, log_level, msg)
 
 
-def get_boto_session():
-    return boto3.Session()
+def get_tags():
+    """Return ec2 instance tags"""
+
+    session = boto3.Session()
+    client = session.client('ec2')
+
+    account_id = session.client('sts').get_caller_identity()['Account']
+    instance_id = requests.get('http://169.254.169.254/latest/meta-data/instance-id').text
+    tag_response = client.describe_tags(
+        Filters=[{'Name':'resource-id', 'Values' : [instance_id]}])
+    tags = {}
+    for tag in tag_response['Tags']:
+        tags[tag['Key']] = tag['Value']
+
+    return tags
+
 
 def get_s3_home_bucket():
+    """Return s3 bucket for user objects"""
 
-    session = get_boto_session()
+    session = boto3.Session()
     client = session.client('ec2')
 
     account_id = session.client('sts').get_caller_identity()['Account']
@@ -58,25 +76,9 @@ def get_s3_home_bucket():
 
     return s3_home_bucket
 
-def get_ldap_info():
-
-    ldap_info = {
-        'base_dn' : None,
-        'hostname' : None,
-    }
-
-    session = get_boto_session()
-    ssm_client = session.client('ssm')
-
-    for k in ldap_info.keys():
-
-        ldap_info_response = ssm_client.get_parameter(Name='/mdl/ldap/{}'.format(k))
-        ldap_info[k] = ldap_info_response['Parameter']['Value']
-
-    return ldap_info
-
 
 def get_metastor_info():
+    """Return metastore connection info"""
 
     info = {
         'hostname' : None,
@@ -102,41 +104,55 @@ def get_metastor_info():
     return info
 
 
-def get_creds(purpose):
+def get_ldap_info():
+    """Return LDAP connection info"""
 
-
-    creds = {
+    info = {
+        'hostname' : None,
         'user' : None,
         'pass' : None,
+        'base_dn' : None,
     }
 
-    session = get_boto_session()
+    session = boto3.Session()
     ssm_client = session.client('ssm')
 
-    for k in creds.keys():
+    tags = get_tags()
+    base_ssm_key = '/app/MDL/{}/{}/LDAP'.format(tags['Purpose'],tags['Environment'])
 
-        cred_response = ssm_client.get_parameter(Name='/mdl/{}/app_{}'.format(purpose,k))
-        creds[k] = cred_response['Parameter']['Value']
+    info_response = ssm_client.get_parameter(Name='{}/HostName'.format(base_ssm_key))
+    info['hostname'] = info_response['Parameter']['Value']
 
-    return creds
+    info_response = ssm_client.get_parameter(Name='{}/MdlAppUsername'.format(base_ssm_key))
+    info['user'] = info_response['Parameter']['Value']
+
+    info_response = ssm_client.get_parameter(Name='{}/MDLAppPassword'.format(base_ssm_key),WithDecryption=True)
+    info['pass'] = info_response['Parameter']['Value']
+
+    info_response = ssm_client.get_parameter(Name='{}/BaseDN'.format(base_ssm_key))
+    info['base_dn'] = info_response['Parameter']['Value']
+
+    return info
 
 
 def get_hive_conn(database='default'):
+    """Return HiveServer2 Thrift connection"""
 
-    creds = get_creds('ldap')
+    ldap_info = get_ldap_info()
 
     hive_conn = pyhs2.connect(
         host='localhost',
         port=10000,
         authMechanism="PLAIN",
-        user=creds['user'],
-        password=creds['pass'],
+        user=ldap_info['user'],
+        password=ldap_info['pass'],
         database=database)
 
     return hive_conn
 
 
 def execute_hive_query(database,q):
+    """Return HiveServer2 normalized query data"""
 
     # initialize Hive connection and cursor
     hive_conn = get_hive_conn(database)
@@ -166,6 +182,7 @@ def execute_hive_query(database,q):
 
 
 def get_metastor_conn():
+    """Return MySQL connection"""
 
     metastor_info = get_metastor_info()
 
@@ -181,6 +198,7 @@ def get_metastor_conn():
 
 
 def execute_metastor_query(q):
+    """Return MySQL normalized query data"""
 
     data = []
 
@@ -201,6 +219,7 @@ def execute_metastor_query(q):
 
 
 def get_metastor_objects():
+    """Return application objects registered by HERD/Metastor"""
 
     q = """
     SELECT
@@ -228,6 +247,7 @@ def get_metastor_objects():
 
 
 def get_user_objects():
+    """Return user objects registered by BDSQL"""
 
     q = """
     SELECT
@@ -255,6 +275,7 @@ def get_user_objects():
 
 
 def get_roles_users():
+    """Return authorization roles and users"""
 
     q = """
     SELECT
@@ -275,25 +296,26 @@ def get_roles_users():
 
 
 def get_ldap_conn():
+    """Return OpenLDAP connection"""
 
-    creds = get_creds('ldap')
     ldap_info = get_ldap_info()
 
-    full_bind_user='uid=%s,ou=People,%s' % (creds['user'],ldap_info['base_dn'])
+    print ldap_info
+
+    full_bind_user='uid=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
 
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_REFERRALS,0)
 
     ldap_conn = ldap.initialize('ldaps://{}:636'.format(ldap_info['hostname']))
     ldap_conn.protocol_version = ldap.VERSION3
-    ldap_conn.simple_bind_s(full_bind_user, creds['pass'])
+    ldap_conn.simple_bind_s(full_bind_user, ldap_info['pass'])
 
     return ldap_conn
 
 
 def execute_ldap_query(search_filter):
-
-    data = []
+    """Return OpenLDAP normalized query data"""
 
     ldap_conn = get_ldap_conn()
     ldap_info = get_ldap_info()
@@ -307,17 +329,21 @@ def execute_ldap_query(search_filter):
     data = []
     for i in ldap_result:
         data.append(i)
+
     return data
 
 
-def get_ldap_objects():
+def get_ldap_objects(search_string):
+    """Return OpenLDAP objects matching a regular expression"""
 
-    search_filter = '(&(cn=APP_MDL_*))'
+    search_filter = '(&({}))'.format(search_string)
     data = execute_ldap_query(search_filter)
+
     return data
 
 
 def convert_database_name_to_role(database, ldap_objects):
+    """Return normalized role name given LDAP group"""
 
     acl_match = None
 
@@ -336,6 +362,7 @@ def convert_database_name_to_role(database, ldap_objects):
 
 
 def create_hive_role(database, role_name):
+    """Create Hive authorization role"""
 
     q = """
         SELECT
@@ -352,58 +379,15 @@ def create_hive_role(database, role_name):
         qs = ['set role admin',create_query]
         execute_hive_query(database,qs)
 
-    # todo: with grant option
-    if re.search('_ACL_(RO|RW|R|W)_public$', role_name):
-        with_grant=""
-    else:
-        with_grant=" WITH GRANT OPTION"
-
-    if re.search('_ACL_RO_',role_name, re.I):
-        privs = ['SELECT']
-
-    tables = execute_hive_query(database,"show tables")
-    for table in tables:
-        for priv in privs:
-
-            e = """
-            SELECT
-                tp.GRANTOR,
-                d.NAME,
-                t.TBL_NAME,
-                tp.TBL_PRIV,
-                tp.GRANT_OPTION,
-                tp.PRINCIPAL_TYPE,
-                tp.PRINCIPAL_NAME
-            FROM
-                TBLS t
-            JOIN
-                DBS d ON(d.DB_ID=t.DB_ID)
-            LEFT JOIN
-                TBL_PRIVS tp ON(tp.TBL_ID=t.TBL_ID)
-            WHERE
-                d.NAME='{}' AND
-                t.TBL_NAME='{}' AND
-                tp.TBL_PRIV='{}' AND
-                tp.PRINCIPAL_NAME='{}'""".format(
-                database, table['tab_name'], priv, role_name.lower())
-            exists_data = execute_metastor_query(q)
-
-            if len(exists_data) == 0:
-                log("#1.a creating new privilege on table: table={} priv={}".format(
-                    table['tab_name'], priv))
-                grant_query="GRANT {} ON TABLE {}.{} TO ROLE {}".format(
-                    priv, database, table['tab_name'], role_name)
-                execute_hive_query(database,['set role admin',grant_query])
-            else:
-                log("#1.b privilege already exists on table: table={} priv={}".format(
-                    table['tab_name'], priv))
+    return True
 
 
 def add_users_to_role(database, role_name, ldap_objects):
+    """Associate OpenLDAP users with Hive authorization role"""
 
     for ldap_object in ldap_objects:
         if (ldap_object[1]['cn'][0].lower() == 'app_mdl_users' and role_name == 'app_mdl_acl_ro_public') or \
-                        ldap_object[1]['cn'][0].lower() == role_name:
+                ldap_object[1]['cn'][0].lower() == role_name:
             users = [i.split(',')[0].replace('uid=','').strip() for i in ldap_object[1]['member']]
             for user in users:
                 q = """
@@ -426,8 +410,13 @@ def add_users_to_role(database, role_name, ldap_objects):
                 else:
                     log("user is already associated with role.")
 
+    grant_privs_to_tables(database, role_name)
+
+    return True
+
 
 def grant_privs_to_tables(database, role_name):
+    """Grant privileges to Hive authorization role"""
 
     tables = execute_hive_query(database,"show tables")
 
@@ -440,21 +429,24 @@ def grant_privs_to_tables(database, role_name):
             exists_data = execute_hive_query(database,['set role admin', exists_q])
             priv_exists = [i for i in exists_data if i['privilege'] == priv]
             if len(priv_exists) == 0:
-                log("#2.a creating new privilege on table. table={} priv={}".format(
+                log("creating new privilege on table. table={} priv={}".format(
                     table['tab_name'], priv))
-                q = "GRANT {} ON TABLE {}.{} TO ROLE {}".format(priv, database, table['tab_name'], role_name)
+                q = "GRANT {} ON TABLE {}.{} TO ROLE {}".format(
+                    priv, database, table['tab_name'], role_name)
                 execute_hive_query(database,['set role admin',q])
             else:
-                log("#2.b privilege already exists on table. table={} priv={}".format(
+                log("privilege already exists on table. table={} priv={}".format(
                     table['tab_name'], priv))
 
+    return True
 
 def sync_app_objects():
+    """Synchronize HERD/Metastor registered application objects with Hive authorization rules"""
 
     log("started syncing app objects")
 
     metastor_objects = get_metastor_objects()
-    ldap_objects = get_ldap_objects()
+    ldap_objects = get_ldap_objects('cn=APP_MDL_*')
 
     databases = set(sorted([i['NAME'] for i in metastor_objects],reverse=True))
     log("total_dbs={}".format(len(databases)))
@@ -465,12 +457,14 @@ def sync_app_objects():
         add_users_to_role(database, role_name, ldap_objects)
         grant_privs_to_tables(database, role_name)
 
+    return True
 
 def sync_user_objects():
+    """Synchronize BDSQL registered user objects with Hive authorization rules"""
 
     log("started syncing user objects")
 
-    ldap_objects = get_ldap_objects()
+    ldap_objects = get_ldap_objects('cn=APP_MDL_*')
     roles_users = get_roles_users()
 
     privs = ['SELECT','INSERT','UPDATE','DELETE']
@@ -481,14 +475,17 @@ def sync_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip() for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('uid=','').strip()
+                for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
     for user in users:
         user_schema_name = 'user_{}'.format(user)
-        user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(s3_home_bucket,user_schema_name)
-        user_schemas = [i['database_name'] for i in execute_hive_query('default','show schemas')]
+        user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
+            s3_home_bucket,user_schema_name)
+        user_schemas = [i['database_name']
+            for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -554,13 +551,13 @@ def sync_user_objects():
                     priv_exists_data = execute_metastor_query(priv_exists_query)
 
                     if len(priv_exists_data) == 0:
-                        log("#3.a creating new privilege on table: table={} priv={}".format(
+                        log("creating new privilege on table: table={} priv={}".format(
                             table['tab_name'], priv))
                         q = "GRANT {} ON TABLE {}.{} TO USER {} WITH GRANT OPTION".format(
                             priv, user_schema_name, table['tab_name'], user)
                         execute_hive_query(user_schema_name,['set role admin',q])
                     else:
-                        log("#3.a privilege already exists on table: table={} priv={}".format(
+                        log("privilege already exists on table: table={} priv={}".format(
                             table['tab_name'], priv))
         else:
             log("no table entries found")
@@ -575,9 +572,10 @@ def sync_user_objects():
         else:
             ldap_group_role_match = ldap_group_cn
 
-        ldap_users = [user.split(',')[0].replace('uid=','') for user in ldap_object[1]['member']]
+        ldap_users = [user.split(',')[0].replace('uid=','')
+            for user in ldap_object[1]['member']]
         role_users = [role_user['user'] for role_user in roles_users
-                      if role_user['role_name'] == ldap_group_role_match]
+            if role_user['role_name'] == ldap_group_role_match]
 
         for role_user in role_users:
             if role_user not in ldap_users:
@@ -586,7 +584,11 @@ def sync_user_objects():
                 q = "REVOKE ROLE {} FROM USER {}".format(ldap_group_role_match, role_user)
                 execute_hive_query('default',['set role admin',q])
 
+    return True
+
+
 def remove_roles():
+    """Remove all Hive authorization roles"""
 
     roles = execute_hive_query('default',['set role admin','show roles'])
     acl_roles = [i['role'] for i in roles if '_acl_' in i['role'].lower()]
@@ -594,12 +596,14 @@ def remove_roles():
     for acl_role in acl_roles:
 
         log("started removing role. role={}".format(acl_role))
-        principal_data = execute_hive_query('default',['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+        principal_data = execute_hive_query('default',
+            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
 
         for principal in principal_data:
 
             user = principal['principal_name']
-            log("started removing user from role. role={} user={}".format(acl_role, user))
+            log("started removing user from role. role={} user={}".format(
+                acl_role, user))
 
             q = "REVOKE ROLE {} FROM USER {}".format(acl_role,user)
             execute_hive_query('default',['set role admin',q])
@@ -609,8 +613,11 @@ def remove_roles():
 
         log("finished with role. role={}".format(acl_role))
 
+    return True
+
 
 def remove_privs():
+    """Remove Hive authorization privileges for all objects"""
 
     revokes = []
 
@@ -623,7 +630,8 @@ def remove_privs():
             priv_data = execute_hive_query(database['NAME'], ['set role admin',q])
             for i in priv_data:
                 log("revoking priv. priv={} principal={} principal_name={} grant_option={}  database={} table={}".format(
-                    i['privilege'], i['principal_type'], i['principal_name'], i['grant_option'], database['NAME'], i['table']))
+                    i['privilege'], i['principal_type'], i['principal_name'],
+                    i['grant_option'], database['NAME'], i['table']))
                 revoke_query = "REVOKE {} ON {} FROM {} {}".format(
                     i['privilege'], i['table'], i['principal_type'], i['principal_name'])
                 execute_hive_query(database['NAME'],['set role admin',revoke_query])
@@ -632,11 +640,14 @@ def remove_privs():
 
     log("revoked {} privs".format(len(revokes)))
 
+    return True
+
 
 def remove_user_objects():
+    """Remove all BDSQL registered user objects"""
 
     log("started removing user objects")
-    ldap_objects = get_ldap_objects()
+    ldap_objects = get_ldap_objects('cn=APP_MDL_*')
 
     s3_home_bucket = get_s3_home_bucket()
 
@@ -644,14 +655,17 @@ def remove_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip() for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('uid=','').strip()
+                for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
     for user in users:
         user_schema_name = 'user_{}'.format(user)
-        user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(s3_home_bucket,user_schema_name)
-        user_schemas = [i['database_name'] for i in execute_hive_query('default','show schemas')]
+        user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
+            s3_home_bucket,user_schema_name)
+        user_schemas = [i['database_name']
+            for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -665,11 +679,12 @@ def remove_user_objects():
 
 
 def show_acls():
+    """Show Hive authorization rules"""
 
     log("show access control list")
 
     print "### LDAP ###"
-    ldap_objects = get_ldap_objects()
+    ldap_objects = get_ldap_objects('cn=APP_MDL_*')
     for ldap_object in ldap_objects:
         group_cn = str(ldap_object[0]) #.split(',')[0].replace('cn=','')
         print "group:\n\t{}".format(group_cn)
@@ -681,7 +696,8 @@ def show_acls():
     acl_roles = [i['role'] for i in roles if '_acl_' in i['role'].lower()]
     for acl_role in acl_roles:
         print "role:\n\t{}".format(acl_role)
-        data = execute_hive_query('default',['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+        data = execute_hive_query('default',
+            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
         headers = data[0].keys()
         print 'members:\n\t' + ','.join(headers)
         for d in data:
@@ -690,8 +706,18 @@ def show_acls():
     databases = execute_metastor_query("SELECT * FROM DBS")
     for database in databases:
         print "working on db: {}".format(database['NAME'])
-        tables = execute_hive_query(database['NAME'],"SHOW TABLES")
-        q = "select tp.GRANTOR, tp.PRINCIPAL_TYPE, tp.PRINCIPAL_NAME, d.NAME, t.TBL_NAME, t.TBL_TYPE, t.CREATE_TIME, t.TBL_ID from DBS d JOIN TBLS t on(t.DB_ID=d.DB_ID) LEFT JOIN TBL_PRIVS tp ON(tp.TBL_ID=t.TBL_ID) WHERE d.NAME='{}'".format(database['NAME'])
+        q = """
+        SELECT
+            tp.GRANTOR, tp.PRINCIPAL_TYPE, tp.PRINCIPAL_NAME, d.NAME, t.TBL_NAME,
+            t.TBL_TYPE, t.CREATE_TIME, t.TBL_ID
+        FROM
+            DBS d
+        JOIN
+            TBLS t on(t.DB_ID=d.DB_ID)
+        LEFT JOIN
+            TBL_PRIVS tp ON(tp.TBL_ID=t.TBL_ID)
+        WHERE
+            d.NAME='{}'""".format(database['NAME'])
         data = execute_metastor_query(q)
         if len(data) > 0:
             headers = data[0].keys()
@@ -699,6 +725,8 @@ def show_acls():
             for d in data:
                 print '\t' + ','.join([str(i) for i in d.values()])
             print '\n'.strip()
+
+    return True
 
 
 if action == 'sync_app_objects':

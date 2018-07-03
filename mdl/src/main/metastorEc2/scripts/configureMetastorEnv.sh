@@ -64,32 +64,34 @@ metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${
 
 if [ "${refreshDatabase}" = "true" ] ; then
 
-    execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/xml/install/addPartitionWorkflow.xml"
-    execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/xml/install/addPartitionWorkflow.xml"
-    execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/xml/install/addPartitionWorkflow.xml"
-
     # addPartitionWorkflow
+    execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
 
     # Replace values for cluster definition
-    execute_cmd "sed -i \"s/{{MYSQL_RDS}}/${metastorDBHost}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{MDL_INSTANCE_NAME}}/${mdlInstanceName}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{REGION}}/${region}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{DEPLOY_BUCKET_KEY}}/${releaseVersion}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{S3_METASTOR_BUCKET}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{S3_DEPLOY_BUCKET}}/${deploymentBucketName}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{S3_DEPLOY_BUCKET_BOOTSTRAP}}/s3\:\/\/${deploymentBucketName}\/${releaseVersion}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{EMR_METASTOR_SR}}/${mdlEMRServiceRole}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{SSH_KEY_PAIR}}/${metastorHiveClusterKeyName}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{PRIVATE_SUBNETS}}/${privateSubnets}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{IAM_PROFILE}}/${mdlInstanceProfile}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
-    execute_cmd "sed -i \"s/{{SG_METASTOR_EMRMSTR_ID}}/${metastorEMRSecurityGroup}/g\" ${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{DEFAULT_CLUSTER_DEF}}/MDLMetastorHiveCluster/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{MYSQL_RDS}}/${metastorDBHost}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{MDL_INSTANCE_NAME}}/${mdlInstanceName}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{REGION}}/${region}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{DEPLOY_BUCKET_KEY}}/${releaseVersion}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{S3_METASTOR_BUCKET}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{S3_DEPLOY_BUCKET}}/${deploymentBucketName}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{S3_DEPLOY_BUCKET_BOOTSTRAP}}/s3\:\/\/${deploymentBucketName}\/${releaseVersion}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{EMR_METASTOR_SR}}/${mdlEMRServiceRole}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{SSH_KEY_PAIR}}/${metastorHiveClusterKeyName}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{PRIVATE_SUBNETS}}/${privateSubnets}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{IAM_PROFILE}}/${mdlInstanceProfile}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
+    execute_cmd "sed -i \"s/{{SG_METASTOR_EMRMSTR_ID}}/${metastorEMRSecurityGroup}/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
     execute_cmd "aws s3 cp ${configFile} s3://${mdlStagingBucketName}/deploy/metastor/deploy.props"
 
     # Register cluster definition
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/metastoreHiveClusterDefinition.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/emrClusterDefinitions --insecure"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/emrClusterDefinitions --insecure"
 
     # Smoke Testing setup
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/smokeTesting/dataProvider.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/dataProviders --insecure"
@@ -100,12 +102,10 @@ if [ "${refreshDatabase}" = "true" ] ; then
 fi
 
 # Change the db.properties
-execute_cmd "sed -i \"s/{{MYSQL_RDS}}/${metastorDBHost}/g\" ${deployLocation}/xml/install/hive-site.xml"
-execute_cmd "aws s3 cp ${deployLocation}/xml/install/hive-site.xml s3://${mdlStagingBucketName}/deploy/metastor/hive-site.xml"
-execute_cmd "sed -i \"s/{{MYSQL_RDS}}/${metastorDBHost}/g\" ${deployLocation}/conf/db.properties"
-sed -i "s/{{MYSQL_PASSWORD}}/${metastorDBPassword}/g" ${deployLocation}/conf/db.properties
-check_error $? "sed -i MYSQL_PASSWORD ${deployLocation}/conf/db.properties"
-execute_cmd "aws s3 cp ${deployLocation}/conf/db.properties s3://${mdlStagingBucketName}/deploy/metastor/db.properties"
+execute_cmd "sed -i \"s/{{MYSQL_RDS}}/${metastorDBHost}/g\" ${deployLocation}/metastoreOperations/rds/conf/db.properties"
+sed -i "s/{{MYSQL_PASSWORD}}/${metastorDBPassword}/g" ${deployLocation}/metastoreOperations/rds/conf/db.properties
+check_error $? "sed -i MYSQL_PASSWORD ${deployLocation}/metastoreOperations/rds/conf/db.properties"
+execute_cmd "aws s3 cp ${deployLocation}/metastoreOperations/rds/conf/db.properties s3://${mdlStagingBucketName}/deploy/metastor/db.properties"
 
 # Upload the data
 execute_cmd "cd ${deployLocation}/data"
@@ -119,41 +119,23 @@ else
     export port="-P 80"
 fi
 
+# Download herd-uploader jar
+execute_cmd "mkdir -p ${deployLocation}/herd-uploader"
+#TODO remove hardcoded uploader-jar version
+execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/0.72.0/herd-uploader-0.72.0.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
+execute_cmd "sudo chmod +x ${deployLocation}/herd-uploader/herd-uploader-app.jar"
+
 # Do not echo the password
-echo "java -jar ../jenkins/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port}"
-eval "java -jar ../jenkins/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} -u ${ldapMdlAppUsername} -w ${mdlUserLdapPassword}"
-check_error ${PIPESTATUS[0]} "java -jar ../jenkins/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName}"
-
-# Installing Shepherd
-# Should we make Shepherd bucket configurable?
-execute_cmd "mkdir -p ${deployLocation}/jenkins/shepherd/tmp"
-execute_cmd "unzip ${deployLocation}/jenkins/shepherd.zip -d ${deployLocation}/jenkins/shepherd/tmp"
-execute_cmd "aws s3 sync ${deployLocation}/jenkins/shepherd/tmp s3://${shepherdS3BucketName}"
-
-# Change Shepherd based on authentication selection
-if [ "${enableSSLAndAuth}" = "true" ] ; then
-    execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/true/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}/${httpProtocol}\:\/\/${herdLoadBalancerDNSName}\/herd-app\/rest/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${mdlInstanceName}herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
-else
-    execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/false/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}//g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}/g\" ${deployLocation}/conf/configuration.json"
-fi
-execute_cmd "aws s3 cp ${deployLocation}/conf/configuration.json s3://${shepherdS3BucketName}"
+echo "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} --disableHostnameVerification true"
+eval "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} -u ${ldapMdlAppUsername} -w ${mdlUserLdapPassword} --disableHostnameVerification true"
+check_error ${PIPESTATUS[0]} "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} --disableHostnameVerification true"
 
 # Execute the demo script if needed
 if [ "${createDemoObjects}" = "true" ] ; then
     execute_cmd "${deployLocation}/scripts/demoMetastor.sh"
 fi
 
-# Smoke test by requesting index.html and making sure its working
-execute_cmd "curl ${shepherdWebSiteBucketUrl}/index.html"
-
-
-# Signal to Cloud Stack
+# Signal success to the CloudFormation Stack
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Metastor Creation Complete' \"${waitHandleForMetastor}\""
-
-
 
 exit 0

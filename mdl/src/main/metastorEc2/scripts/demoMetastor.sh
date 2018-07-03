@@ -50,7 +50,7 @@ function execute_curl_cmd {
 }
 
 function execute_uploader_cmd {
-        cmd="java -jar ${deployLocation}/jenkins/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ${deployLocation}/data/${2}/ -m ${deployLocation}/data/${1} -V -H ${herdLoadBalancerDNSName} ${port} -R 3 -D 60"
+        cmd="java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ${deployLocation}/data/${2}/ -m ${deployLocation}/data/${1} -V -H ${herdLoadBalancerDNSName} ${port} -R 3 -D 60 --disableHostnameVerification true"
         echo $cmd
         cmdWithCredentials="${cmd} -u ${ldapMdlAppUsername} -w ${mdlUserLdapPassword}"
         eval $cmdWithCredentials
@@ -87,8 +87,6 @@ execute_uploader_cmd "2017-08-04.security-data.manifest.json" "2017-08-04"
 execute_uploader_cmd "2017-08-07.security-data.manifest.json" "2017-08-07"
 execute_uploader_cmd "2017-08-08.security-data.manifest.json" "2017-08-08"
 execute_uploader_cmd "2017-08-09.security-data.manifest.json" "2017-08-09"
-execute_uploader_cmd "2017-08-10.security-data.manifest.json" "2017-08-10"
-execute_uploader_cmd "2017-08-11.security-data.manifest.json" "2017-08-11"
 
 # Uploading files Trade Data files
 execute_uploader_cmd "2017-08-01.trade-data.manifest.json" "2017-08-01"
@@ -98,8 +96,6 @@ execute_uploader_cmd "2017-08-04.trade-data.manifest.json" "2017-08-04"
 execute_uploader_cmd "2017-08-07.trade-data.manifest.json" "2017-08-07"
 execute_uploader_cmd "2017-08-08.trade-data.manifest.json" "2017-08-08"
 execute_uploader_cmd "2017-08-09.trade-data.manifest.json" "2017-08-09"
-execute_uploader_cmd "2017-08-10.trade-data.manifest.json" "2017-08-10"
-execute_uploader_cmd "2017-08-11.trade-data.manifest.json" "2017-08-11"
 
 echo "Everything looks good"
 

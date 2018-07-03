@@ -15,7 +15,6 @@
 **/
 package org.tsi.mdlt.test;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,26 +47,25 @@ public class EMRClusterTest extends BaseTest {
 
     @BeforeAll
     public static void setUp() throws Exception {
-        if (new File("mdlt/lib/mdl-1.0.0-tests.jar").exists()) {
-            System.out.println("Working directory   =    " + System.getProperty("user.dir"));
+        LOGGER.info("Working directory   =    " + System.getProperty("user.dir"));
 
-            String instanceName = StackOutputPropertyReader.get(StackOutputKeyEnum.MDL_INSTANCE_NAME).toLowerCase();
-            String stackName = instanceName + "-" + EMR_PREREQ_STACK_SUFFIX;
-            cftClient = new CloudFormationClient(stackName);
-            Map<String, String> parameters = new HashMap<>();
-            parameters.put("MDLInstanceName", instanceName);
-            try {
-                cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true, true);
-            }
-            catch (AlreadyExistsException e) {
-                LOGGER.info("Stack already exist, reuse existing runing stack");
-            }
-
-            // Get all the output values from the provisioned stack and add
-            // them as environment variables.
-            Map<String, String> emrPrereqOutputs = cftClient.getStackOutput();
-            envVars.putAll(emrPrereqOutputs);
+        String instanceName = StackOutputPropertyReader.get(StackOutputKeyEnum.MDL_INSTANCE_NAME).toLowerCase();
+        String stackName = instanceName + "-" + EMR_PREREQ_STACK_SUFFIX;
+        cftClient = new CloudFormationClient(stackName);
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put("MDLInstanceName", instanceName);
+        try {
+            cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true, true);
         }
+        catch (AlreadyExistsException e) {
+            LOGGER.info("Stack already exist, reuse existing running stack");
+        }
+
+        // Get all the output values from the provisioned stack and add
+        // them as environment variables.
+        Map<String, String> emrPrereqOutputs = cftClient.getStackOutput();
+        envVars.putAll(emrPrereqOutputs);
+
     }
 
     @TestFactory

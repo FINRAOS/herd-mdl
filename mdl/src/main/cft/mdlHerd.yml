@@ -19,7 +19,9 @@ Parameters:
   HerdVersion:
     Description: Herd version to use.
     Type: String
-    Default: '0.70.0'
+  HerdUIVersion:
+    Description: Herd-UI release version to use.
+    Type: String
   HerdALBSecurityGroup:
     Description: Herd ALB Security Group Name
     Type: AWS::SSM::Parameter::Value<String>
@@ -35,6 +37,9 @@ Parameters:
   ShepherdWebSiteBucketUrl:
     Description: Shepherd website URL
     Type: AWS::SSM::Parameter::Value<String>
+  ShepherdS3BucketName:
+    Description: 'The bucket name of Shepherd '
+    Type: AWS::SSM::Parameter::Value<String>
   HerdQueueInName:
     Description: Herd SQS Name
     Type: AWS::SSM::Parameter::Value<String>
@@ -47,9 +52,6 @@ Parameters:
   HerdSecurityGroup:
     Description: Herd Security Group Name
     Type: AWS::SSM::Parameter::Value<String>
-  ShepherdDomainName:
-    Description: Domain name for Shepherd
-    Type: String
   ShepherdWebSiteBucketUrl:
     Description: Domain name for Shepherd S3 bucket web site url
     Type: AWS::SSM::Parameter::Value<String>
@@ -370,6 +372,10 @@ Resources:
                   - !Ref HerdVersion
                   - |-
 
+                    herdUiVersion=
+                  - !Ref HerdUIVersion
+                  - |-
+
                     stackName=
                   - !Ref 'AWS::StackName'
                   - |-
@@ -382,12 +388,12 @@ Resources:
                   - !Ref HerdBucketName
                   - |-
 
-                    shepherdDomainName=
-                  - !Ref ShepherdDomainName
-                  - |-
-
                     shepherdWebSiteBucketUrl=
                   - !Ref ShepherdWebSiteBucketUrl
+                  - |-
+
+                    shepherdS3BucketName=
+                  - !Ref ShepherdS3BucketName
                   - |-
 
                     CreateSQS=
@@ -434,6 +440,10 @@ Resources:
 
                     elasticsearchHostname=
                   - !Ref ElastisearchHostname
+                  - |-
+
+                    domainNameSuffix=
+                  - !Ref DomainNameSuffix
                   - |-
 
                     ldapHostName=

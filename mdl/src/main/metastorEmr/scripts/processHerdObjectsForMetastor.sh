@@ -47,26 +47,46 @@ hivePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${enviro
 mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
 ldapMdlAppUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --region ${region} --output text --query Parameter.Value)
 
+execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/managedObjectLoader-${metastorVersion}-dist.zip -O ${deployLocation}/managedObjectLoader.zip"
+execute_cmd "cd ${deployLocation}"
+execute_cmd "unzip managedObjectLoader.zip"
+
+config_file_location="${deployLocation}/managedObjectLoader/scripts/config/application.properties"
+
 # Change the application.properties for metastor
-execute_cmd "sed -i \"s/{{METASTOR_SVC_ACCOUNT}}/${ldapMdlAppUsername}/g\" ${deployLocation}/conf/application.properties"
-execute_cmd "sed -i \"s/{{DM_HOST}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}\/herd-app\/rest\//g\" ${deployLocation}/conf/application.properties"
-execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/conf/application.properties"
-execute_cmd "sed -i \"s/{{DM_DATA_BUCKET}}/${herdS3BucketName}/g\" ${deployLocation}/conf/application.properties"
-execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/conf/application.properties"
-execute_cmd "sed -i \"s/{{CRED_STASH_SVC_ACC_ID}}/${mdlInstanceName}/g\" ${deployLocation}/conf/application.properties"
-sed -i "s/{{METASTOR_SVC_ACCOUNT_PWD}}/${mdlUserLdapPassword}/g" ${deployLocation}/conf/application.properties
-check_error $? "sed {{METASTOR_SVC_ACCOUNT_PWD}} application.props"
-sed -i "s/{{HIVE_PASSWORD}}/${hivePassword}/g" ${deployLocation}/conf/application.properties
+execute_cmd "sed -i \"s/{{DM_REST_URL}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}\/herd-app\/rest\//g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{METASTOR_SVC_ACCOUNT}}/${ldapMdlAppUsername}/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{DM_DATA_BUCKET}}/${herdS3BucketName}/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{ENV_GROUP}}/${environment}/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{MS_HIVE_0_13_USER}}/MS_Hive_0_13/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{NO_OF_RETRIES}}/5/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{TOTAL_PARTITION_THRESHOLD}}/100/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{SINGLE_OBJECT_PARTITION_THRESHOLD}}/50/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{PARTITION_AGE_THRESHOLD_IN_HOURS}}/2/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{MAX_CLUSTER}}/10/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{RETRY_INTERVAL}}/120/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{AUTO_SCALE_INTERVAL_IN_MINUTES}}/2/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{MAX_CLUSTER_TO_START}}/2/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{CLUSTER_DEF_NAME}}/metastoreHiveClusterDefinition/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{EMAIL_LIST_FORMAT_CHANGE}}/mdl_team@finra.org/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{CREATE_CLUSTER_RETRY_COUNT}}/5/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{BACK_LOADING_CHUNK_SIZE}}/100/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{BACK_LOADING_PAGINATION_PAGE_SIZE}}/1000/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{EMR_IDLE_TIME_OUT}}/10/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{EMAIL_HOST}}/`hostname`/g\" ${config_file_location}"
+
+# do not log credentials
+sed -i "s/{{{MS_HIVE_0_13_PWD}}}/${hivePassword}/g" ${config_file_location}
 check_error $? "sed {{HIVE_PASSWORD}} application.props"
 
 execute_cmd "mkdir -p /home/hadoop/dmCreds/"
-execute_cmd "echo ${ldapMdlAppUsername}:${mdlUserLdapPassword} | base64 > /home/hadoop/dmCreds/dmPass.base64"
-execute_cmd "cp ${deployLocation}/conf/application.properties ${deployLocation}/jenkins/deploy/managedObjectLoader/scripts/config/application.properties"
+echo -n "${ldapMdlAppUsername}:${mdlUserLdapPassword}" | base64 > /home/hadoop/dmCreds/dmPass.base64
 
 # Execute the metastor script
-execute_cmd "cd /home/hadoop/jenkins/deploy/managedObjectLoader/scripts"
+execute_cmd "cd ${deployLocation}/managedObjectLoader/scripts"
 execute_cmd "chmod 755 runObjectProcessor.sh"
-execute_cmd "./runObjectProcessor.sh"
+execute_cmd "./runObjectProcessor.sh ${deployLocation} ${deployLocation}/dmCreds/dmPass.base64"
 
 echo "Everything looks good"
 

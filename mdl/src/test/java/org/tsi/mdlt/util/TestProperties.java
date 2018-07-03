@@ -40,7 +40,7 @@ public class TestProperties {
             propertyValues = new Properties();
             propertyValues.load(propFileStream);
 
-            //replace default test parameters with system properties if system property name has prefix:"MDL"
+            //replace default test parameters with DeployPropertiesFile
             Properties systemPropertyValues = System.getProperties();
             for (Object propertyKey : systemPropertyValues.keySet()) {
                 if (propertyKey.toString().equals("DeployPropertiesFile")) {

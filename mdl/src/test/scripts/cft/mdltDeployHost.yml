@@ -29,8 +29,13 @@ Parameters:
       Application Name:Unique name to be associated with the stack instance to
       differentiate from other stacks
     Type: String
-  MDLRelease:
-    Default: DEV
+   ##TODO This parameter should change to release version, and download to github directly after wrapper stack synced
+  InstallMdlYmlLUrl:
+    Default: https://s3.amazonaws.com/mdl-build-bucket/mdlt/build/mdlt/scripts/cft/installMDL.yml
+    Description: Url of the install mdl yml location
+    Type: String
+  ReleaseVersion:
+    Default: herd-mdl-release-1
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
   MDLTBranch:
@@ -45,23 +50,21 @@ Parameters:
       - 'false'
     ConstraintDescription: Must specify true or false
     Type: String
-  JavaKeyStoreFile:
-    Description: S3 location of JKS file for the given certificate
-    Type: String
-    Default: s3://mdl-build-bucket/certs/certs.jks
   KeyName:
     Default: APP_MDL_PROD
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  DeploymentBucketName:
-    Description: Bucket where the deployment code resides
+  DeployComponents:
     Type: String
-  BuildBucketName:
+    Default: All
+    AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
+    Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
+  MdltBucketName:
     Description: Bucket where the latest build is available
     Default: mdl-build-bucket
     Type: String
-  ImageIdParamterKey:
+  ImageId:
     Default: ami-1853ac65
     Description: AMI id parameter key for EC2 instances
     Type: String
@@ -69,6 +72,7 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
+    ##TODO VPC should be created using mdl createVpc.yml in order to side in same vpc
   VpcIdParameterKey:
     Default: /VPC/Primary/ID
     Description: VPC Parameter key name in system store
@@ -77,6 +81,10 @@ Parameters:
     Default: /VPC/Primary/SubnetIDs/private
     Description: VPC Parameter key name in system store
     Type: 'AWS::SSM::Parameter::Value<String>'
+  Environment:
+    Description: Application environment
+    Default: dev
+    Type: String
 Resources:
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -136,7 +144,7 @@ Resources:
   DeployHostEc2Instance:
     Type: 'AWS::EC2::Instance'
     Metadata:
-      Comment: Deploy herd release and perform release validation
+      Comment: Deploy mdl release and perform release validation
       'AWS::CloudFormation::Init':
         config:
           packages:
@@ -162,7 +170,7 @@ Resources:
               command: !Join
                 - ''
                 - - 'aws s3 cp s3://'
-                  - !Ref BuildBucketName
+                  - !Ref MdltBucketName
                   - /mdlt/build/
                   - !Ref MDLTBranch
                   - |
@@ -180,8 +188,8 @@ Resources:
                   - !Ref MDLInstanceName
                   - |+
 
-                  - MDLBuildBucket=
-                  - !Ref BuildBucketName
+                  - MdltBucketName=
+                  - !Ref MdltBucketName
                   - |+
 
                   - StackName=
@@ -196,8 +204,8 @@ Resources:
                   - !Ref RollbackOnFailure
                   - |+
 
-                  - MDLDeploymentBucket=
-                  - !Ref DeploymentBucketName
+                  - DeploymentBucketName=
+                  - !Join ['-', [!Ref MDLInstanceName, 'mdl-staging-bucket']]
                   - |+
 
                   - MDLTBranch=
@@ -208,16 +216,24 @@ Resources:
                   - !Ref DeployHostWaitHandle
                   - |+
 
-                  - MDLRelease=
-                  - !Ref MDLRelease
+                  - ReleaseVersion=
+                  - !Ref ReleaseVersion
                   - |+
 
                   - EnableSSLAndAuth=
                   - !Ref EnableSSLAndAuth
                   - |+
 
-                  - JavaKeyStoreFile=
-                  - !Ref JavaKeyStoreFile
+                  - DeployComponents=
+                  - !Ref DeployComponents
+                  - |+
+
+                  - InstallMdlYmlLUrl=
+                  - !Ref InstallMdlYmlLUrl
+                  - |+
+
+                  - Environment=
+                  - !Ref Environment
                   - |+
 
             /etc/cfn/cfn-hup.conf:
@@ -255,7 +271,7 @@ Resources:
                   - |
                     runas=root
     Properties:
-      ImageId: !Ref ImageIdParamterKey
+      ImageId: !Ref ImageId
       KeyName: !Ref KeyName
       InstanceType: !Ref InstanceType
       SecurityGroupIds:
