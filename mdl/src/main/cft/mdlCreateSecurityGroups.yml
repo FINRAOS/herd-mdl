@@ -106,9 +106,9 @@ Resources:
           ToPort: '8889'
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-            FromPort: '0'
-            ToPort: '65535'
-            CidrIp: 0.0.0.0/0
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '3306'
           ToPort: '3306'
