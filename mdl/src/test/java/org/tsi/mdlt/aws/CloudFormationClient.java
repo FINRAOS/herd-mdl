@@ -93,22 +93,11 @@ public class CloudFormationClient {
     public void createStack(Map<String, String> params, String cftTemplateName,
             boolean useMDLTCFTLocationPrefix, boolean rollbackOnFailure) throws Exception {
         String s3BucketURLPrefix = "https://s3.amazonaws.com/";
-
-        if (useMDLTCFTLocationPrefix) {
-            System.out.println("Using MDLT CFT location prefix");
-            masterCFTLocation = s3BucketURLPrefix
-                    .concat(propertyValues.getProperty("MDLBuildBucket") + "/")
-                    .concat(propertyValues.getProperty("MDLTCFTLocationKey") + "/")
-                    .concat(propertyValues.getProperty("MDLTBranch"))
-                    .concat("/scripts/cft/").concat(cftTemplateName);
-        }
-        else {
-            masterCFTLocation = s3BucketURLPrefix
-                    .concat(propertyValues.getProperty("MDLDeploymentBucket") + "/")
-                    .concat(propertyValues.getProperty("MDLCFTLocationKey") + "/")
-                    .concat(propertyValues.getProperty("MDLRelease"))
-                    .concat("/cft/").concat(cftTemplateName);
-        }
+        masterCFTLocation = s3BucketURLPrefix
+                .concat(propertyValues.getProperty("MdltBucketName") + "/")
+                .concat(propertyValues.getProperty("MDLTCFTLocationKey") + "/")
+                .concat(propertyValues.getProperty("MDLTBranch"))
+                .concat("/scripts/cft/").concat(cftTemplateName);
         System.out.println("Using master CFT location : " + masterCFTLocation);
 
         CreateStackRequest createStackRequest = new CreateStackRequest();

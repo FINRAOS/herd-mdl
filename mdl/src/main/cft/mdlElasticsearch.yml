@@ -76,6 +76,9 @@ Parameters:
   CertificateArn:
     Description: Certificate Arn for MDL
     Type: String
+  EnableSSLAndAuth:
+    Description: Whether to enable Authentication/SSL
+    Type: String
 Resources:
   MDLElasticsearch:
     Type: 'AWS::CodeDeploy::Application'
@@ -93,6 +96,13 @@ Resources:
         - Key: Name
           Value: !Sub 'AWSLX${MDLInstanceName}-Es-${Environment}'
           Type: KEY_AND_VALUE
+  SslAcmArn:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
+      Type: String
+      Value: 'dummyInitialValue'
+      Description: Self-signed Acm Certificate parameter
   EsEc2Instance:
     Type: 'AWS::EC2::Instance'
     Metadata:
@@ -210,6 +220,10 @@ Resources:
 
                     certificateArn=
                   - !Ref CertificateArn
+                  - |-
+
+                    enableSSLAndAuth=
+                  - !Ref EnableSSLAndAuth
                   - |-
 
                     certificateInfo=

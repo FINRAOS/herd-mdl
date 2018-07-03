@@ -17,14 +17,63 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-    <artifactId>herd-mdl</artifactId>
-    <groupId>org.finra.herd-mdl</groupId>
-    <version>1.0.0</version>
-  </parent>
   <modelVersion>4.0.0</modelVersion>
 
+  <groupId>org.finra.herd-mdl</groupId>
   <artifactId>bdsql</artifactId>
+  <version>1.0.0</version>
 
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/FINRAOS/herd-mdl.git</connection>
+    <url>https://github.com/FINRAOS/herd-mdl</url>
+  </scm>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>zip-component-bdsql</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>${project.basedir}/assembly/bdsql-assembly-descriptor.xml</descriptor>
+              </descriptors>
+              <finalName>${project.artifactId}-${project.version}-dist</finalName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <developers>
+    <developer>
+      <id>binaryechoes</id>
+      <name>Justin Mitchell</name>
+      <email>tcpandip@gmail.com</email>
+      <url>https://github.com/binaryechoes</url>
+      <organization>FINRA</organization>
+      <organizationUrl>https://www.linkedin.com/in/binaryechoes</organizationUrl>
+      <roles>
+        <role>developer</role>
+        <role>tester</role>
+      </roles>
+    </developer>
+  </developers>
 
 </project>

@@ -21,11 +21,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -49,14 +47,8 @@ public class HttpsAndAuthTest extends BaseTest {
     private static final String HERD_AUTH_TESTCASES = "/testCases/auth/herdAuthTestCases.json";
     private static final String HTTP_TESTCASES = "/testCases/auth/httpTestCases.json";
     private static final String HTTPS_TESTCASES = "/testCases/auth/httpsTestCases.json";
-    private static final String SHEPHERD_TEST_HTML = "shepherd-test.html";
 
     private static final boolean IS_SSLAUTH_ENABLED = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-
-    @BeforeAll
-    public static void setUp() throws IOException, InterruptedException {
-        TestSetup.setUpShepherd(SHEPHERD_TEST_HTML, envVars);
-    }
 
     @TestFactory
     public Stream<DynamicTest> testHerdShellCommandWithWrongCredential() {

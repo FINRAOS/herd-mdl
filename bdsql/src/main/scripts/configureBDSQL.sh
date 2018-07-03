@@ -93,14 +93,8 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e " INSERT INTO ROLE_MAP VALUES (101,UNIX_TIMESTAMP(),1,'hive','USER','mdl_app','USER',1); ;"
 
     # Execute authorization codebase
-    for i in sync_app_objects sync_user_objects show_acls; do
-        execute_cmd "python scripts/sql_auth.py \"$i\""
-    done
+    execute_cmd "sudo scripts/sql_auth.sh"
 fi
-
-#restart presto-server to cleanup presto cache for ldap
-execute_cmd	"sudo stop presto-server"
-execute_cmd	"sudo start presto-server"
 
 mdlInstanceRowCount=0
 # Wait infinitely till the smoke testing data shows up. If the data does not show up for any reason, CFT will timeout

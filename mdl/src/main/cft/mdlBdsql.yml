@@ -47,7 +47,7 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
   CertificateArn:
     Description: Certificate Arn
-    Type: String
+    Type: AWS::SSM::Parameter::Value<String>
   EnableSSLAndAuth:
     Default: 'true'
     Description: Whether to enable Authentication/SSL
@@ -83,6 +83,9 @@ Parameters:
   BdsqlALBSecurityGroup:
     Description: Bdsql ALB Security Group Name
     Type: AWS::SSM::Parameter::Value<String>
+  BdsqlMasterSecurityGroup:
+    Description: Bdsql Master Security Group Name
+    Type: AWS::SSM::Parameter::Value<String>
   HostedZoneName:
     Description: Hosted Zone Name to create Route53 record set group for the given domain
     Type: String
@@ -92,9 +95,6 @@ Parameters:
   LdapMdlAppUsername:
     Description: Application service account
     Type: AWS::SSM::Parameter::Value<String>
-  JavaKeyStoreFile:
-    Description: S3 location of JKS file for the given certificate
-    Type: String
 Conditions:
   EnableSSLAndAuth: !Equals
     - !Ref EnableSSLAndAuth
@@ -203,7 +203,7 @@ Resources:
               - !Ref MDLInstanceName
               - !Ref Environment
               - !Ref MDLStagingBucketName
-              - !Ref JavaKeyStoreFile
+              - !Sub 's3://${MDLStagingBucketName}/certs/mdl.jks'
               - !Ref 'AWS::Region'
       Configurations:
         - Classification: emrfs-site
@@ -265,6 +265,8 @@ Resources:
             query.client.timeout: 20m
             task.concurrency: '4'
       Instances:
+        AdditionalMasterSecurityGroups:
+          - !Ref BdsqlMasterSecurityGroup
         CoreInstanceGroup:
           EbsConfiguration:
             EbsBlockDeviceConfigs:
@@ -360,4 +362,10 @@ Outputs:
   BdsqlEMRPrestoCluster:
     Value: !Ref BdsqlEMRPrestoCluster
     Description: EMR Cluster Information
-
+  BdsqlLoadBalancerArn:
+      Value: !Ref BdsqlLoadBalancer
+      Description: Application load balancer arn for Bdsql Cluster
+  BdsqlJksURL:
+      Value: !Sub 's3://${MDLStagingBucketName}/certs/mdl.jks'
+      Description: URL for bdsql jks file
+      Condition: EnableSSLAndAuth

@@ -32,6 +32,14 @@ Parameters:
     Description: Create IAM Roles - true || false
     AllowedValues: [true, false]
     Type: String
+  HerdVersion:
+    Default: '0.70.0'
+    Description: Herd release version to use.
+    Type: String
+  HerdUIVersion:
+    Default: '0.41.0'
+    Description: Herd-UI release version to use.
+    Type: String
   HerdDBClass:
     Description: Database instance class for Herd
     Type: String
@@ -147,9 +155,6 @@ Parameters:
   NumberOfBdsqlCoreInstances:
     Description: Number of Core Instances for the EMR cluster
     Type: String
-  JavaKeyStoreFile:
-    Description: S3 location of JKS file for the given certificate
-    Type: String
 Conditions:
   DeployPrereqs: !Or [!Equals [!Ref DeployComponents, Prereqs Only], !Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
   DeployHerd: !Or [!Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
@@ -159,6 +164,7 @@ Conditions:
   EnableSSLAndAuth: !Equals [!Ref EnableSSLAndAuth, true]
   UseS3staticWebPages: !And [!Equals [!Ref EnableSSLAndAuth, false], !Equals [!Ref CreateS3Buckets, true]]
   CreateRoute53ForCloudfront: !And [!Equals [!Ref EnableSSLAndAuth, true], !Equals [!Ref CreateS3Buckets, true], !Equals [!Ref CreateCloudFrontDistribution, true]]
+  DeployBDSQLWithAuth: !And [!Equals [!Ref EnableSSLAndAuth, true], !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]]
 Resources:
   PrerequisitesPrimaryStack:
     Type: 'AWS::CloudFormation::Stack'
@@ -242,6 +248,7 @@ Resources:
         CertificateArn: !Ref CertificateArn
         EsInstanceType: !Ref EsInstanceType
         MDLInstanceName: !Ref MDLInstanceName
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
         Environment: !Ref Environment
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
@@ -261,11 +268,8 @@ Resources:
     Properties:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlHerd.yml]]
       Parameters:
-        ShepherdDomainName: !Join
-          - ''
-          - - !Ref MDLInstanceName
-            - .
-            - !Ref DomainNameSuffix
+        HerdVersion: !Ref HerdVersion
+        HerdUIVersion: !Ref HerdUIVersion
         HerdALBSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/HerdALB]]
         MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
         CreateSQS: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SQS/CreatedByMDL]]
@@ -275,6 +279,7 @@ Resources:
         MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
         CertificateArn: !Ref CertificateArn
         ShepherdWebSiteBucketUrl: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/URL/Shepherd]]
+        ShepherdS3BucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Shepherd]]
         HerdBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Herd]]
         DeploymentBucketName: !Ref DeploymentBucketName
         ReleaseVersion: !Ref ReleaseVersion
@@ -316,6 +321,7 @@ Resources:
       Parameters:
         DeploymentBucketName: !Ref DeploymentBucketName
         ReleaseVersion: !Ref ReleaseVersion
+        HerdVersion: !Ref HerdVersion
         MetastorDBHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /RDS/MetastorDBHostName]]
         HerdLoadBalancerDNSName: !GetAtt [HerdEC2Stack, Outputs.HerdLoadBalancerDNSName]
         HerdBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Herd]]
@@ -362,7 +368,7 @@ Resources:
         MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
         MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
         MDLInstanceName: !Ref MDLInstanceName
-        CertificateArn: !Ref CertificateArn
+        CertificateArn: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
         LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
         Environment: !Ref Environment
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
@@ -370,9 +376,9 @@ Resources:
         BdsqlCoreInstanceType: !Ref BdsqlCoreInstanceType
         NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
         DomainNameSuffix: !Ref DomainNameSuffix
-        JavaKeyStoreFile: !Ref JavaKeyStoreFile
         HostedZoneName: !Ref HostedZoneName
         BdsqlALBSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/BdsqlALB]]
+        BdsqlMasterSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/BdsqlEMRMasterSecurityGroup]]
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
@@ -396,3 +402,11 @@ Outputs:
       - Outputs.BdsqlLoadBalancerURL
     Description: URL for Bdsql cluster
     Condition: DeployBDSQL
+  BdsqlJksURL:
+    Value: !GetAtt BdsqlEmrStack.Outputs.BdsqlJksURL
+    Description: URL for bdsql jks file
+    Condition: DeployBDSQLWithAuth
+  HerdUploaderJarURL:
+    Value: !Sub 'http://central.maven.org/maven2/org/finra/herd/herd-uploader/${HerdVersion}/herd-uploader-${HerdVersion}.jar'
+    Description: URL for herd uploader jar
+    Condition: DeployHerd

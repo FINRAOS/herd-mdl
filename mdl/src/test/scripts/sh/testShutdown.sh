@@ -45,6 +45,6 @@ execute_cmd "cd /home/ec2-user"
 export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
 
 # Execute the test cases
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper shutdown"
+execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/herd-mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper shutdown"
 
 exit 0

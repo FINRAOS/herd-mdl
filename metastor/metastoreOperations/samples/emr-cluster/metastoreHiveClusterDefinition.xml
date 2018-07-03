@@ -15,8 +15,8 @@
 -->
 <emrClusterDefinitionCreateRequest>
     <emrClusterDefinitionKey>
-        <namespace>MDL</namespace>
-        <emrClusterDefinitionName>MDLMetastorHiveCluster</emrClusterDefinitionName>
+        <namespace>{{NAMESPACE}}</namespace>
+        <emrClusterDefinitionName>{{DEFAULT_CLUSTER_DEF}}</emrClusterDefinitionName>
     </emrClusterDefinitionKey>
     <emrClusterDefinition>
         <releaseLabel>emr-5.8.0</releaseLabel>

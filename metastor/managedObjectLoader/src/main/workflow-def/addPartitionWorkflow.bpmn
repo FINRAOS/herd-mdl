@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" xmlns:tns="http://www.activiti.org/test" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test" id="m1443994744894" name="">
+  <process id="METASTOR.addPartitionWorkflow" name="Add Partitions Workflow" isExecutable="true" isClosed="false" processType="None">
+    <startEvent id="start_workflow" name="Start"></startEvent>
+    <serviceTask id="createCluster" name="Aquire Cluster" activiti:class="org.finra.herd.service.activiti.task.CreateEmrCluster">
+      <extensionElements>
+        <activiti:field name="namespace">
+          <activiti:string><![CDATA[metastor]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="emrClusterDefinitionName">
+          <activiti:expression><![CDATA[${clusterDefinitionName}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="emrClusterName">
+          <activiti:expression><![CDATA[${clustername}]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <scriptTask id="prepareEmailContent" name="Prepare Email Content" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script>
+      var emailMessage="";
+      if (createCluster_taskStatus == 'ERROR') { 
+          emailMessage='Create cluster failed with error message:'.concat(createCluster_taskErrorMessage, '\n job ID=', execution.id);
+			  }    
+      else if (execution.hasVariable("getBusinessObjectFormat_taskStatus")) {
+	       if (getBusinessObjectFormat_taskStatus == 'ERROR') {
+	          emailMessage='Get Object Format failed with error message:'.concat(getBusinessObjectFormat_taskErrorMessage, '\n job ID=', execution.id);;
+			  }    
+			} 			  
+      else if (execution.hasVariable("startProcessor_taskStatus")) {
+	       if (startProcessor_taskStatus == 'ERROR') {
+	          emailMessage='Start Processor task failed with error message:'.concat(startProcessor_taskErrorMessage, '\n job ID=', execution.id);
+			  }    
+			}
+	  else {
+	      emailMessage="Error in workflow";
+	  }
+	  execution.setVariable("emailmsg",emailMessage);              
+      </script>
+    </scriptTask>
+    <sequenceFlow id="clusterFailed" name="Cluster Failed" sourceRef="createCluster" targetRef="waitEvent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${createCluster_taskStatus == 'ERROR'}]]></conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="emailWorkflowFailure" name="Send Email on Workflow Step Failure" activiti:type="mail">
+      <extensionElements>
+        <activiti:field name="to">
+          <activiti:expression><![CDATA[${MailDL}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="subject">
+          <activiti:expression><![CDATA[METASTOR - ${env} - Add Partition failed After ${noOfRetries} Retries for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="text">
+          <activiti:expression><![CDATA[${emailmsg}]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow18" sourceRef="prepareEmailContent" targetRef="emailWorkflowFailure"></sequenceFlow>
+    <intermediateCatchEvent id="waitEvent1" name="Wait in minutes">
+      <timerEventDefinition>
+        <timeDuration>${retry_interval}</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <scriptTask id="initializeVaribles" name="Initialize Variables" activiti:async="true" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script>    if (!execution.hasVariable("maxRetries")) {
+          execution.setVariable("maxRetries", 5);
+    }
+
+    execution.setVariable("noOfStatusRetries", 0);
+    execution.setVariable("noOfDBRetries", 0);
+
+    if ( !execution.hasVariable("maxDBRetries")) {
+         execution.setVariable("maxDBRetries", 5);
+    }
+
+    if(execution.hasVariable("startPartitionValue")) {
+             execution.setVariable("stepDates", endPartitionValue+"__"+startPartitionValue);
+
+             var businessObjectPartitions = JSON.parse(execution.getVariable("getBusinessObjectFormat_jsonResponse")).schema.partitions;
+     	    var businessObjectPartitionKey = businessObjectPartitions[0].name;
+     		execution.setVariable("businessObjectPartitionKey", businessObjectPartitionKey);
+           }
+
+    else
+      {
+          var objDataJson = execution.getVariable("notification_businessObjectData");
+          execution.setVariable("notification_businessObjectDefinitionNamespace", JSON.parse(objDataJson).namespace);
+          execution.setVariable("notification_businessObjectDefinitionName", JSON.parse(objDataJson).businessObjectDefinitionName);
+          execution.setVariable("notification_businessObjectFormatUsage", JSON.parse(objDataJson).businessObjectFormatUsage);
+          execution.setVariable("notification_businessObjectFormatFileType", JSON.parse(objDataJson).businessObjectFormatFileType);
+          execution.setVariable("businessObjectPartitionKey", JSON.parse(objDataJson).partitionKey);
+
+          execution.setVariable("notification_partitionValue", JSON.parse(objDataJson).partitionValue);
+          execution.setVariable("stepDates", notification_partitionValue);
+      }
+
+      execution.setVariable("storageName", "?");
+      execution.setVariable("collectStats", "true");
+      execution.setVariable("clustername", "metastore");
+
+        var jdbcExecutionRequest = {
+         connection : {
+         url : 'jdbc:mysql://'.concat(execution.getVariable('dburl'),'/metastor?useSSL=true&amp;requireSSL=true&amp;verifyServerCertificate=false'),
+         username : 'MS_Hive_0_13',
+         password : '${password}',
+         databaseType : 'MYSQL'
+    },
+    statements : [ {
+        type : 'UPDATE',
+        sql : "insert into DM_NOTIFICATION (NAMESPACE,OBJECT_DEF_NAME,USAGE_CODE,FILE_TYPE,PARTITION_VALUES,WF_TYPE, CORRELATION_DATA, EXECUTION_ID, CLUSTER_NAME, PARTITION_KEY) VALUES ('".concat(execution.getVariable('notification_businessObjectDefinitionNamespace'), '\',\'',
+        execution.getVariable('notification_businessObjectDefinitionName'), '\',\'', execution.getVariable('notification_businessObjectFormatUsage'),'\',\'',
+        execution.getVariable('notification_businessObjectFormatFileType'), '\',\'', execution.getVariable('stepDates'), '\',0,\'',
+        execution.getVariable('notification_correlationData'), '\',\'', execution.id, '\',\'', execution.getVariable('clustername'),'\',\'', execution.getVariable('businessObjectPartitionKey'), '\')')
+    } ],
+    "s3PropertiesLocation" : {
+        "bucketName" : (execution.getVariable('s3_bucket')).substring(5),
+        "key" : "METASTOR/staging/deploy/rds/resources/db.properties"
+    }
+};             
+    execution.setVariable('jdbcExecutionRequest', JSON.stringify(jdbcExecutionRequest));
+
+      execution.setVariable("emrStepStatus", "");
+      execution.setVariable("emrStepID", "");  
+      </script>
+    </scriptTask>
+    <sequenceFlow id="flow22" sourceRef="waitEvent1" targetRef="prepareEmailContent">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${noOfRetries >= maxRetries}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow23" sourceRef="waitEvent1" targetRef="exclusivegateway1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${noOfRetries &lt; maxRetries}]]></conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <serviceTask id="getBusinessObjectFormat" name="Get Format Definition to retrieve partition key" activiti:class="org.finra.herd.service.activiti.task.GetBusinessObjectFormat">
+      <extensionElements>
+        <activiti:field name="namespace">
+          <activiti:expression><![CDATA[${notification_businessObjectDefinitionNamespace}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="businessObjectDefinitionName">
+          <activiti:expression><![CDATA[${notification_businessObjectDefinitionName}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="businessObjectFormatUsage">
+          <activiti:expression><![CDATA[${notification_businessObjectFormatUsage}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="businessObjectFormatFileType">
+          <activiti:expression><![CDATA[${notification_businessObjectFormatFileType}]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="save_to_db" name="Save To DB" activiti:class="org.finra.herd.service.activiti.task.ExecuteJdbc">
+      <extensionElements>
+        <activiti:field name="contentType">
+          <activiti:string><![CDATA[json]]></activiti:string>
+        </activiti:field>
+        <activiti:field name="jdbcExecutionRequest">
+          <activiti:expression><![CDATA[${jdbcExecutionRequest}]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <serviceTask id="mailtask1" name="Send Email on savetodb failure" activiti:type="mail">
+      <extensionElements>
+        <activiti:field name="to">
+          <activiti:expression><![CDATA[${MailDL}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="subject">
+          <activiti:expression><![CDATA[METASTOR - ${env} - Save to DB failed for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}]]></activiti:expression>
+        </activiti:field>
+        <activiti:field name="text">
+          <activiti:expression><![CDATA[Save to DB failed for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}
+
+${save_to_db_taskErrorMessage}]]></activiti:expression>
+        </activiti:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow62" sourceRef="initializeVaribles" targetRef="save_to_db"></sequenceFlow>
+    <scriptTask id="updateVariables" name="updateVariables" activiti:async="true" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script>
+    if (execution.hasVariable("noOfRetries")) {
+       var rt = parseInt(execution.getVariable("noOfRetries"))+1;
+       execution.setVariable("noOfRetries", rt.toString());
+       }
+    else
+       {
+       execution.setVariable("noOfRetries", 0);
+       }   
+
+    execution.setVariable("noOfStatusRetries", 0);
+
+    if ( !execution.hasVariable("maxStatusRetries")) {
+         execution.setVariable("maxStatusRetries", 5);
+    }
+
+      execution.setVariable("emrStepStatus", "");
+      execution.setVariable("emrStepID", "");  
+      </script>
+    </scriptTask>
+    <sequenceFlow id="flow63" sourceRef="exclusivegateway1" targetRef="updateVariables"></sequenceFlow>
+    <sequenceFlow id="flow64" sourceRef="updateVariables" targetRef="createCluster"></sequenceFlow>
+    <sequenceFlow id="flow66" sourceRef="emailWorkflowFailure" targetRef="endevent1"></sequenceFlow>
+    <exclusiveGateway id="exclusivegateway4" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow67" sourceRef="start_workflow" targetRef="exclusivegateway4"></sequenceFlow>
+    <sequenceFlow id="flow68" sourceRef="exclusivegateway4" targetRef="initializeVaribles">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${notification_businessObjectData != '?'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow69" sourceRef="exclusivegateway4" targetRef="getBusinessObjectFormat">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${notification_businessObjectData == '?'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow71" sourceRef="getBusinessObjectFormat" targetRef="initializeVaribles"></sequenceFlow>
+    <sequenceFlow id="flow73" sourceRef="createCluster" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${createCluster_taskStatus == 'SUCCESS' }]]></conditionExpression>
+    </sequenceFlow>
+    <intermediateCatchEvent id="timerintermediatecatchevent1" name="TimerCatchEvent">
+      <timerEventDefinition>
+        <timeDuration>${retry_interval}</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <sequenceFlow id="flow75" sourceRef="timerintermediatecatchevent1" targetRef="updateDBSaveRetry">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${noOfDBRetries &lt; maxDBRetries}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow76" sourceRef="timerintermediatecatchevent1" targetRef="mailtask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${noOfDBRetries >= maxDBRetries}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow77" sourceRef="save_to_db" targetRef="exclusivegateway1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${save_to_db_taskStatus == 'SUCCESS'}]]></conditionExpression>
+    </sequenceFlow>
+    <scriptTask id="updateDBSaveRetry" name="updateDBSaveRetry" activiti:async="true" scriptFormat="javascript" activiti:autoStoreVariables="false">
+      <script>
+var rt = parseInt(execution.getVariable("noOfDBRetries"))+1;
+ execution.setVariable("noOfDBRetries", rt.toString());
+      </script>
+    </scriptTask>
+    <sequenceFlow id="flow78" sourceRef="updateDBSaveRetry" targetRef="save_to_db"></sequenceFlow>
+    <sequenceFlow id="flow79" sourceRef="save_to_db" targetRef="timerintermediatecatchevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${save_to_db_taskStatus != 'SUCCESS'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow80" sourceRef="mailtask1" targetRef="endevent1"></sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_METASTOR.addPartitionWorkflow">
+    <bpmndi:BPMNPlane bpmnElement="METASTOR.addPartitionWorkflow" id="BPMNPlane_METASTOR.addPartitionWorkflow">
+      <bpmndi:BPMNShape bpmnElement="start_workflow" id="BPMNShape_start_workflow">
+        <omgdc:Bounds height="35.0" width="35.0" x="118.0" y="17.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="createCluster" id="BPMNShape_createCluster">
+        <omgdc:Bounds height="55.0" width="156.0" x="74.0" y="439.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="prepareEmailContent" id="BPMNShape_prepareEmailContent">
+        <omgdc:Bounds height="55.0" width="136.0" x="489.0" y="485.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="emailWorkflowFailure" id="BPMNShape_emailWorkflowFailure">
+        <omgdc:Bounds height="67.0" width="135.0" x="489.0" y="589.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="waitEvent1" id="BPMNShape_waitEvent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="370.0" y="495.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="initializeVaribles" id="BPMNShape_initializeVaribles">
+        <omgdc:Bounds height="55.0" width="147.0" x="330.0" y="7.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40.0" width="40.0" x="131.0" y="249.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="390.0" y="813.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="getBusinessObjectFormat" id="BPMNShape_getBusinessObjectFormat">
+        <omgdc:Bounds height="61.0" width="159.0" x="193.0" y="100.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="save_to_db" id="BPMNShape_save_to_db">
+        <omgdc:Bounds height="55.0" width="105.0" x="493.0" y="98.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="mailtask1" id="BPMNShape_mailtask1">
+        <omgdc:Bounds height="68.0" width="161.0" x="626.0" y="310.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="updateVariables" id="BPMNShape_updateVariables">
+        <omgdc:Bounds height="55.0" width="147.0" x="79.0" y="335.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway4" id="BPMNShape_exclusivegateway4">
+        <omgdc:Bounds height="40.0" width="40.0" x="203.0" y="14.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="timerintermediatecatchevent1" id="BPMNShape_timerintermediatecatchevent1">
+        <omgdc:Bounds height="35.0" width="35.0" x="689.0" y="215.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="updateDBSaveRetry" id="BPMNShape_updateDBSaveRetry">
+        <omgdc:Bounds height="55.0" width="147.0" x="660.0" y="98.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="clusterFailed" id="BPMNEdge_clusterFailed">
+        <omgdi:waypoint x="230.0" y="466.0"></omgdi:waypoint>
+        <omgdi:waypoint x="344.0" y="473.0"></omgdi:waypoint>
+        <omgdi:waypoint x="387.0" y="495.0"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="39.0" width="67.0" x="240.0" y="466.0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow18" id="BPMNEdge_flow18">
+        <omgdi:waypoint x="557.0" y="540.0"></omgdi:waypoint>
+        <omgdi:waypoint x="556.0" y="589.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow22" id="BPMNEdge_flow22">
+        <omgdi:waypoint x="405.0" y="512.0"></omgdi:waypoint>
+        <omgdi:waypoint x="489.0" y="512.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow23" id="BPMNEdge_flow23">
+        <omgdi:waypoint x="387.0" y="495.0"></omgdi:waypoint>
+        <omgdi:waypoint x="362.0" y="347.0"></omgdi:waypoint>
+        <omgdi:waypoint x="151.0" y="289.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow62" id="BPMNEdge_flow62">
+        <omgdi:waypoint x="403.0" y="62.0"></omgdi:waypoint>
+        <omgdi:waypoint x="545.0" y="98.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow63" id="BPMNEdge_flow63">
+        <omgdi:waypoint x="151.0" y="289.0"></omgdi:waypoint>
+        <omgdi:waypoint x="152.0" y="335.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow64" id="BPMNEdge_flow64">
+        <omgdi:waypoint x="152.0" y="390.0"></omgdi:waypoint>
+        <omgdi:waypoint x="152.0" y="439.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow66" id="BPMNEdge_flow66">
+        <omgdi:waypoint x="556.0" y="656.0"></omgdi:waypoint>
+        <omgdi:waypoint x="407.0" y="813.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow67" id="BPMNEdge_flow67">
+        <omgdi:waypoint x="153.0" y="34.0"></omgdi:waypoint>
+        <omgdi:waypoint x="203.0" y="34.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow68" id="BPMNEdge_flow68">
+        <omgdi:waypoint x="243.0" y="34.0"></omgdi:waypoint>
+        <omgdi:waypoint x="330.0" y="34.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow69" id="BPMNEdge_flow69">
+        <omgdi:waypoint x="223.0" y="54.0"></omgdi:waypoint>
+        <omgdi:waypoint x="272.0" y="100.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow71" id="BPMNEdge_flow71">
+        <omgdi:waypoint x="272.0" y="100.0"></omgdi:waypoint>
+        <omgdi:waypoint x="403.0" y="62.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow73" id="BPMNEdge_flow73">
+        <omgdi:waypoint x="152.0" y="494.0"></omgdi:waypoint>
+        <omgdi:waypoint x="152.0" y="830.0"></omgdi:waypoint>
+        <omgdi:waypoint x="390.0" y="830.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow75" id="BPMNEdge_flow75">
+        <omgdi:waypoint x="706.0" y="215.0"></omgdi:waypoint>
+        <omgdi:waypoint x="733.0" y="153.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow76" id="BPMNEdge_flow76">
+        <omgdi:waypoint x="706.0" y="250.0"></omgdi:waypoint>
+        <omgdi:waypoint x="706.0" y="310.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow77" id="BPMNEdge_flow77">
+        <omgdi:waypoint x="545.0" y="153.0"></omgdi:waypoint>
+        <omgdi:waypoint x="151.0" y="249.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow78" id="BPMNEdge_flow78">
+        <omgdi:waypoint x="660.0" y="125.0"></omgdi:waypoint>
+        <omgdi:waypoint x="598.0" y="125.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow79" id="BPMNEdge_flow79">
+        <omgdi:waypoint x="545.0" y="153.0"></omgdi:waypoint>
+        <omgdi:waypoint x="706.0" y="215.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow80" id="BPMNEdge_flow80">
+        <omgdi:waypoint x="706.0" y="378.0"></omgdi:waypoint>
+        <omgdi:waypoint x="706.0" y="830.0"></omgdi:waypoint>
+        <omgdi:waypoint x="425.0" y="830.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -55,7 +55,7 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
     private static Map<String, String> envVars = ShellCommandProperty.getPropertiesMap();
     private static final boolean IS_AUTH_ENABLED = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
     private static final String JDBC_AUTH_TESTCASES = "/testCases/auth/prestoAuthTestCases.json";
-    private static final User LDAP_APP_USER = User.getLdapAppUser();
+    private static final User LDAP_APP_USER = User.getLdapMdlAppUser();
     private static final User NOAUTH_VALID_JDBC_USER = User.getNoAuthValidJdbcUser();
 
     @TestFactory
@@ -116,14 +116,14 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
         LogStep("Insert record");
         LogVerification("Verify jdbc insertQuery response pass with write permission when enableAuth is true/false");
         String insertQuery = String.format("insert into %s values (1,'abcd')", tableName);
-        assertEquals(1, executePrestoUpdate(insertQuery, jdbcUrl, User.getLdapAppUser()));
+        assertEquals(1, executePrestoUpdate(insertQuery, jdbcUrl, User.getLdapMdlAppUser()));
 
         LogVerification("Verify jdbc insertQuery response pass with write permission when enableAuth is true/false");
         assertEquals(oldRecords + 1, executePrestoSelect(selectQuery, jdbcUrl, LDAP_APP_USER).size());
 
         LogStep("Drop table");
         String dropTable = "DROP TABLE " + tableName;
-        executePrestoUpdate(dropTable, jdbcUrl, User.getLdapAppUser());
+        executePrestoUpdate(dropTable, jdbcUrl, User.getLdapMdlAppUser());
     }
 
     @Test
@@ -137,7 +137,7 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
         else {
             LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
             SQLException authorizationException = assertThrows(SQLException.class, () -> {
-                executePrestoSelect(selectQuery, jdbcUrl, User.getLdapAppUser());
+                executePrestoSelect(selectQuery, jdbcUrl, User.getLdapSecAppUser());
             });
             assertTrue(authorizationException.getMessage().contains("Access Denied"), "expect message not correct:" + authorizationException.getMessage());
         }

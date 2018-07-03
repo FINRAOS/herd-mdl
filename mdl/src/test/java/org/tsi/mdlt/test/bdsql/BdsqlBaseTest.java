@@ -72,7 +72,6 @@ public abstract class BdsqlBaseTest extends BaseTest {
 
     protected static void executeShellScript(String shellFile, String... args) throws IOException, InterruptedException {
         Map<String, String> setupEnvVars = new HashMap<>(envVars);
-        setupEnvVars.put("InputFilesDir", "./mdl/build");
         String shellCommand = "./mdlt/scripts/sh/shellExecutor.sh "
                 + "-w /home/ec2-user "
                 + "-c ./mdlt/scripts/sh/presto/"

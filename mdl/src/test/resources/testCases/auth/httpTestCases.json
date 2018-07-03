@@ -15,22 +15,5 @@
       ]
     },
     "assert": "status code is 200"
-  },
-  {
-    "name": "Test with hardcode http in url: shepherd",
-    "description": "Test with hardcode http in url: shepherd",
-    "testCase": {
-      "type": "shell",
-      "workingDirectory": "/home/ec2-user",
-      "command": "/usr/bin/curl",
-      "arguments": [
-        "--max-time 30 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
-        "-X GET",
-        "-H 'Content-Type: application/xml'",
-        "-u ${ldapAppUser}:${ldapAppPassword}",
-        "--url http://${ShepherdS3Bucket}.s3-website-${RegionName}.amazonaws.com/shepherd-test.html?${HerdLoadBalancerDNSName}"
-      ]
-    },
-    "assert": "status code is 200"
   }
 ]

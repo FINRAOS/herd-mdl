@@ -136,12 +136,13 @@ execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 
 # 5) Configure environment
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herd.postgres.0.1.0.cnfgn.sql"
 
-## Increment the expansion upper-bound when a new Herd DB incremental upgrade script becomes available
-## This number in the brace exansions should be one less than the latest version.
-# todo: find a more elegant way to do this
 pre=""
 post=""
-for initial in {1..69}
+
+initial=1
+version=$(echo ${herdVersion} | cut -d. -f2)
+
+while [ ${initial} -lt ${version} ]
 do
     if [ ${initial} -lt 10 ]; then
         next=$((10#${initial}+1))
@@ -156,6 +157,7 @@ do
         next=$((10#${initial}+1))
         post="${next}"
     fi
+    ((initial++))
 
 # Apply incremental upgrade scripts to the Herd DB
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herd.postgres.0.${pre}.0-to-0.${post}.0.upgrade.sql"

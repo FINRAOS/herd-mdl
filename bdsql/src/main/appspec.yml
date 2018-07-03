@@ -38,7 +38,7 @@ hooks:
     - location: scripts/configureBDSQL.sh
       timeout: 600
       runas: hadoop
-  ValidateService
+  ValidateService:
     - location: scripts/smokeTesting.sh
       timeout: 300
       runas: hadoop

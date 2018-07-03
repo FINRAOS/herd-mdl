@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 <jobDefinitionCreateRequest>
-    <namespace>MDL</namespace>
+    <namespace>{{NAMESPACE}}</namespace>
     <jobName>addPartitionWorkflow</jobName>
     <description>Add Partitions Workflow</description>
     <activitiJobXml>

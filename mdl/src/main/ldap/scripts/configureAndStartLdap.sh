@@ -27,6 +27,7 @@ function init() {
     # export constants
     export LDAP_ADMIN_USER="ldap_admin_user"
     export MDL_APP_USER="ldap_mdl_app_user"
+    export SEC_APP_USER="ldap_sec_app_user"
     export AUTH_GROUP="ou=People"
 
     # source bash_profile to load logger and utils
@@ -56,12 +57,15 @@ function init_params() {
     sleep 1
 
     MDL_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
+    SEC_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
 
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AdministratorPassword --value ${LDAP_ADMIN_PASS} --type SecureString --description \"LDAP administrative password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword --value ${MDL_APP_PASS} --type SecureString --description \"LDAP application/service password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/SecAppPassword --value ${SEC_APP_PASS} --type SecureString --description \"LDAP sec account password\" --overwrite"
 
     LDAP_ADMIN_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${LDAP_ADMIN_PASS}")
     MDL_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${MDL_APP_PASS}")
+    SEC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${SEC_APP_PASS}")
 
     BASE_DN=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN --output text --query Parameter.Value)
 }
@@ -180,6 +184,19 @@ objectClass: inetOrgPerson
 userPassword: ${MDL_APP_PASS_CRYPT}
 EOF
     echo "${USER_LDIF}" > new_user.ldif
+    ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
+
+    # add MDL test account
+    read -r -d '' USER_LDIF << EOF
+dn: uid=${SEC_APP_USER},${AUTH_GROUP},${BASE_DN}
+changetype: add
+uid: ${SEC_APP_USER}
+cn: ${SEC_APP_USER}
+sn: null
+objectClass: inetOrgPerson
+userPassword: ${SEC_APP_PASS_CRYPT}
+EOF
+    echo "$USER_LDIF" > new_user.ldif
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
     # Create MDL LDAP group and add service account to group

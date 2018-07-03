@@ -43,11 +43,17 @@ deployPropertiesFile=$1
 
 execute_cmd "cd /home/ec2-user"
 
+export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
+
+#mdlt setup: bring up mdl stack
+execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/herd-mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper setup"
+
+#Copy ldap certificates to mdlt deploy host
 if [ "${EnableSSLAndAuth}" == 'true' ] ; then
     #1. add LDAP certificate to trusted store
     execute_cmd "aws configure set default.region ${RegionName}"
-    LDAP_SERVER=$(aws ssm get-parameter --name "/mdl/ldap/hostname" --output text --query Parameter.Value)
-    LDAP_BASE_DN=$(aws ssm get-parameter --name "/mdl/ldap/base_dn" --output text --query Parameter.Value)
+    LDAP_SERVER=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/LDAP/HostName" --output text --query Parameter.Value)
+    LDAP_BASE_DN=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN" --output text --query Parameter.Value)
 
     # export LDAP server cert
     echo | openssl s_client -connect "$LDAP_SERVER:636" | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' > ldapserver.pem
@@ -59,12 +65,22 @@ if [ "${EnableSSLAndAuth}" == 'true' ] ; then
     rm -fr ldapserver.pem ldapserver.der
 
     #2. copy certs jks to mdlt deploy host
-    execute_cmd "aws s3 cp ${JavaKeyStoreFile} certs.jks"
+    MDL_STAGING_BUCKET=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/S3/MDL" --output text --query Parameter.Value)
+    execute_cmd "aws s3 cp s3://${MDL_STAGING_BUCKET}/certs/mdl.jks certs.jks"
 fi
 
-export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
+# download herd uploader jar
+execute_cmd "rm -rf mdl"
+execute_cmd "mkdir -p mdl/herd"
+#Todo Passing from parameter after using wrapper mdl
+herdVersion="0.70.0"
+execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ./mdl/herd/herd-uploader-app.jar"
 
-# Execute the test cases
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper setup"
+# download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
+execute_cmd "mkdir -p mdl/bdsql"
+execute_cmd "aws s3 cp s3://${DeploymentBucketName}/${ReleaseVersion}/bdsql/bdsql.zip ."
+execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
+execute_cmd "rm -rf bdsql.zip"
+execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/scripts/sh/presto/sql_auth.sh"
 
 exit 0

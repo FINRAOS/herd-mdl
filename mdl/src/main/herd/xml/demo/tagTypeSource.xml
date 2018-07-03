@@ -19,5 +19,5 @@
      </tagTypeKey>
      <displayName>Source</displayName>
      <tagTypeOrder>0</tagTypeOrder>
-     <description>Where the data came from. And some descriptive information.</description>
+     <description>Descriptive information of the tag type.</description>
 </tagTypeCreateRequest>

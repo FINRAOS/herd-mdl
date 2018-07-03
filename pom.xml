@@ -22,7 +22,7 @@
     <groupId>org.finra.herd-mdl</groupId>
     <artifactId>herd-mdl</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <description>This is the base pom for the herd-mdl project.</description>
 
@@ -95,11 +95,5 @@
             </roles>
         </developer>
     </developers>
-
-    <modules>
-        <module>metastor</module>
-        <module>mdl</module>
-        <module>bdsql</module>
-    </modules>
 
 </project>

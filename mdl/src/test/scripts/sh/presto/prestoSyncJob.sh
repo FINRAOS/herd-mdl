@@ -46,13 +46,11 @@ fi
 . ${configFile}
 . ${testConfigFile}
 
-PrestoClusterId=${BdsqlEMRPrestoCluster}
-
-echo "aws ssm get-parameter --name \"/app/MDL/${MDLInstanceName}/${Environment}/S3/MDL\" --region ${RegionName} --output text --query 'Parameter.Value'"
-s3BucketStaging=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/S3/MDL" --region ${RegionName} --output text --query 'Parameter.Value')
 
 echo "add presto sql_auth sync job"
-stepId=$(aws emr add-steps --cluster-id ${PrestoClusterId} --steps Type=CUSTOM_JAR,Name=PrestoSyncJAR,ActionOnFailure=CONTINUE,Jar=s3://elasticmapreduce/libs/script-runner/script-runner.jar,Args=s3://${s3BucketStaging}/deploy/bdsql/bootstrap/sql_auth.sh --query 'StepIds[0]' --output text)
+PrestoClusterId=${BdsqlEMRPrestoCluster}
+sqlAuthS3Location="s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/scripts/sh/presto/sql_auth.sh"
+stepId=$(aws emr add-steps --cluster-id ${PrestoClusterId} --steps Type=CUSTOM_JAR,Name=PrestoSyncJAR,ActionOnFailure=CONTINUE,Jar=s3://elasticmapreduce/libs/script-runner/script-runner.jar,Args=${sqlAuthS3Location} --query 'StepIds[0]' --output text)
 
 echo "wait for the sync step to be done"
 execute_cmd "aws emr wait step-complete --cluster-id ${PrestoClusterId} --step-id ${stepId}"

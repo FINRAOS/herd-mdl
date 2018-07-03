@@ -17,27 +17,21 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: MDL - Prerequisites Primary installation template
 Parameters:
   CreateS3Buckets:
-    Default: 'true'
     Description: Create S3 buckets - true || false
     Type: String
   CreateIAMRoles:
-    Default: 'true'
     Description: Create IAM Roles - true || false
     Type: String
   CreateKeypair:
-    Default: 'true'
     Description: Create Keypair - true || false
     Type: String
   CreateSecurityGroups:
-    Default: 'true'
     Description: Create Security Groups - true || false
     Type: String
   CreateSQS:
-    Default: 'true'
     Description: Create SQS - true || false
     Type: String
   CreateVPC:
-    Default: 'true'
     Description: Create VPC - true || false
     Type: String
   DeploymentBucketName:
@@ -61,7 +55,6 @@ Parameters:
     Description: Custom tag value to be applied to all the resources
     Type: String
   EnableSSLAndAuth:
-    Default: 'true'
     Description: Whether to enable Authentication/SSL
     Type: String
 Conditions:

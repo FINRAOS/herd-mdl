@@ -24,12 +24,14 @@ public enum StackOutputKeyEnum {
     BDSQL_URL("BdsqlURL"),
     ES_EC2_IP("EsEc2Ip"),
     SHEPHERD_WEBSITE_URL("ShepherdWebSiteBucketUrl"),
-    HERD_LB_DNS("HerdLoadBalancerDNSName"),
-    BDSQL_NLB_URL("BdsqlNetworkBalancerURL"),
-    BDSQL_NLB_DNS("BdsqlNetworkBalancerDNSName"),
+    SHEPHERD_S3_BUCKET("ShepherdS3Bucket"),
+    HERD_LB_DNS_NAME("HerdLoadBalancerDNSName"),
+    HERD_LB_DNS_URL("HerdLoadBalancerDNSURL"),
     HERD_LB_URL("HerdLoadBalancerURL"),
     HERD_URL("HerdURL"),
-    SHEPHERD_S3_BUCKET("ShepherdS3Bucket");
+    BDSQL_NLB_URL("BdsqlNetworkBalancerURL"),
+    BDSQL_NLB_DNS("BdsqlNetworkBalancerDNSName"),
+    BDSQL_LB_ARN("BdsqlLoadBalancerArn");
 
     private String key;
 

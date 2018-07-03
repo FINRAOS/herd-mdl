@@ -19,17 +19,15 @@ package org.tsi.mdlt.enums;
  * enumeration for stack input parameters
  */
 public enum StackInputParameterKeyEnum {
-    //Deploy host input parameter for release version
-    DEPLOY_MDL_RELEASE("MDLRelease"),
-
     MDL_INSTANCE_NAME("MDLInstanceName"),
+    DEPLOYMENT_BUCKET_NAME("DeploymentBucketName"),
     RELEASE_VERSION("ReleaseVersion"),
     CREATE_DEMO_OBJECT("CreateDemoObjects"),
     ENABLE_SSL_AUTH("EnableSSLAndAuth"),
     ROLLBACK_ON_FAILURE("RollbackOnFailure"),
     ENVIRONMENT("Environment"),
-    KEYPAIR_NAME_IN_STORE("KeypairNameInStore"),
-    ARCUS_IMAGE_ID("ArcusImageId");
+    DEPLOY_COMPONENTS("DeployComponents"),
+    CREATE_OPEN_lDAP("CreateOpenLDAP");
 
     private String key;
 

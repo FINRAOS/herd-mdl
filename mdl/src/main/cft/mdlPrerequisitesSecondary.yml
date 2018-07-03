@@ -131,15 +131,9 @@ Resources:
         ReleaseVersion: !Ref ReleaseVersion
         PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
         ImageId: !Ref ImageId
-        KeypairName: !Join
-          - ''
-          - - /app/MDL/
-            - !Ref MDLInstanceName
-            - /
-            - !Ref Environment
-            - /KEYS/KeypairName
+        KeypairName: !Ref KeypairName
         DN: !Ref LdapDN
-        EnableHTTPS: !Ref EnableSSLAndAuth
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
         VpcIdParameterKey: !Ref VpcIdParameterKey
         PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
   CloudFrontDistributionCreation:

@@ -75,26 +75,36 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     }
 
     @AfterAll
-    public static void cleanupLdapUsers() {
+    public static void cleanupLdapUsers() throws NamingException, IOException, InterruptedException {
+        LOGGER.info("Ldap User list");
+        LdapUtil.listEntries();
+        deleteEntryIgnoringError(LDAP_USER_NAMESPACE);
+        deleteEntryIgnoringError(LDAP_USER_NEWUSER);
+        deleteEntryIgnoringError(LDAP_USER_DELETEUSER);
+
+        removeUserFromGroupIgnoringError(LDAP_USER_NEWUSER, MDL_USER_GROUP);
+        removeUserFromGroupIgnoringError(LDAP_USER_DELETEUSER, MDL_USER_GROUP);
+
+        LOGGER.info("Ldap User list after cleanup");
+        LdapUtil.listEntries();
+        syncBdsqlAuth();
+    }
+
+    private static void deleteEntryIgnoringError(String username) {
         try {
-            LOGGER.info("Ldap User list");
-            LdapUtil.listEntries();
-            LdapUtil.deleteEntry(LDAP_USER_NAMESPACE);
-            LdapUtil.deleteEntry(LDAP_USER_NEWUSER);
-            LdapUtil.deleteEntry(LDAP_USER_DELETEUSER);
-
-            LdapUtil.removeUserFromGroup(LDAP_USER_NEWUSER, MDL_USER_GROUP);
-            LdapUtil.removeUserFromGroup(LDAP_USER_DELETEUSER, MDL_USER_GROUP);
-
-            LOGGER.info("Ldap User list after cleanup");
-            LdapUtil.listEntries();
-            syncBdsqlAuth();
-
+            LdapUtil.deleteEntry(username);
         }
         catch (Exception e) {
             LOGGER.error(e.getMessage());
-            LOGGER.warn("Ignore errors in deleting user or removing user from group, "
-                    + "as cleanup is not needed if testcases pass, it only needed when testcase failed and testcase cleanup is not executed");
+        }
+    }
+
+    private static void removeUserFromGroupIgnoringError(String username, String groupName) {
+        try {
+            LdapUtil.removeUserFromGroup(username, groupName);
+        }
+        catch (Exception e) {
+            LOGGER.error(e.getMessage());
         }
     }
 
@@ -119,11 +129,11 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         LogVerification("Existing ldap user with schema permission can access new table");
         String jdbcUrl = getValidPrestoJdbcUrl(schema);
         String selectQuery = getSelectQuery(schema, objectName);
-        assertEquals(2, executePrestoSelect(selectQuery, jdbcUrl, User.getLdapTestUser1()).size());
+        assertEquals(2, executePrestoSelect(selectQuery, jdbcUrl, User.getLdapMdlAppUser()).size());
 
         LogVerification("Existing ldap user without schema permission cannot access new table");
         SQLException authorizationException = assertThrows(SQLException.class, () -> {
-            executePrestoSelect(selectQuery, jdbcUrl, User.getLdapTestUser2());
+            executePrestoSelect(selectQuery, jdbcUrl, User.getLdapSecAppUser());
         });
         verifyErrorMsgIsAccessDenied(authorizationException);
     }
@@ -155,7 +165,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         TimeUnit.SECONDS.sleep(10);
 
         LogVerification("ldap user with AD group can access new schema");
-        assertEquals(2, executePrestoSelect(getSelectQuery(schema, objectName), getValidPrestoJdbcUrl(schema), User.getLdapAppUser()).size());
+        assertEquals(2, executePrestoSelect(getSelectQuery(schema, objectName), getValidPrestoJdbcUrl(schema), User.getLdapMdlAppUser()).size());
 
         LogVerification("ldap user without AD group cannot access new schema");
         SQLException authorizationException = assertThrows(SQLException.class, () -> {
@@ -200,11 +210,11 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
         LogVerification("Verify new ldap user with AD group have permission to table");
         given().atMost(1, TimeUnit.MINUTES).pollInterval(5, TimeUnit.SECONDS)
-                .ignoreExceptionsMatching(e -> e.getMessage().contains("Access Denied")).await()
-                .until(() -> {
-                    LOGGER.info("Polling every 5 seconds with 1 minute timeout");
-                    return executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).size() > 0;
-                });
+            .ignoreExceptionsMatching(e -> e.getMessage().contains("Access Denied")).await()
+            .until(() -> {
+                LOGGER.info("Polling every 5 seconds with 1 minute timeout");
+                return executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).size() > 0;
+            });
 
         LogStep("remove new ldap user from AD group");
         LdapUtil.removeUserFromGroup(username, MDL_USER_GROUP);
@@ -245,11 +255,11 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
         LogVerification("Verify ldap user have permission to table");
         given().atMost(1, TimeUnit.MINUTES).pollInterval(5, TimeUnit.SECONDS)
-                .ignoreExceptionsMatching(e -> e.getMessage().contains("Access Denied")).await()
-                .until(() -> {
-                    LOGGER.info("Polling every 5 seconds with 1 minute timeout");
-                    return executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).size() > 0;
-                });
+            .ignoreExceptionsMatching(e -> e.getMessage().contains("Access Denied")).await()
+            .until(() -> {
+                LOGGER.info("Polling every 5 seconds with 1 minute timeout");
+                return executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).size() > 0;
+            });
 
         LogStep("Delete user from Ldap");
         LdapUtil.deleteEntry(username);
@@ -257,7 +267,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         TimeUnit.SECONDS.sleep(15);
 
         LogVerification("Verify deleted ldapUser cannot access bdsql");
-        executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).forEach(LOGGER::info);
         SQLException exception = assertThrows(SQLException.class, () -> {
             executePrestoSelect(selectQuery, jdbcUrl, newLdapUser);
         });
@@ -269,12 +278,12 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     private void waitForSchemaTableCreated(int timeoutMinutes, String schema, String tablename) throws ClassNotFoundException, InterruptedException {
         String showQuery = String.format("show tables from %s", schema);
         given().atMost(timeoutMinutes, TimeUnit.MINUTES).pollInterval(10, TimeUnit.SECONDS)
-                .ignoreException(SQLException.class)
-                .until(() -> {
-                    LOGGER.info("Polling every 10 seconds with timeout: " + timeoutMinutes + " minutes");
-                    List<String> records = executePrestoSelect(showQuery, getValidPrestoJdbcUrl(schema), User.getLdapAppUser());
-                    return records.size() > 0 && records.stream().anyMatch(table -> table.equals(tablename + "_mdl_txt"));
-                });
+            .ignoreException(SQLException.class)
+            .until(() -> {
+                LOGGER.info("Polling every 10 seconds with timeout: " + timeoutMinutes + " minutes");
+                List<String> records = executePrestoSelect(showQuery, getValidPrestoJdbcUrl(schema), User.getLdapMdlAppUser());
+                return records.size() > 0 && records.stream().anyMatch(table -> table.equals(tablename + "_mdl_txt"));
+            });
     }
 
     private String getSelectQuery(String schema, String table) {

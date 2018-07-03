@@ -43,18 +43,14 @@ public class ShellCommandProperty {
     }
 
     private static void addAllRequiredSsmToMap(Map<String, String> propertiesMap) {
-        addSsmParameterToMap(SsmParameterKeyEnum.APP_USER, propertiesMap);
-        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.APP_PASSWORD, propertiesMap);
-        addSsmParameterToMap(SsmParameterKeyEnum.TEST_USER_1, propertiesMap);
-        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.TEST_USER_1_PASSWORD, propertiesMap);
-        addSsmParameterToMap(SsmParameterKeyEnum.TEST_USER_2, propertiesMap);
-        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.TEST_USER_2_PASSWORD, propertiesMap);
+        addSsmParameterToMap(SsmParameterKeyEnum.MDL_APP_USER, propertiesMap);
+        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.MDL_APP_PASSWORD, propertiesMap);
     }
 
     private static void addSsmParameterToMap(SsmParameterKeyEnum ssmParameterKeyEnum,
             Map<String, String> propertiesMap) {
         boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        String value = isAuthEnabled ? SsmUtil.getDecryptedParameterByName(ssmParameterKeyEnum).getValue() : "randomusername";
+        String value = isAuthEnabled ? SsmUtil.getDecryptedLdapParameter(ssmParameterKeyEnum).getValue() : "randomusername";
         propertiesMap.put(ssmParameterKeyEnum.getVariableName(), value);
     }
 
@@ -62,7 +58,7 @@ public class ShellCommandProperty {
     private static void addDecryptedSsmParameterToMap(SsmParameterKeyEnum ssmParameterKeyEnum,
             Map<String, String> propertiesMap) {
         boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        String value = isAuthEnabled ? SsmUtil.getDecryptedParameterByName(ssmParameterKeyEnum).getValue() : "";
+        String value = isAuthEnabled ? SsmUtil.getDecryptedLdapParameter(ssmParameterKeyEnum).getValue() : "";
         propertiesMap.put(ssmParameterKeyEnum.getVariableName(), value);
     }
 }
