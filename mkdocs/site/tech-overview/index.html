@@ -1,0 +1,577 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+        <link rel="canonical" href="https://finraos.github.io/aphelion/tech-overview/">
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../">
+      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+    
+    
+      
+        <title>Technical Overview - Herd-MDL</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.css">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.js"></script>
+    
+    
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#herd-mdl-technical-overview" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a target="_parent" href="https://finraos.github.io/aphelion/" title="Herd-MDL" class="md-header-nav__button md-logo">
+          
+            <img src="../images/gk.svg" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Herd-MDL
+              </span>
+              <span class="md-header-nav__topic">
+                Technical Overview
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <img src="../images/gk.svg" width="24" height="24">
+      
+    </span>
+    Herd-MDL
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+      What is Herd-MDL?
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+      Basic Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+      User Guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+      Administration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        Technical Overview
+      </label>
+    
+    <a href="./" title="Technical Overview" class="md-nav__link md-nav__link--active">
+      Technical Overview
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-architecture" title="Herd-MDL Architecture" class="md-nav__link">
+    Herd-MDL Architecture
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#herd" title="Herd" class="md-nav__link">
+    Herd
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#herd-ui" title="Herd-UI" class="md-nav__link">
+    Herd-UI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metastor" title="Metastor" class="md-nav__link">
+    Metastor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#big-data-sql-bdsql" title="Big Data SQL (BDSQL)" class="md-nav__link">
+    Big Data SQL (BDSQL)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-product-install" title="Herd-MDL Product Install" class="md-nav__link">
+    Herd-MDL Product Install
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-diagram" title="Flow Diagram" class="md-nav__link">
+    Flow Diagram
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resources-diagram" title="Resources Diagram" class="md-nav__link">
+    Resources Diagram
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+      Advanced Install
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-architecture" title="Herd-MDL Architecture" class="md-nav__link">
+    Herd-MDL Architecture
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#herd" title="Herd" class="md-nav__link">
+    Herd
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#herd-ui" title="Herd-UI" class="md-nav__link">
+    Herd-UI
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metastor" title="Metastor" class="md-nav__link">
+    Metastor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#big-data-sql-bdsql" title="Big Data SQL (BDSQL)" class="md-nav__link">
+    Big Data SQL (BDSQL)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-product-install" title="Herd-MDL Product Install" class="md-nav__link">
+    Herd-MDL Product Install
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flow-diagram" title="Flow Diagram" class="md-nav__link">
+    Flow Diagram
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resources-diagram" title="Resources Diagram" class="md-nav__link">
+    Resources Diagram
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="herd-mdl-technical-overview">Herd-MDL Technical Overview<a class="headerlink" href="#herd-mdl-technical-overview" title="Permanent link">&para;</a></h1>
+<h2 id="herd-mdl-architecture">Herd-MDL Architecture<a class="headerlink" href="#herd-mdl-architecture" title="Permanent link">&para;</a></h2>
+<p><img alt="Architecture Diagram Image" src="../images/MDL-Arch.jpg" /></p>
+<p>MDL consists of four major components.</p>
+<h3 id="herd">Herd<a class="headerlink" href="#herd" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Herd maintains the metadata information about each object registered/tracked by MDL. </li>
+<li>Herd ALB enables the end user to connect to Herd web server. Note that the MDL components are hosted in private subnets for security reasons, and the ALBs enable users to interact with each component.</li>
+<li>Herd has a postgres database which stores all the metadata information</li>
+<li>Herd uses OpenLDAP for authentication/authorization of end users</li>
+<li>Herd can be deployed with SSL or without SSL support</li>
+<li>End user can access Herd in three ways<ul>
+<li>REST endpoints - Herd provides REST endpoints which can be used to interact with Herd<ul>
+<li>User may use any of the rest clients available to them like <a href="https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en">PostMan</a> or <a href="https://chrome.google.com/webstore/detail/advanced-rest-client/hgmloofddffdnphfgcellkdfbfbjeloo?hl=en-US">Advanced Rest Client</a></li>
+</ul>
+</li>
+<li>SDK - Herd provides a Java SDK in case user needs to interact with Herd through Java applications</li>
+<li>Command line - End user can use <a href="https://curl.haxx.se">cURL</a> command to interact with Herd end points              </li>
+</ul>
+</li>
+</ul>
+<h3 id="herd-ui">Herd-UI<a class="headerlink" href="#herd-ui" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Herd UI provides the user interface for the end user to retrieve details about the objects tracked by Herd</li>
+<li>Cloudfront is used to render the angular pages for UI</li>
+<li>Herd-UI supports both SSL or Plaintext deployments</li>
+</ul>
+<h3 id="metastor">Metastor<a class="headerlink" href="#metastor" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Metastor shares the Hive metastore with Bdsql Presto cluster</li>
+<li>Metastor takes care of updating Hive metastore for the objects tracked in MDL</li>
+<li>As soon as Hive metastore is updated, the objects are available in Bdsql Presto cluster for querying, as they share the same Hive metastore</li>
+<li>Metastor creates Hive external tables pointing to the S3 location of data objects/partitions</li>
+<li>Metastor uses notification feature (Activiti) from Herd for data upload event notifications</li>
+</ul>
+<h3 id="big-data-sql-bdsql">Big Data SQL (BDSQL)<a class="headerlink" href="#big-data-sql-bdsql" title="Permanent link">&para;</a></h3>
+<ul>
+<li>BDSQL uses EMR Presto cluster which is extended to user through JDBC end point</li>
+<li>BDSQL takes care of authorization for the objects being queried through Presto</li>
+<li>BDSQL uses OpenLDAP for authentication/authorization</li>
+<li>BDSQL supports both SSL and Plaintext deployments</li>
+</ul>
+<h2 id="herd-mdl-product-install">Herd-MDL Product Install<a class="headerlink" href="#herd-mdl-product-install" title="Permanent link">&para;</a></h2>
+<p>Herd-MDL makes extensive use of CloudFormation to create AWS resources and to install and configure the Herd-MDL product. Instructions are available to perform <a href="">Basic</a> and <a href="">Advanced</a> installations. The sections below include information to help understand the details of the product install. And feel free to browse the source code as well - start with the <a href="https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/installMDL.yml">top-level Herd-MDL CloudFormation install template</a> and dig!</p>
+<h3 id="flow-diagram">Flow Diagram<a class="headerlink" href="#flow-diagram" title="Permanent link">&para;</a></h3>
+<p>This section describes the nested CloudFormation templates and flow between. The layers of the flow are as follows:</p>
+<ul>
+<li>MDL - Installation template<ul>
+<li>Wrapper template that takes in various general and specific parameters</li>
+<li>Calls prerequisite stacks conditionally depending on parameters</li>
+<li>Calls MDL stacks</li>
+</ul>
+</li>
+<li>MDL - Prerequisites primary installation templates<ul>
+<li>Conditionally creates required AWS resources based on general parameters</li>
+<li>MDL can create all required AWS resources -- or for 'Advanced' installations, it can refer to externally created AWS resources </li>
+<li>Nothing specific to MDL product is configured in this layer - just AWS resources that are <em>NOT</em> EC2, RDS, ALB, EMR</li>
+</ul>
+</li>
+<li>MDL - Prerequisites secondary installation templates   <ul>
+<li>Creates required MDL resources: RDS for Herd, Metastore</li>
+<li>Creates Herd-UI static asset deployment</li>
+</ul>
+</li>
+<li>MDL - Product installation templates<ul>
+<li>ElasticSearch - install and configure ElasticSearch for use by Herd</li>
+<li>Herd Webserver - install Herd and create endpoint for REST APIs</li>
+<li>Metastor Server - install Metastore, integrate with Herd</li>
+<li>Bdsql - install BDSQL, integrate with Metastore, create JDBC endpoint</li>
+</ul>
+</li>
+</ul>
+<p><img alt="CFT Flow Diagram Image" src="../images/MDL-CFT.png" /></p>
+<h3 id="resources-diagram">Resources Diagram<a class="headerlink" href="#resources-diagram" title="Permanent link">&para;</a></h3>
+<p>This diagram shows all the resources created during Herd-MDL Product Install:</p>
+<p><img alt="Resource Diagram Image" src="../images/MDL-resources.png" /></p>
+                
+                  
+                
+              
+              
+                
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../admin-guide/" title="Administration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Administration
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../advanced-install/" title="Advanced Install" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Advanced Install
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.js"></script>
+      
+      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>

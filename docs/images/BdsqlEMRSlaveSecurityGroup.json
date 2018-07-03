@@ -1,0 +1,9 @@
+  BdsqlEMRSlaveSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${MDLInstanceName}-${Environment}-BdsqlEMRSlaveSecurityGroup'
+      GroupDescription: Allow https & postgress to client host
+      VpcId: !Ref VpcIdParameterKey
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: '-1'

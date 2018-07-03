@@ -1,0 +1,27 @@
+  ShepherdCloudFrontDistributionSSL:
+    Type: 'AWS::CloudFront::Distribution'
+    Condition: EnableSSLAndAuth
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Join ['', [!Ref MDLInstanceName, 'shepherd.', !Ref DomainNameSuffix]]
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 300
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: true
+          TargetOriginId: !Ref ShepherdS3BucketName
+          ViewerProtocolPolicy: redirect-to-https
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - DomainName: !Ref ShepherdS3BucketDomain
+            Id: !Ref ShepherdS3BucketName
+            S3OriginConfig: {}

@@ -1,0 +1,725 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+        <link rel="canonical" href="https://finraos.github.io/aphelion/user-guide/">
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../">
+      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+    
+    
+      
+        <title>User Guide - Herd-MDL</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.css">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.js"></script>
+    
+    
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#herd-mdl-user-guide" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a target="_parent" href="https://finraos.github.io/aphelion/" title="Herd-MDL" class="md-header-nav__button md-logo">
+          
+            <img src="../images/gk.svg" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Herd-MDL
+              </span>
+              <span class="md-header-nav__topic">
+                User Guide
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <img src="../images/gk.svg" width="24" height="24">
+      
+    </span>
+    Herd-MDL
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+      What is Herd-MDL?
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+      Basic Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        User Guide
+      </label>
+    
+    <a href="./" title="User Guide" class="md-nav__link md-nav__link--active">
+      User Guide
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-and-discovery-in-herd-ui" title="Search and Discovery in Herd-UI" class="md-nav__link">
+    Search and Discovery in Herd-UI
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-away" title="Take-away" class="md-nav__link">
+    Take-away
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interactive-query-with-bdsql" title="Interactive Query with BDSQL" class="md-nav__link">
+    Interactive Query with BDSQL
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities_1" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-aways" title="Take-aways" class="md-nav__link">
+    Take-aways
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingesting-data-into-herd-mdl" title="Ingesting data into Herd-MDL" class="md-nav__link">
+    Ingesting data into Herd-MDL
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities_2" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-aways_1" title="Take-aways" class="md-nav__link">
+    Take-aways
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-additional-use-cases" title="Herd-MDL additional use cases" class="md-nav__link">
+    Herd-MDL additional use cases
+  </a>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+      Administration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+      Technical Overview
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+      Advanced Install
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-and-discovery-in-herd-ui" title="Search and Discovery in Herd-UI" class="md-nav__link">
+    Search and Discovery in Herd-UI
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-away" title="Take-away" class="md-nav__link">
+    Take-away
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interactive-query-with-bdsql" title="Interactive Query with BDSQL" class="md-nav__link">
+    Interactive Query with BDSQL
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities_1" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-aways" title="Take-aways" class="md-nav__link">
+    Take-aways
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingesting-data-into-herd-mdl" title="Ingesting data into Herd-MDL" class="md-nav__link">
+    Ingesting data into Herd-MDL
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#activities_2" title="Activities" class="md-nav__link">
+    Activities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#take-aways_1" title="Take-aways" class="md-nav__link">
+    Take-aways
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-mdl-additional-use-cases" title="Herd-MDL additional use cases" class="md-nav__link">
+    Herd-MDL additional use cases
+  </a>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="herd-mdl-user-guide">Herd-MDL User Guide<a class="headerlink" href="#herd-mdl-user-guide" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Let's get to know Herd-MDL by exploring these features:</p>
+<ul>
+<li>Search and Discovery - use Herd-UI to view the demo objects that are created during Herd installation – this is how end users will locate and understand data in Herd-MDL</li>
+<li>Interactive Query - connect to Big Data SQL (BDSQL) JDBC endpoint to query the data as it sits in S3 - this is how end users will access the data</li>
+<li>Ingestion - explore two ways to ingest data into the Herd MDL - the Uploader tool and direct S3 upload with API registration</li>
+<li>Integration - call some Herd REST endpoints that are used by Herd-UI and discuss various other integrations using the REST APIs.</li>
+</ul>
+<h2 id="search-and-discovery-in-herd-ui">Search and Discovery in Herd-UI<a class="headerlink" href="#search-and-discovery-in-herd-ui" title="Permanent link">&para;</a></h2>
+<p><strong>Purpose - search and browse in Herd-UI and view the detailed business and technical metadata that is stored in the Herd catalog.</strong></p>
+<p>Terminology</p>
+<ul>
+<li>Data Entity (also known as a Business Object Definition in Herd APIs) - represents a set of data with a specific business meaning e.g. Trade Details. Includes descriptive information and details of data format.</li>
+<li>Data Object (also known as a Business Object Data in Herd APIs) - represents actual data in some storage location. Includes information about physical location, partitions, and storage platform.</li>
+<li>Category (also known as Tag in Herd APIs) - represents a business concept that is used to group and describe Data Entities, e.g. Market Data</li>
+</ul>
+<h3 id="activities">Activities<a class="headerlink" href="#activities" title="Permanent link">&para;</a></h3>
+<p>Pre-requisites - Herd-MDL is installed and validated; User has browser and network access to Herd-UI URL.</p>
+<p>Browse the catalog</p>
+<ul>
+<li>Locate the Herd-UI URL in output of Herd-MDL wrapper stack and enter that URL into a web browser</li>
+<li>Browse by clicking 'SEC' on the Herd-UI home page.</li>
+<li>Only a single category (SEC) is created in the demo install.</li>
+<li>Herd administrators and/rr data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.</li>
+<li>The Category page has a description of the category and a list of Data Entities that have been tagged with this category</li>
+<li>The list shows a short description of each Data Entity along with its display name and physical name.</li>
+<li>Users can filter the list of Data Entities by clicking on checkboxes to the left. This list includes all categories of all Data Entities in the list.</li>
+</ul>
+<p>Search the catalog</p>
+<ul>
+<li>On the Home page, enter a term (such as 'Price') in the search box and press the search button (magnifying glass icon).</li>
+<li>The Search Results page shows a list of all Data Entities and Categories that contain that term</li>
+<li>The term matches are visible with hit highlighting in the 'Found In' section of each search result. This shows how the term matched in the name, description, column name or description, etc in the Data Entity</li>
+<li>Users can filter the list of Data Entities by clicking on checkboxes to the left. This list includes all categories of all Data Entities in the search results.</li>
+<li>Click on a Data Entity name (like 'Security Test Object') to view more details about that Data Entity</li>
+</ul>
+<p>Learn about a Data Entity</p>
+<ul>
+<li>The Data Entity page for each object has a description, a list of categories it's been tagged with, and a list of contacts that are experts on this data.</li>
+<li>The 'Columns' tab lists all columns in the data entity (if it's columnar data) along with description for each column and its datatype</li>
+<li>View Data Objects registered for this Data Entity by clicking 'Data Object List'</li>
+</ul>
+<p>View Data Objects</p>
+<ul>
+<li>The Data Object List page shows all the Data Objects that have been registered for this Data Entity along with their partition values and information about their format</li>
+<li>Click on the 'View Data Object' link for any of the Data Objects to see more details</li>
+<li>The Data Object Detail page shows all details about a data object including its partition values, audit information such as when it was registered, and its storage type and physical location</li>
+</ul>
+<p>More information</p>
+<ul>
+<li>Data publishers and/or Herd administrators can manage all the descriptive information and tagging via on-screen editing or via APIs as described in <a href="https://github.com/FINRAOS/herd/wiki/Populating-Business-Metadata">Populating Business Metadata</a> on the Herd GitHub wiki</li>
+<li>More details about each page/screen in Herd-UI are available in the <a href="https://github.com/FINRAOS/herd-ui/wiki/User-Guide">Herd-UI User Guide</a> in the Herd-UI GitHub wiki</li>
+</ul>
+<h3 id="take-away">Take-away<a class="headerlink" href="#take-away" title="Permanent link">&para;</a></h3>
+<p><em>Herd-UI is a powerful search and discovery tool that allows end users to rapidly locate and understand data across the breadth of a massive data lake.</em></p>
+<h2 id="interactive-query-with-bdsql">Interactive Query with BDSQL<a class="headerlink" href="#interactive-query-with-bdsql" title="Permanent link">&para;</a></h2>
+<p><strong>Purpose - explore data anywhere in the data lake using Big Data SQL (BDSQL), a Presto query cluster that can access all data registered in the Herd catalog</strong></p>
+<p>Terminology</p>
+<ul>
+<li>Data Entity (also known as a Business Object Definition in Herd APIs) - represents a set of data with a specific business meaning e.g. Trade Details. Includes descriptive information and details of data format.</li>
+</ul>
+<h3 id="activities_1">Activities<a class="headerlink" href="#activities_1" title="Permanent link">&para;</a></h3>
+<p>Pre-requisites - Herd-MDL is installed and validated; User has SQL client with presto-jdbc-0.190 driver and network access to the BDSQL JDBC endpoint</p>
+<p>This section will use the 'Security Test Object'. The Data Entity page for 'Security Test Object' is <your Herd-UI hostame>/data-entities/SEC_MARKET_DATA/SecurityData</p>
+<p>Query data</p>
+<ul>
+<li>Locate the BDSQL JDBC connection string in the output of the Herd-MDL wrapper stack and create a JDBC connection with a SQL client.</li>
+<li>For demo installs without authentication, the user is 'hadoop' and the password is left blank.</li>
+<li>It's easy to query data from any Data Entity in the data lake. Simply locate some basic technical metadata on the Data Entity page of the Herd-UI</li>
+<li>The technical metadata required is: Namespace, Physical Name, Usage, and File Type. For example for the 'Security Test Object', these values are: Namespace=SEC_MARKET_DATA, Physical Name=SecurityData, Usage=MDL, and File Type=TXT</li>
+<li>Query the data in the SQL client – the schema and logical table name for JDBC query are made up of Namespace.PhysicalName_Usage_FileType,</li>
+<li>So to query 'Security Test Object', enter <code>'select * from sec\_market\_data.securitydata\_mdl\_txt'.</code></li>
+<li>The SQL client will display the results. Use partitions in the where clause to optimize performance.</li>
+</ul>
+<p>More information</p>
+<ul>
+<li>More details about how physical metadata in Herd is used to enable BDSQL is available in the <a href="http://127.0.0.1:8000/docs/tech-overview/#herd-mdl-architecture">Technical Overview</a></li>
+<li>The instance type and node count of the BDSQL Presto cluster can be tuned for performance</li>
+</ul>
+<h3 id="take-aways">Take-aways<a class="headerlink" href="#take-aways" title="Permanent link">&para;</a></h3>
+<p><em>Users can query anything in the data lake in seconds. The example above has one object – but Herd-MDL achieves interactive query performance even if you have thousands of Data entities, millions of Data Objects and partitions, and cases where each Data Object has tens of billions of rows that make up a Data Entity with trillions of rows.</em></p>
+<p><em>BDSQL exposes all the data in your data lake to any user who can perform SQL queries. It looks like one gigantic database accessible to anyone with a SQL client – but it's actually based on more scalable and cost-effective technology than even the most expensive proprietary big data appliances.</em></p>
+<h2 id="ingesting-data-into-herd-mdl">Ingesting data into Herd-MDL<a class="headerlink" href="#ingesting-data-into-herd-mdl" title="Permanent link">&para;</a></h2>
+<p><strong>Purpose - demonstrate two methods of loading and registering data into Herd-MDL</strong></p>
+<p>Terminology</p>
+<ul>
+<li>Data Entity (also known as a Business Object Definition in Herd APIs) - represents a set of data with a specific business meaning e.g. Trade Details. Includes descriptive information and details of data format.</li>
+<li>Data Object (also known as a Business Object Data in Herd APIs) - represents actual data in some storage location. Includes information about physical location, partitions, and storage platform.</li>
+</ul>
+<h3 id="activities_2">Activities<a class="headerlink" href="#activities_2" title="Permanent link">&para;</a></h3>
+<p>Pre-requisites</p>
+<ul>
+<li>Herd-MDL is installed and validated; User has machine with access to S3 endpoints to upload the data and Herd endpoints to register the data</li>
+<li>Obtain the Herd Uploader jar - use the link for "HerdUploaderJarURL" in the output of your Herd-MDL CloudFormation stack</li>
+<li>Obtain the data files for <a href="https://github.com/FINRAOS/herd-mdl/blob/master/mdl/src/main/metastorEc2/data/2017-08-10/2017-08-10.security-data.txt">2017-08-10</a> and <a href="https://github.com/FINRAOS/herd-mdl/blob/master/mdl/src/main/metastorEc2/data/2017-08-11/2017-08-11.security-data.txt">2017-08-11</a></li>
+</ul>
+<p>View the currently registered Data Objects for the 'Security Test Object' at <your Herd-UI hostame>/data-objects/SEC_MARKET_DATA/SecurityData. The Data Object List shows date-partitioned data from 2018-08-01 through 2018-08-09</p>
+<p>Load data using the Uploader Tool, an ingestion utility created by the Herd team.</p>
+<ul>
+<li>The Uploader populates your data lake by putting data in S3 and registering the data with the Herd catalog.</li>
+<li>Place the uploader jar in a directory and the data file in a subdirectory called 'data'</li>
+<li>The Uploader tool requires a JSON manifest that contains the metadata for registration in the Herd catalog. Here is the manifest file for the 2018-08-10 SecurityData registration:</li>
+</ul>
+<pre class="codehilite"><code>{
+&quot;namespace&quot;: &quot;SEC\_MARKET\_DATA&quot;,
+&quot;businessObjectDefinitionName&quot;: &quot;SecurityData&quot;,
+&quot;businessObjectFormatUsage&quot;: &quot;MDL&quot;,
+&quot;businessObjectFormatFileType&quot;: &quot;TXT&quot;,
+&quot;businessObjectFormatVersion&quot;: &quot;0&quot;,
+&quot;partitionKey&quot;: &quot;TDATE&quot;,
+&quot;partitionValue&quot;: &quot;2017-08-10&quot;,
+&quot;manifestFiles&quot; : \[ {
+&quot;fileName&quot; : &quot;2017-08-10.security-data.txt&quot;,
+&quot;rowCount&quot; : 504
+}\]
+}</code></pre>
+
+
+<ul>
+<li>Create a manifest file named manifest.json with the contents above in the directory with the jar</li>
+<li>In that same directory, execute the following command (your uploader version will differ)</li>
+</ul>
+<pre class="codehilite"><code>java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD\_LOAD\_BALANCER\_DNS\_NAME}</code></pre>
+
+
+<ul>
+<li>The uploader tool performs the following steps:<ul>
+<li>Pre-registers a BData in the Herd catalog with 'Uploading' status and obtains a Herd-configured S3 prefix</li>
+<li>Obtains temporary credentials to upload to that S3 prefix. If Herd is configured for Namespace-level authorization, only users with write permissions to the SEC_MARKET_DATA namespace can obtain credentials.</li>
+<li>Uploads the file from the local filesystem to the S3 prefix obtained in the previous step. The S3 upload AWS multipart uploader with up to 10 parallel threads for performance and with automatic retry for reliability.</li>
+<li>Registers the BData as 'VALID' once the S3 upload completes</li>
+</ul>
+</li>
+</ul>
+<p>Load the data using S3 APIs and Herd REST APIs</p>
+<ul>
+<li>Coming soon, detailed, steps as follows including sample request JSON for Herd</li>
+<li>Call Herd Pre-Registration API to obtain S3 Prefix</li>
+<li>Use S3 API to upload file(s) to prefix</li>
+<li>Call Herd Registration API to validate data and update status</li>
+</ul>
+<p>More information</p>
+<ul>
+<li>The examples above are for loading new Data Objects to an existing Data Entity that was created by the Herd-MDL install automation. Creating a new Data Entity is described in detail in the Herd tutorial <a href="https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data">Quick Start to Registering Data</a></li>
+<li>Learn more about the Herd catalog in the <a href="https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data">Herd Wiki</a> and about Herd REST APIs by browsing the <a href="https://finraos.github.io/herd/docs/latest/rest/index.html">Herd Swagger API documentation</a></li>
+</ul>
+<h3 id="take-aways_1">Take-aways<a class="headerlink" href="#take-aways_1" title="Permanent link">&para;</a></h3>
+<p><em>The Uploader tool is a quick, easy way to ingest Data Objects into the Herd-MDL. This tool has been used extensively at FINRA. Many teams script the generation of manifest files and the uploader CLI. Petabytes of data have been uploaded using this tool..</em></p>
+<h2 id="herd-mdl-additional-use-cases">Herd-MDL additional use cases<a class="headerlink" href="#herd-mdl-additional-use-cases" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Scale!<ul>
+<li>Herd-MDL is proven at scale. FINRA uses the Herd catalog, Herd-UI, and BDSQL for interactive query in a data lake with multiple petabytes. It's all the same technology as presented in this User Guide -- just at a much larger scale</li>
+</ul>
+</li>
+<li>Integrations<ul>
+<li>Teams at FINRA have integrated with Herd-MDL to fulfill various data processing and analytics requirements. Contact us through GitHub for questions or a demonstration.</li>
+<li>Ingest / Processing<ul>
+<li>Document-based use case - custom apps for data intake from end users</li>
+<li>Batch-processing use case - ETL framework that registers data and establishes lineage</li>
+</ul>
+</li>
+<li>Analytics<ul>
+<li>Big Data BI tools - either custom or COTS like Tableau or Pentaho</li>
+<li>Data Science tool including native Spark library for Herd</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+                
+                  
+                
+              
+              
+                
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../basic-install/" title="Basic Install" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Basic Install
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../admin-guide/" title="Administration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Administration
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.js"></script>
+      
+      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>

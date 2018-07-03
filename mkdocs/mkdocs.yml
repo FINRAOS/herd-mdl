@@ -1,0 +1,45 @@
+site_name: Herd-MDL
+site_url: https://finraos.github.io/aphelion/
+
+pages:
+  - What is Herd-MDL?: index.md
+  - Basic Install: basic-install.md
+  - User Guide: user-guide.md
+  - Administration: admin-guide.md
+  - Technical Overview: tech-overview.md
+  - Advanced Install: advanced-install.md
+ 
+# Configuration
+theme:
+  name: null
+  custom_dir: finra-theme
+
+  # Don't include MkDocs' JavaScript
+  include_search_page: false
+  search_index_only: true
+
+  # Default values, taken from mkdocs_theme.yml
+  language: en
+  direction: ltr
+  feature:
+    tabs: false
+  palette:
+    primary: indigo
+    accent: indigo
+  font:
+    text: Roboto
+    code: Roboto Mono
+  logo: 'images/gk.svg'
+
+  google_analytics: ['UA-68362192-1', 'auto']
+
+# Extensions
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc:
+      permalink: true

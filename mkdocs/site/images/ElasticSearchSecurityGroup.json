@@ -1,0 +1,18 @@
+  ElasticSearchSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${MDLInstanceName}-${Environment}-ElasticSearchSecurityGroup'
+      GroupDescription: 'Allow ssh, http, https & all outgoing traffic'
+      VpcId: !Ref VpcIdParameterKey
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8888'
+          ToPort: '8888'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: '-1'

@@ -1,0 +1,15 @@
+  HerdALBSecurityGroupSSL:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: EnableSSLAndAuth
+    Properties:
+      GroupName: !Sub '${MDLInstanceName}-${Environment}-HerdALBSecurityGroup'
+      GroupDescription: Allow https to client host
+      VpcId: !Ref VpcIdParameterKey
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: '-1'

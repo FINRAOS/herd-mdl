@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+     <loc>https://finraos.github.io/aphelion/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://finraos.github.io/aphelion/basic-install/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://finraos.github.io/aphelion/user-guide/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://finraos.github.io/aphelion/admin-guide/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://finraos.github.io/aphelion/tech-overview/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
+     <loc>https://finraos.github.io/aphelion/advanced-install/</loc>
+     <lastmod>2018-07-03</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+</urlset>
