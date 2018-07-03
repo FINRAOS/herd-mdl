@@ -24,11 +24,11 @@
     <fileSets>
 		<fileSet>
 			<directory>rds</directory>
-			<outputDirectory>rds</outputDirectory>
+			<outputDirectory>metastoreOperations/rds</outputDirectory>
 		</fileSet>
 		<fileSet>
 			<directory>samples</directory>
-			<outputDirectory>samples</outputDirectory>
+			<outputDirectory>metastoreOperations/samples</outputDirectory>
 		</fileSet>
     </fileSets>
 </assembly>
