@@ -32,6 +32,10 @@ Parameters:
   DeploymentBucketName:
     Description: Deployment bucket where the code resides
     Type: String
+  BdsqlVersion:
+    Description: Bdsql version to use.
+    Type: String
+    Default: '1.0.0'
   ReleaseVersion:
     Description: Release version
     Type: String
@@ -321,6 +325,7 @@ Resources:
             - - 's3://'
               - !Ref MDLStagingBucketName
               - /deploy/metastor/deploy.props
+          - !Ref BdsqlVersion
         Jar: 's3://elasticmapreduce/libs/script-runner/script-runner.jar'
       JobFlowId: !Ref BdsqlEMRPrestoCluster
       Name: !Sub '${MDLInstanceName}-BDSQLConfigStep'
