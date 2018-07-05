@@ -1,7 +1,3 @@
-// @import "mixins";
-// @import "theme";
-// @import "variables";
-
 .btn-no-style {
   background-color: transparent;
   border-color: transparent;
@@ -67,7 +63,9 @@ a, .btn-link {
 .btn-icon {
   @extend .btn-secondary;
 
-  line-height: 36px;
-  padding: 0;
-  text-align: center;
+  span {
+    line-height: 36px;
+    padding: 0;
+    text-align: center;
+  }
 }

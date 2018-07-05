@@ -16,8 +16,8 @@ $line-height-body: 1.6;
 
 // -- Sizes
 $font-size-base: 16px;
-$font-size-display-4: 11.2rem;
-$font-size-display-3: 5.6rem;
+$font-size-display-4: 5.25rem;  // 84px
+$font-size-display-3: 4.5rem;   // 72px
 $font-size-display-2: 3.75rem;  // 60px
 $font-size-display-1: 3rem;     // 48px
 $font-size-headline: 2.25rem;   // 36px
@@ -26,6 +26,8 @@ $font-size-subhead: 1.125rem;   // 18px
 $font-size-body: 1rem;
 $font-size-caption: 0.875rem;   // 14px
 $font-size-legal: 0.625rem;     // 10px
+
+$mobile-min-height: 48px;
 
 // -- Weights
 $font-weight-light: 100;

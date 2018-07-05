@@ -1,12 +1,17 @@
-// @import "mixins";
-// @import "variables";
-
 // Splash container
 #splash {
   background-color: $primary;
   padding: 0;
   position: relative;
   width: auto;
+
+  img {
+    height: 100%;
+    opacity: 0.5;
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
 
   &:before {
     @include background-gradient;
@@ -68,14 +73,14 @@
 
   @media (min-width: 768px) {
     height: 40%;
-    left: 30%;
-    top: 35%;
-    width: 40%;
+    left: 25%;
+    top: 37%;
+    width: 50%;
   }
 
   h1 {
     font-size: $font-size-display-1;
-    margin: 0 0 0.5em;
+    margin: 0 0 0.6em;
   }
   p {
     font-size: $font-size-title;

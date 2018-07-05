@@ -1,7 +1,3 @@
-// @import "mixins";
-// @import "theme";
-// @import "variables";
-
 html {
   -webkit-box-sizing: border-box;
   box-sizing: border-box
@@ -107,7 +103,15 @@ header,
       );
   }
   h1 {
-    color: map-get($section-light-bg, primary);
+    color: map-get($section-light-bg, accent);
+  }
+}
+
+#features {
+  i.fal,
+  i.far,
+  i.fas {
+    font-size: $font-size-display-3;
   }
 }
 
