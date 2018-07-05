@@ -21,5 +21,5 @@ Herd and Herd-MDL are API-first products. Teams at FINRA have integrated custom 
 
 This diagram illustrates how the technical components of Herd-MDL fulfull the use cases. For more information, see [Technical Overview](tech-overview.md) 
 
-![Data Flow Diagram Image](images/dfd.png)
+![Data Flow Diagram Image](images/DFD.png)
 
