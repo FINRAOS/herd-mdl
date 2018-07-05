@@ -4,7 +4,7 @@ Herd-MDL Technical Overview
 
 ## Herd-MDL Architecture
 
-![Architecture Diagram Image](images/MDL-Arch.jpg)
+![Architecture Diagram Image](images/MDL-arch.jpg)
 
 MDL consists of four major components.
 

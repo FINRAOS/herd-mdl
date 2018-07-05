@@ -1,5 +1,5 @@
 site_name: Herd-MDL
-site_url: https://finraos.github.io/aphelion/
+site_url: https://finraos.github.io/herd-mdl/
 
 pages:
   - What is Herd-MDL?: index.md
@@ -29,7 +29,8 @@ theme:
   font:
     text: Roboto
     code: Roboto Mono
-  logo: 'images/gk.svg'
+  logo: 'images/herd_logo_large.png'
+  
 
   google_analytics: ['UA-68362192-1', 'auto']
 
