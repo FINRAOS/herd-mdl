@@ -24,8 +24,8 @@ theme:
   feature:
     tabs: false
   palette:
-    primary: indigo
-    accent: indigo
+    primary: teal
+    accent: teal
   font:
     text: Roboto
     code: Roboto Mono
