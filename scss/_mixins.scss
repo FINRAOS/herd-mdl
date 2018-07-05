@@ -1,5 +1,3 @@
-// @import "theme";
-
 // Background gradient color
 @mixin background-gradient($c1:$accent1, $c2:rgba(red($primary-rgb),green($primary-rgb),blue($primary-rgb),0), $c3:$accent2) {
   background: linear-gradient(135deg, $c1 0%, $c2 50%),
@@ -7,6 +5,9 @@
 }
 
 // Breakpoints
+@mixin for-tablet-portrait-down {
+  @media ( max-width: $bp-tablet-portrait ) { @content; }
+}
 @mixin for-tablet-portrait-up {
   @media ( min-width: $bp-tablet-portrait ) { @content; }
 }
@@ -50,7 +51,7 @@
 }
 
 // Link color
-@mixin link-color($d:$primary, $h:rgba($d, 0.7), $f:darken($d, 10%)) {
+@mixin link-color($d:$accent2, $h:rgba($d, 0.7), $f:darken($d, 10%)) {
   &, &:link, &:visited {
     color: $d;
   }
@@ -73,6 +74,7 @@
 // =======
 
 // Bracket hover effect
+// --------------------
 @mixin bracket-effect {
   &::before,
   &::after {
@@ -112,6 +114,7 @@
 } // End bracket hover effect
 
 // 3D Hover effect
+// ---------------
 .perspective {
   position: relative;
 	margin: 0;
@@ -160,8 +163,8 @@
   }
 } // End 3D Hover effect
 
-
 // Text fill effect
+// ----------------
 // Works for one liners only
 .text-fill-effect {
 	color: #0972b4;
@@ -185,4 +188,168 @@
   &:focus::before {
   	max-width: 100%;
   }
-} // End text fill effect
+} // End Text fill effect
+
+// Slide down effect
+// -----------------
+// http://www.justinaguilar.com/animations/
+.slideDown {
+	animation-name: slideDown;
+	-webkit-animation-name: slideDown;
+
+	animation-duration: 1s;
+	-webkit-animation-duration: 1s;
+
+	animation-timing-function: ease;
+	-webkit-animation-timing-function: ease;
+}
+
+@keyframes slideDown {
+	0% {
+		transform: translateY(-100%);
+	}
+	50%{
+		transform: translateY(8%);
+	}
+	65%{
+		transform: translateY(-4%);
+	}
+	80%{
+		transform: translateY(4%);
+	}
+	95%{
+		transform: translateY(-2%);
+	}
+	100% {
+		transform: translateY(0%);
+	}
+}
+
+@-webkit-keyframes slideDown {
+	0% {
+		-webkit-transform: translateY(-100%);
+	}
+	50%{
+		-webkit-transform: translateY(8%);
+	}
+	65%{
+		-webkit-transform: translateY(-4%);
+	}
+	80%{
+		-webkit-transform: translateY(4%);
+	}
+	95%{
+		-webkit-transform: translateY(-2%);
+	}
+	100% {
+		-webkit-transform: translateY(0%);
+	}
+} // End Slide down effect
+
+// Slide up effect
+// ---------------
+// http://www.justinaguilar.com/animations/
+.slideUp {
+	animation-name: slideUp;
+	-webkit-animation-name: slideUp;
+
+	animation-duration: 1s;
+	-webkit-animation-duration: 1s;
+
+	animation-timing-function: ease;
+	-webkit-animation-timing-function: ease;
+}
+
+@keyframes slideUp {
+	0% {
+		transform: translateY(0%);
+	}
+	50%{
+		transform: translateY(-108%);
+	}
+	65%{
+		transform: translateY(-96%);
+	}
+	80%{
+		transform: translateY(-104%);
+	}
+	95%{
+		transform: translateY(-98%);
+	}
+	100% {
+		transform: translateY(0%);
+	}
+}
+
+@-webkit-keyframes slideUp {
+	0% {
+		-webkit-transform: translateY(0%);
+	}
+	50%{
+		-webkit-transform: translateY(-108%);
+	}
+	65%{
+		-webkit-transform: translateY(-96%);
+	}
+	80%{
+		-webkit-transform: translateY(-104%);
+	}
+	95%{
+		-webkit-transform: translateY(-98%);
+	}
+	100% {
+		-webkit-transform: translateY(0%);
+	}
+} // End Slide up effect
+
+// Fade in effect
+// --------------
+// http://www.justinaguilar.com/animations/
+.fadeIn {
+	animation-name: fadeIn;
+	-webkit-animation-name: fadeIn;
+
+	animation-duration: 1.5s;
+	-webkit-animation-duration: 1.5s;
+
+	animation-timing-function: ease-in-out;
+	-webkit-animation-timing-function: ease-in-out;
+
+	visibility: visible;
+}
+
+@keyframes fadeIn {
+	0% {
+		transform: scale(0);
+		opacity: 0;
+	}
+	60% {
+		transform: scale(1.1);
+	}
+	80% {
+		transform: scale(0.9);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@-webkit-keyframes fadeIn {
+	0% {
+		-webkit-transform: scale(0);
+		opacity: 0;
+	}
+	60% {
+		-webkit-transform: scale(1.1);
+	}
+	80% {
+		-webkit-transform: scale(0.9);
+		opacity: 1;
+	}
+	100% {
+		-webkit-transform: scale(1);
+		opacity: 1;
+	}
+} // End Fade in effect
