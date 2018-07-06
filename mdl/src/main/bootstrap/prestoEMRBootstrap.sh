@@ -20,6 +20,16 @@ environment=$2
 stagingBucket=$3
 javaKeyStoreFile=$4
 regionName=$5
+logGroupName=$6
+
+#Set cloudwatch log for Bdsql
+sudo sed -i \"s/{log_group_name}/${logGroupName}/g\" /home/hadoop/scripts/logs.conf
+wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+chmod +x ./awslogs-agent-setup.py
+sudo python awslogs-agent-setup.py -n -r ${regionName} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf
+sudo mkdir -p /var/awslogs/etc/config
+sudo cp /home/hadoop/scripts/logs.conf /var/awslogs/etc/config/codedeploy_logs.conf
+sudo service awslogs restart
 
 export STAGING_BUCKET=${stagingBucket}
 export S3_LOCATION="s3://$STAGING_BUCKET/deploy/bdsql/bootstrap/"

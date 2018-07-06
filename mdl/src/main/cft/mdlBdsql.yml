@@ -99,6 +99,9 @@ Parameters:
   LdapMdlAppUsername:
     Description: Application service account
     Type: AWS::SSM::Parameter::Value<String>
+  LogGroupName:
+    Description: CloudWatch Log group name
+    Type: String
 Conditions:
   EnableSSLAndAuth: !Equals
     - !Ref EnableSSLAndAuth
