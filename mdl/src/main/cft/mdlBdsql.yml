@@ -209,9 +209,11 @@ Resources:
             Args:
               - !Ref MDLInstanceName
               - !Ref Environment
-              - !Ref MDLStagingBucketName
+              - !Ref DeploymentBucketName
               - !Sub 's3://${MDLStagingBucketName}/certs/mdl.jks'
               - !Ref 'AWS::Region'
+              - !Ref ReleaseVersion
+              - !Ref LogGroupName
       Configurations:
         - Classification: emrfs-site
           ConfigurationProperties:

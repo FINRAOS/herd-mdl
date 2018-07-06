@@ -17,24 +17,27 @@
 
 mdlInstanceName=$1
 environment=$2
-stagingBucket=$3
+deployBucket=$3
 javaKeyStoreFile=$4
 regionName=$5
-logGroupName=$6
+releaseVersion=$6
+logGroupName=$7
+
+export DEPLOY_BUCKET=${deployBucket}
+export S3_LOCATION="s3://${DEPLOY_BUCKET}/${releaseVersion}/bootstrap/"
+echo "started download BDSQL artifacts. S3_location=$S3_LOCATION"
+sudo aws s3 sync "$S3_LOCATION" /opt/mdl/bdsql/ #--include '*.sh'
 
 #Set cloudwatch log for Bdsql
-sudo sed -i \"s/{log_group_name}/${logGroupName}/g\" /home/hadoop/scripts/logs.conf
+ls /opt/mdl/bdsql
+echo "setup cloudwatch for Bdsql"
+sudo sed -i "s/{log_group_name}/${logGroupName}/g" /opt/mdl/bdsql/logs.conf
 wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
 chmod +x ./awslogs-agent-setup.py
 sudo python awslogs-agent-setup.py -n -r ${regionName} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf
 sudo mkdir -p /var/awslogs/etc/config
-sudo cp /home/hadoop/scripts/logs.conf /var/awslogs/etc/config/codedeploy_logs.conf
+sudo cp /opt/mdl/bdsql/logs.conf /var/awslogs/etc/config/codedeploy_logs.conf
 sudo service awslogs restart
-
-export STAGING_BUCKET=${stagingBucket}
-export S3_LOCATION="s3://$STAGING_BUCKET/deploy/bdsql/bootstrap/"
-echo "started download BDSQL artifacts. S3_location=$S3_LOCATION"
-sudo aws s3 sync "$S3_LOCATION" /opt/mdl/bdsql/ #--include '*.sh'
 
 function log(){
 
