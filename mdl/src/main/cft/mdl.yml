@@ -222,6 +222,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -255,6 +256,7 @@ Resources:
         LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
         LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -306,6 +308,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -347,6 +350,7 @@ Resources:
         MetastorInstanceType: !Ref MetastorInstanceType
         DomainNameSuffix: !Ref DomainNameSuffix
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -382,6 +386,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue

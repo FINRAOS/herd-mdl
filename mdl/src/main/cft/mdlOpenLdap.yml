@@ -62,6 +62,9 @@ Parameters:
   CreateOpenLDAP:
     Description: Create OpenLDAP for Authentication - true || false
     Type: String
+  LogGroupName:
+    Description: CloudWatch Log group name
+    Type: String
 Conditions:
   CreateOpenLDAPCondition: !Equals
     - !Ref CreateOpenLDAP
@@ -120,36 +123,58 @@ Resources:
                 - ''
                 - - |
                     function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
-                  - |
                     function execute_cmd {         cmd="${1}";             echo $cmd;         eval $cmd;         check_error ${PIPESTATUS[0]} "$cmd"; }
-                  - |
+                    configFile="/tmp/logs.props"
+                    . ${configFile}
                     user=mdladmin
-                  - |
                     password=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
-                  - |
                     execute_cmd "useradd -m -d /home/${user} ${user}"
-                  - |
                     echo ${user}:${password} | chpasswd
-                  - |
                     echo "${user} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-                  - |
                     cd /home/${user}
-                  - |
                     execute_cmd "curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install"
-                  - |
                     execute_cmd "chmod +x ./install"
-                  - |
                     ./install auto 2>&1
-                  - |
                     sleep 2m
-                  - |
                     execute_cmd "./install auto" 2>&1 # Retrying after 2m
-                  - |
                     execute_cmd "sudo service codedeploy-agent status"
-                  - |
                     echo 'Code deploy setup complete, sleeping for 2 mins'
-                  - |
                     sleep 2m
+                    execute_cmd "sudo sed -i \"s/{log_group_name}/${logGroupName}/g\" /tmp/logs.conf"
+                    execute_cmd "wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py"
+                    execute_cmd "chmod +x ./awslogs-agent-setup.py"
+                    execute_cmd "sudo python awslogs-agent-setup.py -n -r ${region} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf"
+                    execute_cmd "sudo mkdir -p /var/awslogs/etc/config"
+                    execute_cmd "sudo cp /tmp/logs.conf /var/awslogs/etc/config/codedeploy_logs.conf"
+                    execute_cmd "sudo service awslogs restart"
+          files:
+            /tmp/logs.conf:
+              content: !Sub |
+                [codedeploy-agent-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file = /var/log/aws/codedeploy-agent/codedeploy-agent.log
+                log_stream_name = openldap/codedeploy/{instance_id}-codedeploy-agent-log
+                log_group_name = {log_group_name}
+
+                [codedeploy-updater-logs]
+                file = /tmp/codedeploy-agent.update.log
+                log_stream_name = openldap/codedeploy/{instance_id}-codedeploy-updater-log
+                log_group_name = {log_group_name}
+
+                [codedeploy-deployment-logs]
+                file = /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log
+                log_stream_name = openldap/codedeploy/{instance_id}-codedeploy-deployments-log
+                log_group_name = {log_group_name}
+              mode: '000644'
+              owner: root
+              group: root
+            /tmp/logs.props:
+              content: !Sub |
+                logGroupName=${LogGroupName}
+                region=${AWS::Region}
+              mode: '000644'
+              owner: root
+              group: root
         Install:
           commands:
             1-deploy:
@@ -195,6 +220,10 @@ Resources:
                   - |-
 
                     deployLocation=/home/mdladmin/deploy/mdl
+                  - |-
+
+                    logGroupName=
+                  - !Ref LogGroupName
                   - |+
 
               mode: '000400'
@@ -252,8 +281,7 @@ Resources:
         - Key: Name
           Value: !Sub 'AWSLX${MDLInstanceName}-OpenLdap-${Environment}'
       UserData:
-        Fn::Base64:
-          !Sub |
+        Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LdapEc2Instance --configsets PreInstallAndInstall --region ${AWS::Region}
           wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
