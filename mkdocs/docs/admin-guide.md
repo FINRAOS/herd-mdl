@@ -268,6 +268,85 @@ result: 0 Success
 \# numEntries: 9
 ```
   
+## How to find Herd-MDL logs in CloudWatch
+Note:Log created in cloudwatch only when the log content is not empty, therefore, some log stream mentioned bellow may not be found if it has empty content.
+
+$StackLogGroupName:
+the stack name of MDL - Installation template (eg: maggieteststack-MdlStack-XY4EUHA50KVL).
+
+**Elastic Search Logs:**
+
+$EsEc2InstanceId: the instance id of elasticsearch ec2
+
+*   CodeDeploy Logs: 
+    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-codedeploy-agent-log
+    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-deployments-log
+    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-updater-log
+ 
+*   Apache Logs:
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-log
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-access-log
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-error-log
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-access-log
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-error-log
+    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-request-log
+  
+* Elastic Search Logs:
+    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-log
+    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-index_indexing_slowlog-log
+    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-index_search_slowlog-log
+    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch_deprecation-log
+
+**Herd Logs:**
+
+$HerdEc2InstanceId: the instance id of herd ec2
+
+* CodeDeploy Logs: 
+     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-codedeploy-agent-log
+     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-deployments-log
+     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-updater-log
+
+* Apache Logs:
+    * $StackLogGroupName/herd/apache/$HerdEc2InstanceId-apache-access-log
+    * $StackLogGroupName/herd/apache/$HerdEc2InstanceId-apache-error-log
+
+* Tomcat Logs:
+    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-catalina-log
+    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-catalina-out-log
+    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-localhost-access-log
+    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-localhost-log
+
+**Metastor Logs:**
+
+$MetastorEc2InstanceId: the instance id of metastor ec2
+
+* CodeDeploy Logs: 
+    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-codedeploy-agent-log
+    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-deployments-log
+    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-updater-log
+
+* Rds Logs: 
+    * Error Log: /aws/rds/instance/$RdsInstanceName/error/$RdsInstanceName
+    * General Log: /aws/rds/instance/$RdsInstanceName/general/$RdsInstanceName
+    * Audit Log: /aws/rds/instance/$RdsInstanceName/audit/$RdsInstanceName
+    * Slow query Log: /aws/rds/instance/$RdsInstanceName/slowquery/$RdsInstanceName
+
+**Bdsql Logs:**
+
+$BdsqlEc2InstanceId: the instance id of bdsql ec2
+
+* EMR bootstrap Logs:
+    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-controller
+    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stderr
+    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stdout
+
+* EMR hadoop step Logs:
+    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-controller
+    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stderr
+    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stdout
+
+**Lambda Logs:**
+/aws/lambda/$lambda_function_name/(eg:/aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4)
 
 ## Troubleshooting
 
