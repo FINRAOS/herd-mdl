@@ -189,10 +189,10 @@ Parameters:
     Description: Number of Core Instances for the EMR cluster
     Type: String
     Default: '1'
-  ReleaseArtifactLocation:
-    Description: Appliction zip folder location
-    Type: String
-    Default: https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip
+  CloudWatchRetentionDays:
+    Description: 'Retention days for CloudWatch logs'
+    Type: Number
+    Default: 90
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -222,6 +222,7 @@ Metadata:
         Parameters:
           - ImageId
           - MDLInstanceName
+          - CloudWatchRetentionDays
       - Label:
           default: RDS Parameters
         Parameters:
@@ -312,7 +313,8 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
-              release_artifact_location = event['ResourceProperties']['ReleaseArtifactLocation'].replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip'
+              release_artifact_location = release_artifact_location.replace('{releaseVersion}', release_version)
 
               deployment_bucket_name = deployment_bucket_location
               prefix = release_version
@@ -388,7 +390,6 @@ Resources:
       ReleaseVersion: !Ref ReleaseVersion
       BucketArn: !GetAtt DeployBucket.Arn
       DeploymentBucketLocation: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
-      ReleaseArtifactLocation: !Ref ReleaseArtifactLocation
   MdlStack:
     DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
@@ -431,6 +432,7 @@ Resources:
         CustomTagName: !Ref CustomTagName
         CustomTagValue: !Ref CustomTagValue
         NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
+        CloudWatchRetentionDays: !Ref CloudWatchRetentionDays
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -460,3 +462,6 @@ Outputs:
     Value: !GetAtt MdlStack.Outputs.BdsqlJksURL
     Description: URL for Bdsql jks file
     Condition: DeployBDSQLWithAuth
+  CloudWatchLogGroupName:
+    Value: !GetAtt MdlStack.Outputs.CloudWatchLogGroupName
+    Description: cloud watch log group name
