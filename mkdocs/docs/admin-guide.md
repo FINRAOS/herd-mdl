@@ -269,7 +269,7 @@ result: 0 Success
 ```
   
 ## How to find Herd-MDL logs in CloudWatch
-Note:Log created in cloudwatch only when the log content is not empty, therefore, some log stream mentioned bellow may not be found if it has empty content.
+Note:Logs are created in cloudwatch only when the log content is not empty, therefore, some of the log streams mentioned below may not be found if the logs are empty.
 
 $StackLogGroupName:
 the stack name of MDL - Installation template (eg: maggieteststack-MdlStack-XY4EUHA50KVL).
