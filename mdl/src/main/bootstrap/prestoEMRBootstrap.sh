@@ -29,7 +29,6 @@ echo "started download BDSQL artifacts. S3_location=$S3_LOCATION"
 sudo aws s3 sync "$S3_LOCATION" /opt/mdl/bdsql/ #--include '*.sh'
 
 #Set cloudwatch log for Bdsql
-ls /opt/mdl/bdsql
 echo "setup cloudwatch for Bdsql"
 sudo sed -i "s/{log_group_name}/${logGroupName}/g" /opt/mdl/bdsql/logs.conf
 wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py

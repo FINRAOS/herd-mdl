@@ -284,13 +284,6 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LdapEc2Instance --configsets PreInstallAndInstall --region ${AWS::Region}
-          wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
-          wget https://s3.amazonaws.com/aws-codedeploy-${AWS::Region}/cloudwatch/codedeploy_logs.conf
-          chmod +x ./awslogs-agent-setup.py
-          sudo python awslogs-agent-setup.py -n -r ${AWS::Region} -c s3://aws-codedeploy-${AWS::Region}/cloudwatch/awslogs.conf
-          sudo mkdir -p /var/awslogs/etc/config
-          sudo cp codedeploy_logs.conf /var/awslogs/etc/config/
-          service awslogs restart
   LdapWaitHandle:
     Condition: CreateOpenLDAPCondition
     Type: AWS::CloudFormation::WaitConditionHandle

@@ -192,7 +192,7 @@ Parameters:
   ReleaseArtifactLocation:
     Description: Appliction zip folder location
     Type: String
-    Default: https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/herd-mdl-1.1.0-dist.zip
+    Default: https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -312,7 +312,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
-              release_artifact_location = event['ResourceProperties']['ReleaseArtifactLocation']
+              release_artifact_location = event['ResourceProperties']['ReleaseArtifactLocation'].replace('{releaseVersion}', release_version)
 
               deployment_bucket_name = deployment_bucket_location
               prefix = release_version
