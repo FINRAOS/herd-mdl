@@ -336,14 +336,23 @@ $MetastorEc2InstanceId: the instance id of metastor ec2
 $BdsqlEc2InstanceId: the instance id of bdsql ec2
 
 * EMR bootstrap Logs:
-    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-controller
-    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stderr
-    * $LogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stdout
+    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-controller
+    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stderr
+    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stdout
 
 * EMR hadoop step Logs:
-    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-controller
-    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stderr
-    * $LogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stdout
+    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-controller
+    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stderr
+    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stdout
+    
+**OpenLdap Logs:**
+
+$OpenLdapEc2InstanceId: the instance id of OpenLdap ec2
+
+* CodeDeploy Logs: 
+    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-codedeploy-agent-log
+    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-deployments-log
+    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-updater-log
 
 **Lambda Logs:**
 /aws/lambda/$lambda_function_name/(eg:/aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4)
