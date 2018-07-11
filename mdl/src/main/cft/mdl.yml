@@ -155,6 +155,9 @@ Parameters:
   NumberOfBdsqlCoreInstances:
     Description: Number of Core Instances for the EMR cluster
     Type: String
+  CloudWatchRetentionDays:
+    Description: 'Retention days for CloudWatch logs'
+    Type: Number
 Conditions:
   DeployPrereqs: !Or [!Equals [!Ref DeployComponents, Prereqs Only], !Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
   DeployHerd: !Or [!Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
@@ -166,9 +169,15 @@ Conditions:
   CreateRoute53ForCloudfront: !And [!Equals [!Ref EnableSSLAndAuth, true], !Equals [!Ref CreateS3Buckets, true], !Equals [!Ref CreateCloudFrontDistribution, true]]
   DeployBDSQLWithAuth: !And [!Equals [!Ref EnableSSLAndAuth, true], !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]]
 Resources:
+  CloudWatchLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: !Ref CloudWatchRetentionDays
   PrerequisitesPrimaryStack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployPrereqs
+    DependsOn: CloudWatchLogGroup
     Properties:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlPrerequisitesPrimary.yml]]
       Parameters:
@@ -222,6 +231,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -255,6 +265,7 @@ Resources:
         LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
         LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -306,6 +317,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -347,6 +359,7 @@ Resources:
         MetastorInstanceType: !Ref MetastorInstanceType
         DomainNameSuffix: !Ref DomainNameSuffix
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -382,6 +395,7 @@ Resources:
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]
+        LogGroupName: !Ref AWS::StackName
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -410,3 +424,6 @@ Outputs:
     Value: !Sub 'http://central.maven.org/maven2/org/finra/herd/herd-uploader/${HerdVersion}/herd-uploader-${HerdVersion}.jar'
     Description: URL for herd uploader jar
     Condition: DeployHerd
+  CloudWatchLogGroupName:
+    Value: !Ref CloudWatchLogGroup
+    Description: cloud watch log group name

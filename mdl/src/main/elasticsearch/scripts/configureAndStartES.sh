@@ -46,6 +46,11 @@ fi
 
 execute_cmd "cd /home/mdladmin"
 
+#Configure cloudwatch log for elastic search
+execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"
+execute_cmd "sudo bash -c 'echo >> /var/awslogs/etc/config/codedeploy_logs.conf; cat ${deployLocation}/conf/logs.conf >> /var/awslogs/etc/config/codedeploy_logs.conf'"
+execute_cmd "sudo service awslogs restart"
+
 # Configure apache
 execute_cmd "sudo ${deployLocation}/scripts/configureApacheES.sh"
 
