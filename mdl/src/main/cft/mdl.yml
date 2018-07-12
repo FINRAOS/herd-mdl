@@ -158,6 +158,7 @@ Parameters:
   CloudWatchRetentionDays:
     Description: 'Retention days for CloudWatch logs'
     Type: Number
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
 Conditions:
   DeployPrereqs: !Or [!Equals [!Ref DeployComponents, Prereqs Only], !Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
   DeployHerd: !Or [!Equals [!Ref DeployComponents, Herd], !Equals [!Ref DeployComponents, Metastor], !Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]
@@ -169,15 +170,9 @@ Conditions:
   CreateRoute53ForCloudfront: !And [!Equals [!Ref EnableSSLAndAuth, true], !Equals [!Ref CreateS3Buckets, true], !Equals [!Ref CreateCloudFrontDistribution, true]]
   DeployBDSQLWithAuth: !And [!Equals [!Ref EnableSSLAndAuth, true], !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]]
 Resources:
-  CloudWatchLogGroup:
-    Type: "AWS::Logs::LogGroup"
-    Properties:
-      LogGroupName: !Ref AWS::StackName
-      RetentionInDays: !Ref CloudWatchRetentionDays
   PrerequisitesPrimaryStack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployPrereqs
-    DependsOn: CloudWatchLogGroup
     Properties:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlPrerequisitesPrimary.yml]]
       Parameters:
@@ -266,6 +261,7 @@ Resources:
         LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         LogGroupName: !Ref AWS::StackName
+        CloudWatchRetentionDays: !Ref CloudWatchRetentionDays
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -425,5 +421,5 @@ Outputs:
     Description: URL for herd uploader jar
     Condition: DeployHerd
   CloudWatchLogGroupName:
-    Value: !Ref CloudWatchLogGroup
+    Value: !Ref AWS::StackName
     Description: cloud watch log group name
