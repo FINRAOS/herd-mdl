@@ -252,8 +252,8 @@ Resources:
         Environment: !Ref Environment
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/Admin]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/Admin]]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
       Tags:
         - Key: !Ref CustomTagName
@@ -289,8 +289,8 @@ Resources:
         ImageId: !Ref ImageId
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/Admin]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/Admin]]
         HerdInstanceType: !Ref HerdInstanceType
         RefreshDatabase: !Ref RefreshDatabase
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
@@ -337,8 +337,8 @@ Resources:
         ImageId: !Ref ImageId
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/Admin]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/Admin]]
         RefreshDatabase: !Ref RefreshDatabase
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
@@ -369,7 +369,7 @@ Resources:
         MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
         MDLInstanceName: !Ref MDLInstanceName
         CertificateArn: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/Admin]]
         Environment: !Ref Environment
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         BdsqlMasterInstanceType: !Ref BdsqlMasterInstanceType

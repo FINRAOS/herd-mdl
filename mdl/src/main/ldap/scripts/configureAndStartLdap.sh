@@ -26,9 +26,18 @@ function init() {
 
     # export constants
     export LDAP_ADMIN_USER="ldap_admin_user"
+    export ADMIN_APP_USER="ldap_admin_user"
     export MDL_APP_USER="ldap_mdl_app_user"
     export SEC_APP_USER="ldap_sec_app_user"
-    export AUTH_GROUP="ou=People"
+    export RO_APP_USER="ldap_ro_app_user"
+    export ADMIN_APP_GROUP="APP_ADMIN_GROUP"
+    export MDL_APP_GROUP="APP_MDL_GROUP"
+    export SEC_APP_GROUP="APP_SEC_GROUP"
+    export RO_APP_GROUP="APP_RO_GROUP"
+    export ADMIN_AUTH_GROUP="ADMIN"
+    export MDL_APP_AUTH_GROUP="MDL"
+    export SEC_APP_AUTH_GROUP="SEC"
+    export RO_APP_AUTH_GROUP="RO"
 
     # source bash_profile to load logger and utils
     source ~/.bash_profile
@@ -51,21 +60,39 @@ function export_execs() {
 function init_params() {
     # set params
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/HostName --value ${HOSTNAME} --type String --description \"LDAP server hostname\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup --value ${AUTH_GROUP} --type String --description \"LDAP server hostname\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --value ${ADMIN_AUTH_GROUP} --type String --description \"Admin Auth Group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --value ${MDL_APP_AUTH_GROUP} --type String --description \"MDL Auth Group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --value ${SEC_APP_AUTH_GROUP} --type String --description \"SEC Auth Group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --value ${RO_APP_AUTH_GROUP} --type String --description \"Read Only Auth Group\" --overwrite"
 
     LDAP_ADMIN_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
-    sleep 1
-
     MDL_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
     SEC_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
+    RO_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
+    ADMIN_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
 
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AdministratorPassword --value ${LDAP_ADMIN_PASS} --type SecureString --description \"LDAP administrative password\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword --value ${MDL_APP_PASS} --type SecureString --description \"LDAP application/service password\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/SecAppPassword --value ${SEC_APP_PASS} --type SecureString --description \"LDAP sec account password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AdminUser --value ${LDAP_ADMIN_USER} --type String --description \"LDAP administrative user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/Admin --value ${ADMIN_APP_USER} --type String --description \"MDL administrative user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/MDL --value ${MDL_APP_USER} --type String --description \"LDAP application/service user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/SEC --value ${SEC_APP_USER} --type String --description \"LDAP sec account user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/RO --value ${RO_APP_USER} --type String --description \"LDAP read-only account user\" --overwrite"
+
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Group/Admin --value ${ADMIN_APP_GROUP} --type String --description \"MDL administrative user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Group/MDL --value ${MDL_APP_GROUP} --type String --description \"LDAP application/service user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Group/SEC --value ${SEC_APP_GROUP} --type String --description \"LDAP sec account user\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Group/RO --value ${RO_APP_GROUP} --type String --description \"LDAP read-only account user\" --overwrite"
+
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AdminPassword --value ${LDAP_ADMIN_PASS} --type SecureString --description \"LDAP administrative password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/Admin --value ${ADMIN_APP_PASS} --type SecureString --description \"MDL administrative password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/MDL --value ${MDL_APP_PASS} --type SecureString --description \"LDAP application/service password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/SEC --value ${SEC_APP_PASS} --type SecureString --description \"LDAP sec account password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/RO --value ${RO_APP_PASS} --type SecureString --description \"LDAP read-only account password\" --overwrite"
 
     LDAP_ADMIN_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${LDAP_ADMIN_PASS}")
     MDL_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${MDL_APP_PASS}")
     SEC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${SEC_APP_PASS}")
+    RO_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${RO_APP_PASS}")
+    ADMIN_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${ADMIN_APP_PASS}")
 
     BASE_DN=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN --output text --query Parameter.Value)
 }
@@ -112,6 +139,7 @@ function create_group(){
 
         local GROUP_NAME="$1"
         local USER_NAME="$2"
+        local AUTH_GROUP="$3"
 
         read -r -d '' CONF <<EOF
 dn: cn=${GROUP_NAME},ou=Groups,${BASE_DN}
@@ -162,10 +190,10 @@ objectclass: dcObject
 objectclass: organization
 o: `echo ${BASE_DN} | sed -e 's/,dc=/./g' -e 's/dc=//'`
 
-dn: ${AUTH_GROUP},${BASE_DN}
+dn: ou=${ADMIN_AUTH_GROUP},${BASE_DN}
 objectClass: top
 objectClass: organizationalUnit
-ou: People
+ou: ${ADMIN_AUTH_GROUP}
 
 dn: ou=Groups,${BASE_DN}
 objectClass: top
@@ -173,9 +201,75 @@ objectClass: organizationalUnit
 ou: Groups
 EOF
 
+    ldapadd -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H ldapi:/// << EOF
+dn: ${BASE_DN}
+objectclass: dcObject
+objectclass: organization
+o: `echo ${BASE_DN} | sed -e 's/,dc=/./g' -e 's/dc=//'`
+
+dn: ou=${MDL_APP_AUTH_GROUP},${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: ${MDL_APP_AUTH_GROUP}
+
+dn: ou=Groups,${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups
+EOF
+
+    ldapadd -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H ldapi:/// << EOF
+dn: ${BASE_DN}
+objectclass: dcObject
+objectclass: organization
+o: `echo ${BASE_DN} | sed -e 's/,dc=/./g' -e 's/dc=//'`
+
+dn: ou=${SEC_APP_AUTH_GROUP},${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: ${SEC_APP_AUTH_GROUP}
+
+dn: ou=Groups,${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups
+EOF
+
+
+    ldapadd -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H ldapi:/// << EOF
+dn: ${BASE_DN}
+objectclass: dcObject
+objectclass: organization
+o: `echo ${BASE_DN} | sed -e 's/,dc=/./g' -e 's/dc=//'`
+
+dn: ou=${RO_APP_AUTH_GROUP},${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: ${RO_APP_AUTH_GROUP}
+
+dn: ou=Groups,${BASE_DN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups
+EOF
+
+
+    # add MDL Admin account
+    read -r -d '' USER_LDIF << EOF
+dn: uid=${LDAP_ADMIN_USER},ou=${ADMIN_AUTH_GROUP},${BASE_DN}
+changetype: add
+uid: ${LDAP_ADMIN_USER}
+cn: ${LDAP_ADMIN_USER}
+sn: null
+objectClass: inetOrgPerson
+userPassword: ${ADMIN_APP_PASS_CRYPT}
+EOF
+    echo "${USER_LDIF}" > new_user.ldif
+    ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
+
     # add MDL service account
     read -r -d '' USER_LDIF << EOF
-dn: uid=${MDL_APP_USER},${AUTH_GROUP},${BASE_DN}
+dn: uid=${MDL_APP_USER},ou=${MDL_APP_AUTH_GROUP},${BASE_DN}
 changetype: add
 uid: ${MDL_APP_USER}
 cn: ${MDL_APP_USER}
@@ -186,9 +280,9 @@ EOF
     echo "${USER_LDIF}" > new_user.ldif
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
-    # add MDL test account
+    # add SEC account
     read -r -d '' USER_LDIF << EOF
-dn: uid=${SEC_APP_USER},${AUTH_GROUP},${BASE_DN}
+dn: uid=${SEC_APP_USER},ou=${SEC_APP_AUTH_GROUP},${BASE_DN}
 changetype: add
 uid: ${SEC_APP_USER}
 cn: ${SEC_APP_USER}
@@ -199,8 +293,24 @@ EOF
     echo "$USER_LDIF" > new_user.ldif
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
+    # Create RO account
+    read -r -d '' USER_LDIF << EOF
+dn: uid=${RO_APP_USER},ou=${RO_APP_AUTH_GROUP},${BASE_DN}
+changetype: add
+uid: ${RO_APP_USER}
+cn: ${RO_APP_USER}
+sn: null
+objectClass: inetOrgPerson
+userPassword: ${RO_APP_PASS_CRYPT}
+EOF
+    echo "$USER_LDIF" > new_user.ldif
+    ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
+
     # Create MDL LDAP group and add service account to group
-    create_group "APP_MDL_Users" "${MDL_APP_USER}"
+    create_group ${ADMIN_APP_GROUP} "${LDAP_ADMIN_USER}" "ou=${ADMIN_AUTH_GROUP}"
+    create_group ${MDL_APP_GROUP} "${MDL_APP_USER}" "ou=${MDL_APP_AUTH_GROUP}"
+    create_group ${SEC_APP_GROUP} "${SEC_APP_USER}" "ou=${SEC_APP_AUTH_GROUP}"
+    create_group ${RO_APP_GROUP} "${RO_APP_USER}" "ou=${RO_APP_AUTH_GROUP}"
 
     execute_cmd "/etc/init.d/slapd restart"
 }
