@@ -45,6 +45,7 @@ fi
 
 
 execute_cmd "cd /home/mdladmin"
+execute_cmd "aws configure set default.region ${region}"
 
 # Set cloudwatch log group retention period
 execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days ${cloudWatchRetentionDays}"
