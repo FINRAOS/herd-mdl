@@ -64,17 +64,24 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     private static final String LDAP_USER_DELETEUSER = "ldap_deleteuser";
 
     @BeforeAll
-    public static void setup() throws NamingException {
+    public static void setup() throws NamingException, IOException, InterruptedException {
         boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
         if (!isAuthEnabled) {
             LOGGER.info("Skip bdsql sync testcases as enableAuth is disabled");
             Assume.assumeTrue(isAuthEnabled);
         } else {
+            LOGGER.info("Ldap User list in before all");
+            cleanupLdapUsers();
             LdapUtil.listEntries();
         }
     }
 
     @AfterAll
+    public static void teardown() throws InterruptedException, NamingException, IOException {
+        cleanupLdapUsers();
+        syncBdsqlAuth();
+    }
+
     public static void cleanupLdapUsers() throws NamingException, IOException, InterruptedException {
         LOGGER.info("Ldap User list");
         LdapUtil.listEntries();
@@ -87,7 +94,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
         LOGGER.info("Ldap User list after cleanup");
         LdapUtil.listEntries();
-        syncBdsqlAuth();
     }
 
     private static void deleteEntryIgnoringError(String username) {

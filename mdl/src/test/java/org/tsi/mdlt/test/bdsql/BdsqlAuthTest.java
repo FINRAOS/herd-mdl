@@ -86,6 +86,24 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
     }
 
     @Test
+    public void testPrestoReadWithUpperCaseUsername()  {
+        String jdbcUrl = getValidPrestoJdbcUrl("sec_market_data");
+        String selectQuery = "select * from securitydata_mdl_txt";
+        if (!IS_AUTH_ENABLED) {
+            LOGGER.info("Testcases skipped as auth is disabled");
+        }
+        else {
+            LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
+            User ldapUser = User.getLdapMdlAppUser();
+            ldapUser.setUsername(ldapUser.getUsername().toUpperCase());
+            SQLException authorizationException = assertThrows(SQLException.class, () -> {
+                executePrestoSelect(selectQuery, jdbcUrl, ldapUser);
+            });
+            assertTrue(authorizationException.getMessage().contains("Access Denied"), "expect message not correct:" + authorizationException.getMessage());
+        }
+    }
+
+    @Test
     //@DisableOnAuthenticationDisabled
     //TO disable condition annotation is NOT working somehow
     public void testPrestoReadWriteToLdapUserSchema() throws SQLException, ClassNotFoundException {

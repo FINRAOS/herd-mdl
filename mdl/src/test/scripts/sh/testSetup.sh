@@ -73,7 +73,7 @@ fi
 execute_cmd "rm -rf mdl"
 execute_cmd "mkdir -p mdl/herd"
 #Todo Passing from parameter after using wrapper mdl
-herdVersion="0.70.0"
+herdVersion="0.72.0"
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ./mdl/herd/herd-uploader-app.jar"
 
 # download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
