@@ -269,93 +269,77 @@ result: 0 Success
 ```
   
 ## How to find Herd-MDL logs in CloudWatch
-Note:Logs are created in cloudwatch only when the log content is not empty, therefore, some of the log streams mentioned below may not be found if the logs are empty.
+Note: Logs are created in cloudwatch only when the log content is not empty, therefore, some of the log streams mentioned below may not be found if the logs are empty.
 
-$StackLogGroupName:
-the stack name of MDL - Installation template (eg: maggieteststack-MdlStack-XY4EUHA50KVL).
+### Logs inside customized stack log group
 
-**Elastic Search Logs:**
+**Steps:**
 
-$EsEc2InstanceId: the instance id of elasticsearch ec2
+*   Login to AWS Console and navigate to CloudWatch
+*   Click on 'Logs' in the left panel
+*   Filter Log Groups with stack cloudwatch log group name
+    *   **where to find stack log group name?**: please find the value for the key "CloudWatchLogGroupName" from the outputs section of the MDL stack.(Example: logtest-MdlStack-10IBXFGDHF94M)
+*   Click on above filtered stack log group to open it, inside this stack log group folder, you can find most of herd-mdl logs saved as log stream
 
-*   CodeDeploy Logs: 
-    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-codedeploy-agent-log
-    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-deployments-log
-    *  $StackLogGroupName/elasticsearch/codedeploy/$EsEc2InstanceId-updater-log
- 
-*   Apache Logs:
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-log
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-access-log
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-error-log
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-access-log
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-error-log
-    *  $StackLogGroupName/elasticsearch/apache/$EsEc2InstanceId-apache-ssl-request-log
+**Elastic Search Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| CodeDeploy Logs | elasticsearch/codedeploy/*
+| Apache Logs | elasticsearch/apache/*
+| Elastic Search Logs | elasticsearch/*
   
-* Elastic Search Logs:
-    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-log
-    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-index_indexing_slowlog-log
-    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch-index_search_slowlog-log
-    * $StackLogGroupName/elasticsearch/$EsEc2InstanceId-elasticsearch_deprecation-log
+**Herd Log Streams:**
 
-**Herd Logs:**
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | herd/codedeploy/*
+| **Apache Logs** | herd/apache/*
+| **Tomcat Logs** | herd/tomcat/*
 
-$HerdEc2InstanceId: the instance id of herd ec2
+**Metastor Log Streams:**
 
-* CodeDeploy Logs: 
-     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-codedeploy-agent-log
-     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-deployments-log
-     * $StackLogGroupName/herd/codedeploy/$HerdEc2InstanceId-updater-log
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Logs** | metastor/codedeploy/*
 
-* Apache Logs:
-    * $StackLogGroupName/herd/apache/$HerdEc2InstanceId-apache-access-log
-    * $StackLogGroupName/herd/apache/$HerdEc2InstanceId-apache-error-log
 
-* Tomcat Logs:
-    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-catalina-log
-    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-catalina-out-log
-    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-localhost-access-log
-    * $StackLogGroupName/herd/tomcat/$HerdEc2InstanceId-tomcat-localhost-log
+**Bdsql Log Streams:**
 
-**Metastor Logs:**
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **EMR bootstrap Logs** | /bdsql/bootstrap/*
+| **EMR hadoop step Logs** | /bdsql/hadoop/step/*
 
-$MetastorEc2InstanceId: the instance id of metastor ec2
+**OpenLdap Log Streams:**
 
-* CodeDeploy Logs: 
-    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-codedeploy-agent-log
-    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-deployments-log
-    * $StackLogGroupName/metastor/codedeploy/$MetastorEc2InstanceId-updater-log
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | openldap/codedeploy/*
 
-* Rds Logs: 
-    * Error Log: /aws/rds/instance/$RdsInstanceName/error/$RdsInstanceName
-    * General Log: /aws/rds/instance/$RdsInstanceName/general/$RdsInstanceName
-    * Audit Log: /aws/rds/instance/$RdsInstanceName/audit/$RdsInstanceName
-    * Slow query Log: /aws/rds/instance/$RdsInstanceName/slowquery/$RdsInstanceName
 
-**Bdsql Logs:**
+### Logs with aws default log group
 
-$BdsqlEc2InstanceId: the instance id of bdsql ec2
+**Rds Log Group:**
 
-* EMR bootstrap Logs:
-    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-controller
-    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stderr
-    * $StackLogGroupName/bdsql/bootstrap/$BdsqlEc2InstanceId-stdout
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Rds Log** | /aws/rds/instance/{{RdsInstanceName}}/{{logType}}/{{RdsInstanceName}} |  <table><tr><td>/aws/rds/instance/logtest-prod-metastor/error</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/general</td></tr><td>/aws/rds/instance/logtest-prod-metastor/audit</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/slowquery</td></tr></table>|
 
-* EMR hadoop step Logs:
-    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-controller
-    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stderr
-    * $StackLogGroupName/bdsql/hadoop/steps/$BdsqlEc2InstanceId-stdout
-    
-**OpenLdap Logs:**
 
-$OpenLdapEc2InstanceId: the instance id of OpenLdap ec2
+**Lambda Log Group:**
 
-* CodeDeploy Logs: 
-    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-codedeploy-agent-log
-    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-deployments-log
-    * $StackLogGroupName/openldap/codedeploy/$OpenLdapEc2InstanceId-updater-log
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Lambda Log** | /aws/lambda/{{lambda_function_name}}	| /aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4 |
 
-**Lambda Logs:**
-/aws/lambda/$lambda_function_name/(eg:/aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4)
 
 ## Troubleshooting
 
