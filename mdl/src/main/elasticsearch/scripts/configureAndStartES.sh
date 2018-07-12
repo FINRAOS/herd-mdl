@@ -57,7 +57,7 @@ if [ "${isTagExisted}" != "false" ] ; then
     echo "tagging sqs"
     cloudwatch_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
     cloudwatch_tags=${cloudwatch_tags//\"/\\\"}
-    execute_cmd "aws logs tag-log-group --log-group-name ${logGroupName} --tags \"$sqs_tags\""
+    execute_cmd "aws logs tag-log-group --log-group-name ${logGroupName} --tags \"${cloudwatch_tags}\""
 fi
 
 #Configure cloudwatch log for elastic search
