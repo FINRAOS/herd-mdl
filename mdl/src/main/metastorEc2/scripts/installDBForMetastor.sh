@@ -64,7 +64,7 @@ if [ "${metastorDBPassword}" = "" ] ; then
 fi
 
 # Change the RDS password
-aws rds modify-db-instance --db-instance-identifier ${metastoreDBInstance} --master-user-password ${metastorDBPassword} --apply-immediately --region ${region}
+aws rds modify-db-instance --db-instance-identifier ${metastoreDBInstance} --master-user-password ${metastorDBPassword} --cloudwatch-logs-export-configuration "{\"EnableLogTypes\":[\"error\",\"general\",\"audit\",\"slowquery\"]}" --apply-immediately --region ${region}
 check_error $? "aws rds modify-db-instance --db-instance-identifier ${metastoreDBInstance}  modify password"
 # Waiting for the new password to take effect
 sleep 300

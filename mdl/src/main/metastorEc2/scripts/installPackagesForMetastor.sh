@@ -47,5 +47,6 @@ fi
 execute_cmd "yum update -y aws-cfn-bootstrap"
 execute_cmd "yum install -y lynx"
 execute_cmd "yum install -y jq"
+execute_cmd "pip install --upgrade awscli"
 
 exit 0
