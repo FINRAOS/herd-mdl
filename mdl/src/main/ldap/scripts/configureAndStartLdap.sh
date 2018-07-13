@@ -26,7 +26,7 @@ function init() {
 
     # export constants
     export LDAP_ADMIN_USER="ldap_admin_user"
-    export ADMIN_APP_USER="ldap_admin_user"
+    export ADMIN_APP_USER="ldap_mdl_admin_user"
     export MDL_APP_USER="ldap_mdl_app_user"
     export SEC_APP_USER="ldap_sec_app_user"
     export RO_APP_USER="ldap_ro_app_user"
