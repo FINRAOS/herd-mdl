@@ -178,15 +178,24 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     # Ignore error for first time
     psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c "DELETE FROM cnfgn WHERE cnfgn_key_nm = 'security.enabled.spel.expression';"
 
+    # Get Auth group-names from parameter store
     admin_group=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
     mdl_read_write_group=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --with-decryption --region ${region} --output text --query Parameter.Value)
     sec_read_write_group=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
     read_only_group=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --with-decryption --region ${region} --output text --query Parameter.Value)
 
+    # Add security role functions for auth groups
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsAdmin.sql -v scrty_role=\"'${admin_group}'\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"'${mdl_read_write_group}'\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"'${sec_read_write_group}'\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadOnly.sql -v scrty_role=\"'${read_only_group}'\""
+
+    # Get admin user
+    admin_user=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
+
+    # Add namespace authorization admin permissions for the app-admin user
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
+
 fi
 
 # Configuration for Elasticsearch
