@@ -142,13 +142,13 @@ fi
 if [ "${enableSSLAndAuth}" = "true" ] ; then
 
     # Get admin user and password from parameter store
-    admin_user=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
-    admin_pass=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
+    admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
+    admin_pass=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
 
     # Get app users from the parameter store
-    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/MDL --with-decryption --region ${region} --output text --query Parameter.Value)
-    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
-    read_only_user=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/RO --with-decryption --region ${region} --output text --query Parameter.Value)
+    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/MDL --with-decryption --region ${region} --output text --query Parameter.Value)
+    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
+    read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/RO --with-decryption --region ${region} --output text --query Parameter.Value)
 
     # Add READ/WRITE permissions for the MDL user on the MDL namespace
     execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
