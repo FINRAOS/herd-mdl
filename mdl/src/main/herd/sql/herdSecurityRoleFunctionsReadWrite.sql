@@ -13,8 +13,8 @@
 -- limitations under the License.
 
 -- sequences
-\set scrty_role_fn_seq = 'scrty_role_fn_seq'
-\set scrty_role_seq = 'scrty_role_seq'
+\set scrty_role_fn_seq 'scrty_role_fn_seq'
+\set scrty_role_seq 'scrty_role_seq'
 
 -- Insert the security role
 INSERT INTO scrty_role(scrty_role_cd, scrty_role_ds, creat_ts, creat_user_id, updt_ts, updt_user_id) VALUES (:'scrty_role', 'security role with read/write permissions', current_timestamp, 'system', current_timestamp, 'system');
