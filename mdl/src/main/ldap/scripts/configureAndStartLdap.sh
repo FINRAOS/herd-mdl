@@ -256,10 +256,10 @@ EOF
 
     # add MDL Admin account
     read -r -d '' USER_LDIF << EOF
-dn: uid=${LDAP_ADMIN_USER},ou=${ADMIN_AUTH_GROUP},${BASE_DN}
+dn: uid=${ADMIN_APP_USER},ou=${ADMIN_AUTH_GROUP},${BASE_DN}
 changetype: add
-uid: ${LDAP_ADMIN_USER}
-cn: ${LDAP_ADMIN_USER}
+uid: ${ADMIN_APP_USER}
+cn: ${ADMIN_APP_USER}
 sn: null
 objectClass: inetOrgPerson
 userPassword: ${ADMIN_APP_PASS_CRYPT}
@@ -307,7 +307,7 @@ EOF
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
     # Create MDL LDAP group and add service account to group
-    create_group ${ADMIN_APP_GROUP} "${LDAP_ADMIN_USER}" "ou=${ADMIN_AUTH_GROUP}"
+    create_group ${ADMIN_APP_GROUP} "${ADMIN_APP_USER}" "ou=${ADMIN_AUTH_GROUP}"
     create_group ${MDL_APP_GROUP} "${MDL_APP_USER}" "ou=${MDL_APP_AUTH_GROUP}"
     create_group ${SEC_APP_GROUP} "${SEC_APP_USER}" "ou=${SEC_APP_AUTH_GROUP}"
     create_group ${RO_APP_GROUP} "${RO_APP_USER}" "ou=${RO_APP_AUTH_GROUP}"

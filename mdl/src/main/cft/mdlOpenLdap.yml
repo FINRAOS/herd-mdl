@@ -343,7 +343,7 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: LDAP HostName name
-  MDLAppPasswordParameter:
+  MDLLdapPasswordParameter:
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -353,24 +353,10 @@ Resources:
           - !Ref MDLInstanceName
           - /
           - !Ref Environment
-          - /LDAP/MDLAppPassword
+          - /LDAP/Password/Admin
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: LDAP sec app account password parameter
-  SecAppPasswordParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/SecAppPassword
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: LDAP MDLTestPassword
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition

@@ -185,10 +185,10 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     read_only_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/RO --with-decryption --region ${region} --output text --query Parameter.Value)
 
     # Add security role functions for auth groups
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsAdmin.sql -v scrty_role=\"'${admin_group}'\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"'${mdl_read_write_group}'\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"'${sec_read_write_group}'\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadOnly.sql -v scrty_role=\"'${read_only_group}'\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsAdmin.sql -v scrty_role=\"${admin_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${mdl_read_write_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${sec_read_write_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadOnly.sql -v scrty_role=\"${read_only_group}\""
 
     # Get admin user
     admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)

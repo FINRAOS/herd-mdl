@@ -33,7 +33,7 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   HerdVersion:
-    Default: '0.70.0'
+    Default: '0.74.0'
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
