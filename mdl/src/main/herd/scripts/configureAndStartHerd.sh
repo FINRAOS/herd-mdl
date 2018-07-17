@@ -150,15 +150,18 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
     read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/RO --with-decryption --region ${region} --output text --query Parameter.Value)
 
+    # Create Namespace
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+
     # Add READ/WRITE permissions for the MDL user on the MDL namespace
     execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
 
     # Add READ/WRITE permissions for the SEC user on the SEC namespace
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
 
     # Add READ permissions for the RO user on the SEC & MDL namespaces
     execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
 
 fi
 
