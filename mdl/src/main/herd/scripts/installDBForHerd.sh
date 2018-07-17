@@ -192,9 +192,10 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
 
     # Get admin user
     admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
+    admin_user_url="uid=${admin_user},ou=${admin_group},${ldapBaseDN}"
 
     # Add namespace authorization admin permissions for the app-admin user
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user_url}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
 
 fi
 
