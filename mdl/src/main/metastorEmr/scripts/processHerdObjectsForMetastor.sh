@@ -45,7 +45,6 @@ execute_cmd "aws configure set default.region ${region}"
 
 hivePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
 mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-ldapMdlAppUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --region ${region} --output text --query Parameter.Value)
 
 execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/managedObjectLoader-${metastorVersion}-dist.zip -O ${deployLocation}/managedObjectLoader.zip"
 execute_cmd "cd ${deployLocation}"
