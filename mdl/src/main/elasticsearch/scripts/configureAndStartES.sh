@@ -51,10 +51,10 @@ execute_cmd "aws configure set default.region ${region}"
 execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days ${cloudWatchRetentionDays}"
 
 # Copy stack tags to cloudwatch log group
-stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags" --output json | jq -c '.[]')
-isTagExisted=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
-if [ "${isTagExisted}" != "false" ] ; then
-    echo "tagging sqs"
+stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags[]" --output json)
+tagExists=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
+if [ "${tagExists}" != "false" ] ; then
+    echo "tagging cloudwatch log group"
     cloudwatch_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
     cloudwatch_tags=${cloudwatch_tags//\"/\\\"}
     execute_cmd "aws logs tag-log-group --log-group-name ${logGroupName} --tags \"${cloudwatch_tags}\""
