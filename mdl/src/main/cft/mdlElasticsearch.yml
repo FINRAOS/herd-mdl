@@ -82,6 +82,10 @@ Parameters:
   LogGroupName:
     Description: CloudWatch Log group name
     Type: String
+  CloudWatchRetentionDays:
+    Description: 'Retention days for CloudWatch logs'
+    Type: Number
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
 Resources:
   MDLElasticsearch:
     Type: 'AWS::CodeDeploy::Application'
@@ -277,6 +281,10 @@ Resources:
 
                     logGroupName=
                   - !Ref LogGroupName
+                  - |-
+
+                    cloudWatchRetentionDays=
+                  - !Ref CloudWatchRetentionDays
                   - |+
 
               mode: '000400'
