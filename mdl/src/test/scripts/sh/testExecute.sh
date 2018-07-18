@@ -44,9 +44,10 @@ deployPropertiesFile=$1
 #Copy mdlt files(which stores mdl stack output parameters) to ec2 ?? which file
 execute_cmd "cd /home/ec2-user"
 
-export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
-
 # Execute the test cases
-execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar lib/junit-platform-console-standalone-1.0.0-M4.jar -p org.tsi.mdlt.test --details verbose --cp mdlt/lib/herd-mdl-1.0.0-tests.jar:${APP_LIB_JARS} --reports-dir /tmp/sam --disable-ansi-colors"
+execute_cmd "wget http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar -O mdlt/junit-runner.jar"
+#TODO need to remove this once mdl fix the version issue
+releaseVersion="1.2.0"
+execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
 
 exit 0

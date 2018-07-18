@@ -57,6 +57,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
+import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
 import org.tsi.mdlt.util.TagsReader;
 import org.tsi.mdlt.util.TestProperties;
 
@@ -87,17 +89,18 @@ public class CloudFormationClient {
      *
      * @param params                   stack parameters
      * @param cftTemplateName          cft json file name
-     * @param useMDLTCFTLocationPrefix whether use mdlt cft location prefix, eg ??
      * @param rollbackOnFailure        whether rollback on stack creation failure
      */
-    public void createStack(Map<String, String> params, String cftTemplateName,
-            boolean useMDLTCFTLocationPrefix, boolean rollbackOnFailure) throws Exception {
+    public void createStack(Map<String, String> params, String cftTemplateName, boolean rollbackOnFailure) throws Exception {
         String s3BucketURLPrefix = "https://s3.amazonaws.com/";
+        String accountId = AWSSecurityTokenServiceClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build()
+            .getCallerIdentity(new GetCallerIdentityRequest())
+            .getAccount();
         masterCFTLocation = s3BucketURLPrefix
-                .concat(propertyValues.getProperty("MdltBucketName") + "/")
-                .concat(propertyValues.getProperty("MDLTCFTLocationKey") + "/")
-                .concat(propertyValues.getProperty("MDLTBranch"))
-                .concat("/scripts/cft/").concat(cftTemplateName);
+                .concat(accountId + "-" + propertyValues.getProperty("MDLInstanceName") + "-" + "mdlt" + "/")
+                .concat("cft" + "/")
+                .concat(cftTemplateName);
         System.out.println("Using master CFT location : " + masterCFTLocation);
 
         CreateStackRequest createStackRequest = new CreateStackRequest();

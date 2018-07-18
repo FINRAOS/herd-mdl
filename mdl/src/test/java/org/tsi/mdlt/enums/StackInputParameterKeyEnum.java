@@ -20,6 +20,7 @@ package org.tsi.mdlt.enums;
  */
 public enum StackInputParameterKeyEnum {
     MDL_INSTANCE_NAME("MDLInstanceName"),
+    MDL_STACK_NAME("MDLStackName"),
     DEPLOYMENT_BUCKET_NAME("DeploymentBucketName"),
     RELEASE_VERSION("ReleaseVersion"),
     CREATE_DEMO_OBJECT("CreateDemoObjects"),
@@ -27,7 +28,10 @@ public enum StackInputParameterKeyEnum {
     ROLLBACK_ON_FAILURE("RollbackOnFailure"),
     ENVIRONMENT("Environment"),
     DEPLOY_COMPONENTS("DeployComponents"),
-    CREATE_OPEN_lDAP("CreateOpenLDAP");
+    CREATE_OPEN_lDAP("CreateOpenLDAP"),
+    DOMAIN_NAME_SUFFIX("DomainNameSuffix"),
+    HOSTED_ZONE_NAME("HostedZoneName"),
+    CERTIFICATE_ARN("CertificateArn");
 
     private String key;
 

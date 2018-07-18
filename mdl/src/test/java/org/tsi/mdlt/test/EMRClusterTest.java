@@ -18,9 +18,19 @@ package org.tsi.mdlt.test;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.DescribeSubnetsRequest;
+import com.amazonaws.services.ec2.model.DescribeVpcsRequest;
+import com.amazonaws.services.ec2.model.KeyPairInfo;
+import com.amazonaws.services.ec2.model.Subnet;
+import com.amazonaws.services.ec2.model.Vpc;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -54,8 +64,12 @@ public class EMRClusterTest extends BaseTest {
         cftClient = new CloudFormationClient(stackName);
         Map<String, String> parameters = new HashMap<>();
         parameters.put("MDLInstanceName", instanceName);
+        parameters.put("VpcId", getAnyVpcId());
+        parameters.put("SubnetId", getAnySubnetId());
+        parameters.put("KeyPairName", getAnyKeyPairName());
+
         try {
-            cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true, true);
+            cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true);
         }
         catch (AlreadyExistsException e) {
             LOGGER.info("Stack already exist, reuse existing running stack");
@@ -67,6 +81,7 @@ public class EMRClusterTest extends BaseTest {
         envVars.putAll(emrPrereqOutputs);
 
     }
+
 
     @TestFactory
     public Stream<DynamicTest> testShellCommandsForEMRClusterTest() {
@@ -85,4 +100,27 @@ public class EMRClusterTest extends BaseTest {
         }
     }
 
+    private static String getAnyVpcId(){
+        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+        Optional<Vpc>  vpc= ec2.describeVpcs().getVpcs().stream().findAny();
+        assert vpc.isPresent();
+        return vpc.get().getVpcId();
+    }
+
+    private static String getAnySubnetId(){
+        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+        Optional<Subnet>  subnet = ec2.describeSubnets().getSubnets().stream().findAny();
+        assert subnet.isPresent();
+        return subnet.get().getSubnetId();
+    }
+
+    private static String getAnyKeyPairName(){
+        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
+            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
+        Optional<KeyPairInfo>  keyPairInfo = ec2.describeKeyPairs().getKeyPairs().stream().findAny();
+        assert keyPairInfo.isPresent();
+        return keyPairInfo.get().getKeyName();
+    }
 }

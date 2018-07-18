@@ -54,18 +54,19 @@ public class TestWrapper {
             //Getting properties
             Properties testProperties = TestProperties.getProperties();
             String instanceName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
+            String stackName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_STACK_NAME.getKey());
             boolean rollbackOnFailure = Boolean.valueOf(System.getProperty(StackInputParameterKeyEnum.ROLLBACK_ON_FAILURE.getKey()));
             String command = args[0];
 
             if (SETUP_CMD.equals(command)) {
                 LOGGER.info("Create application wrapper stack, wait for completion and save outputs for testing");
-                createStackAndWaitForCompletion(instanceName, rollbackOnFailure);
-                saveStackInputProperties(instanceName);
-                saveStackOutputProperties(instanceName);
+                createStackAndWaitForCompletion(stackName, rollbackOnFailure);
+                saveStackInputProperties(instanceName, stackName);
+                saveStackOutputProperties(instanceName, stackName);
             }
             else if (SHUTDOWN_CMD.equals(command)) {
                 //Note: Delete app wrapper stack first, then prereq wrapper stack
-                shutdownStack(instanceName);
+                shutdownStack(stackName);
             }
             else {
                 throw new IllegalArgumentException("Unrecognized command : " + command);
@@ -78,14 +79,13 @@ public class TestWrapper {
         }
     }
 
-    private static void createStackAndWaitForCompletion(String instanceName, boolean rollbackOnFailure) {
-        String stackName = getStackNameByInstanceName(instanceName);
+    private static void createStackAndWaitForCompletion(String stackName, boolean rollbackOnFailure) {
         CloudFormationClient cfClient;
         try {
             cfClient = new CloudFormationClient(stackName);
             Map<String, String> parameters = createStackParameters();
             try {
-                cfClient.createStack(parameters, APP_STACK_TEMPLATE_CFT, false, rollbackOnFailure);
+                cfClient.createStack(parameters, APP_STACK_TEMPLATE_CFT, rollbackOnFailure);
             }
             catch (AlreadyExistsException ae) {
                 LOGGER.warn("Stack, " + stackName + " already exists, initializing the properties file if needed");
@@ -107,6 +107,11 @@ public class TestWrapper {
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENVIRONMENT, parameters);
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.DEPLOY_COMPONENTS, parameters);
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.RELEASE_VERSION, parameters);
+
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.DOMAIN_NAME_SUFFIX, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.HOSTED_ZONE_NAME, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.CERTIFICATE_ARN, parameters);
+
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENABLE_SSL_AUTH, parameters);
         //when enableSslAndAuth is true, set parameter createOpenLdap to true
         parameters.put(StackInputParameterKeyEnum.CREATE_OPEN_lDAP.getKey(), enableSslAndAuth);
@@ -117,7 +122,7 @@ public class TestWrapper {
         parameters.put(keyEnum.getKey(),  TestProperties.getProperties().getProperty(keyEnum.getKey()));
     }
 
-    private static void saveStackOutputProperties(String instanceName) throws Exception {
+    private static void saveStackOutputProperties(String instanceName, String stackName) throws Exception {
 
         LOGGER.info("Save stack outputs to file test.props for instanceName: " + instanceName);
 
@@ -128,11 +133,10 @@ public class TestWrapper {
             writer.write(StackOutputKeyEnum.MDL_INSTANCE_NAME.getKey() + "=" + instanceName);
             writer.newLine();
 
-            String appStackName = getStackNameByInstanceName(instanceName);
-            writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + appStackName);
+            writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + stackName);
             writer.newLine();
 
-            CloudFormationClient cfClient = new CloudFormationClient(appStackName);
+            CloudFormationClient cfClient = new CloudFormationClient(stackName);
             Map<String, String> clusterOutputs = cfClient.getStackOutput();
 
             if (clusterOutputs != null && !clusterOutputs.isEmpty()) {
@@ -143,13 +147,12 @@ public class TestWrapper {
         }
     }
 
-    private static void saveStackInputProperties(String instanceName) throws Exception {
+    private static void saveStackInputProperties(String instanceName, String stackName) throws Exception {
         LOGGER.info("Save some stack inputs to file test.props for instanceName: " + instanceName);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")))) {
-            String appStackName = getStackNameByInstanceName(instanceName);
 
-            CloudFormationClient cfClient = new CloudFormationClient(appStackName);
-            Parameter env = cfClient.getStackByName(appStackName).getParameters().stream()
+            CloudFormationClient cfClient = new CloudFormationClient(stackName);
+            Parameter env = cfClient.getStackByName(stackName).getParameters().stream()
                     .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
                     .findFirst().get();
 
@@ -176,13 +179,9 @@ public class TestWrapper {
         }
     }
 
-    private static void shutdownStack(String instanceName) throws Exception {
-        String stackName = getStackNameByInstanceName(instanceName);
+    private static void shutdownStack(String stackName) throws Exception {
         CloudFormationClient cfClient = new CloudFormationClient(stackName);
         cfClient.deleteStack();
     }
 
-    private static String getStackNameByInstanceName(String instanceName) {
-        return instanceName + "App";
-    }
 }

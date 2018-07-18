@@ -30,25 +30,13 @@ Parameters:
     AllowedPattern: '[a-z0-9]*'
     MaxLength: 5
   ReleaseVersion:
-    Default: DEV
+    Default: 1.1.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
-    Type: String
-  InstallMdlYmlLUrl:
-    Description: Url of the install mdl yml location
-    Type: String
-  MdltBucketName:
-    Description: Bucket where the latest mdlt build is available
-    Default: mdl-build-bucket
-    Type: String
-  MDLTBranch:
-    Default: mdlt
-    Description: Enter the MDLT branch to use
     Type: String
   KeyName:
     Default: APP_MDL_PROD
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-    Type: String
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Type: 'AWS::EC2::KeyPair::KeyName'
   ImageId:
     Default: ami-1853ac65
     Description: AMI id for EC2 instances
@@ -57,73 +45,72 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-  VpcIdParameterKey:
-    Default: /VPC/Primary/ID
-    Description: VPC Parameter key name in system store
-    Type: String
-  PrivateSubnetsParameterKey:
-    Default: /VPC/Primary/SubnetIDs/private
-    Description: VPC Parameter key name in system store
-    Type: String
+  VpcId:
+    Description: aws existing VPC Id
+    Type: 'AWS::EC2::VPC::Id'
+  PublicSubnetId:
+    Description: Existing aws subnet id
+    Type: 'AWS::EC2::Subnet::Id'
   DeployComponents:
     Type: String
     Default: All
     AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
     Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
+  MdltResultS3BucketName:
+     Description: Provide your s3 bucket name if you want to save mdlt results to your s3 bucket, otherwise, mdlt result will be saved to mdlt default bucket
+     Type: String
+  CertificateArn:
+    Description: Certificate Arn for MDL
+    Type: String
+    Default: arn:aws:acm:us-east-1:328703175456:certificate/f9bd4060-21e8-484a-9f4e-e000da7f29c0
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+    Default: poc.aws.cloudfjord.com.
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+    Default: poc.aws.cloudfjord.com
 Resources:
   DeployHostHttpsWithAuth:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join
-        - ''
-        - - 'https://s3.amazonaws.com/'
-          - !Ref MdltBucketName
-          - /mdlt/build/
-          - !Ref MDLTBranch
-          - /
-          - scripts/cft/mdltDeployHost.yml
+      # TODO this url should change to git hub location
+      # https://github.com/FINRAOS/herd-mdl/releases/download/mdlt-v1.1.0/mdltDeployHost.yml
+      TemplateURL: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdltDeployHost.yml
       Parameters:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure
-        MDLInstanceName: !Join
-          - ''
-          - - !Ref MDLInstanceName
-            - httpsauth
+        MDLInstanceName: !Sub '${MDLInstanceName}httpsauth'
         KeyName: !Ref KeyName
-        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
-        MdltBucketName: !Ref MdltBucketName
-        MDLTBranch: !Ref MDLTBranch
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcIdParameterKey: !Ref VpcIdParameterKey
-        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        VpcId: !Ref VpcId
+        PublicSubnetId: !Ref PublicSubnetId
         DeployComponents: !Ref DeployComponents
+        MdltResultS3BucketName: !Ref MdltResultS3BucketName
+        CertificateArn: !Ref CertificateArn
+        HostedZoneName: !Ref HostedZoneName
+        DomainNameSuffix: !Ref DomainNameSuffix
   DeployHostHttpWithoutAuth:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join
-        - ''
-        - - 'https://s3.amazonaws.com/'
-          - !Ref MdltBucketName
-          - /mdlt/build/
-          - !Ref MDLTBranch
-          - /
-          - scripts/cft/mdltDeployHost.yml
+      TemplateURL: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdltDeployHost.yml
       Parameters:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure
-        MDLInstanceName: !Join
-          - ''
-          - - !Ref MDLInstanceName
-            - httpnauth
+        MDLInstanceName: !Sub '${MDLInstanceName}httpnauth'
         KeyName: !Ref KeyName
-        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
-        MdltBucketName: !Ref MdltBucketName
-        MDLTBranch: !Ref MDLTBranch
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcIdParameterKey: !Ref VpcIdParameterKey
-        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        VpcId: !Ref VpcId
+        PublicSubnetId: !Ref PublicSubnetId
         DeployComponents: !Ref DeployComponents
+        MdltResultS3BucketName: !Ref MdltResultS3BucketName
+        CertificateArn: ''
+        HostedZoneName: ''
+        DomainNameSuffix: ''

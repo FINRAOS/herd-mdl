@@ -19,7 +19,7 @@
       <emrClusterDefinitionName>MDLTTestCluster</emrClusterDefinitionName>
    </emrClusterDefinitionKey>
    <emrClusterDefinition>
-      <sshKeyPairName>TEST_KEY_PAIR</sshKeyPairName>
+      <sshKeyPairName>$emrKeyPairName</sshKeyPairName>
       <subnetId>$emrClusterSubnets</subnetId>
       <logBucket>s3://$emrClusterLogBucket/EMR/MDLTTestCluster/</logBucket>
       <keepAlive>true</keepAlive>

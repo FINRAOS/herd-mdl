@@ -25,22 +25,21 @@ Parameters:
     Description: Whether rollback on app stack failure
   MDLInstanceName:
     Default: mdlt
-    Description: >-
-      Application Name:Unique name to be associated with the stack instance to
-      differentiate from other stacks
+    Description: existing mdl stack associated instancename or instance name to be used for new mdl stack creation
     Type: String
-   ##TODO This parameter should change to release version, and download to github directly after wrapper stack synced
-  InstallMdlYmlLUrl:
-    Default: https://s3.amazonaws.com/mdl-build-bucket/mdlt/build/mdlt/scripts/cft/installMDL.yml
-    Description: Url of the install mdl yml location
+  MDLStackName:
+    Default: mdlt
+    Description: existing mdl stack name or stack name to be used for new mdl stack creation(this name cannot be the same as current stack name)
     Type: String
   ReleaseVersion:
-    Default: herd-mdl-release-1
+    Default: 1.1.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
-  MDLTBranch:
-    Default: mdlt
-    Description: Enter the MDLT branch to use
+  InstallMdlYmlUrl:
+    AllowedPattern : '.+'
+  #TODO this value should come from mdlt.yml, remove this default value when commit
+    Default: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
+    Description: Url of the install mdl yml location
     Type: String
   EnableSSLAndAuth:
     Default: 'false'
@@ -60,10 +59,6 @@ Parameters:
     Default: All
     AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
     Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
-  MdltBucketName:
-    Description: Bucket where the latest build is available
-    Default: mdl-build-bucket
-    Type: String
   ImageId:
     Default: ami-1853ac65
     Description: AMI id parameter key for EC2 instances
@@ -72,26 +67,35 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-    ##TODO VPC should be created using mdl createVpc.yml in order to side in same vpc
-  VpcIdParameterKey:
-    Default: /VPC/Primary/ID
-    Description: VPC Parameter key name in system store
-    Type: 'AWS::SSM::Parameter::Value<String>'
-  PrivateSubnetsParameterKey:
-    Default: /VPC/Primary/SubnetIDs/private
-    Description: VPC Parameter key name in system store
-    Type: 'AWS::SSM::Parameter::Value<String>'
+  VpcId:
+    Description: aws existing VPC Id
+    Type: 'AWS::EC2::VPC::Id'
+  PublicSubnetId:
+    Description: Existing aws subnet id
+    Type: 'AWS::EC2::Subnet::Id'
   Environment:
     Description: Application environment
-    Default: dev
+    Default: prod
+    Type: String
+  MdltResultS3BucketName:
+     Description: S3 bucket name to save mdlt result
+     Type: String
+  CertificateArn:
+    Description: Certificate Arn for MDL
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
     Type: String
 Resources:
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: !Sub '${MDLInstanceName}-DelpyHostSecurityGroup'
+      GroupName: !Sub '${MDLInstanceName}-DeployHostSecurityGroup'
       GroupDescription: Allow ssh & all outgoing traffic
-      VpcId: !Ref VpcIdParameterKey
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -167,18 +171,17 @@ Resources:
                     pip install awscli --upgrade
             2-run-mdlt:
               cwd: /home/ec2-user
-              command: !Join
-                - ''
-                - - 'aws s3 cp s3://'
-                  - !Ref MdltBucketName
-                  - /mdlt/build/
-                  - !Ref MDLTBranch
-                  - |
-                    /scripts/testRunner.sh ./testRunner.sh
-                  - |
-                    chmod 755 ./testRunner.sh
-                  - ./testRunner.sh /home/ec2-user/deployHost.props
-                  - |+
+              command: !Sub |
+                #copy mdlt artifacts to ec2
+                mkdir -p mdlt
+                cd mdlt
+                #TODO this need to changed to github location
+                wget https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip -O mdlt.zip
+                unzip mdlt.zip
+                rm -f mdlt.zip
+                find ./ -name "*.sh" -exec chmod +x {} \;
+                cd ..
+                ./mdlt/scripts/testRunner.sh /home/ec2-user/deployHost.props
 
           files:
             /home/ec2-user/deployHost.props:
@@ -189,11 +192,11 @@ Resources:
                   - |+
 
                   - MdltBucketName=
-                  - !Ref MdltBucketName
+                  - !Join ['-', [!Ref 'AWS::AccountId', !Ref MDLInstanceName, 'mdlt']]
                   - |+
 
-                  - StackName=
-                  - !Ref 'AWS::StackName'
+                  - MDLStackName=
+                  - !Ref MDLStackName
                   - |+
 
                   - RegionName=
@@ -206,10 +209,6 @@ Resources:
 
                   - DeploymentBucketName=
                   - !Join ['-', [!Ref MDLInstanceName, 'mdl-staging-bucket']]
-                  - |+
-
-                  - MDLTBranch=
-                  - !Ref MDLTBranch
                   - |+
 
                   - DeployHostWaitHandle=
@@ -228,12 +227,28 @@ Resources:
                   - !Ref DeployComponents
                   - |+
 
-                  - InstallMdlYmlLUrl=
-                  - !Ref InstallMdlYmlLUrl
+                  - InstallMdlYmlUrl=
+                  - !Ref InstallMdlYmlUrl
                   - |+
 
                   - Environment=
                   - !Ref Environment
+                  - |+
+
+                  - MdltResultS3BucketName=
+                  - !Ref MdltResultS3BucketName
+                  - |+
+
+                  - DomainNameSuffix=
+                  - !Ref DomainNameSuffix
+                  - |+
+
+                  - HostedZoneName=
+                  - !Ref HostedZoneName
+                  - |+
+
+                  - CertificateArn=
+                  - !Ref CertificateArn
                   - |+
 
             /etc/cfn/cfn-hup.conf:
@@ -274,31 +289,22 @@ Resources:
       ImageId: !Ref ImageId
       KeyName: !Ref KeyName
       InstanceType: !Ref InstanceType
-      SecurityGroupIds:
-        - !Ref DeployHostSecurityGroup
-      SubnetId: !Select
-        - '0'
-        - !Split
-          - ','
-          - !Ref PrivateSubnetsParameterKey
       IamInstanceProfile: !Ref DeployHostInstanceProfile
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref DeployHostSecurityGroup
+          SubnetId: !Ref PublicSubnetId
       Tags:
         - Key: Name
           Value: !Sub '${MDLInstanceName}-DeployHostEc2Node'
-      UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash
-            - |
-              yum update -y aws-cfn-bootstrap
-            - |
-              # Deploy herd release and perform release validation
-            - '/opt/aws/bin/cfn-init -v -s '
-            - !Ref 'AWS::StackId'
-            - ' -r DeployHostEc2Instance '
-            - '         --region '
-            - !Ref 'AWS::Region'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y aws-cfn-bootstrap
+          #Deploy herd release and perform release validation
+          opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource DeployHostEc2Instance --region ${AWS::Region}
   DeployHostWaitHandle:
     Type: 'AWS::CloudFormation::WaitConditionHandle'
   DeployHostWaitCondition:
