@@ -31,8 +31,11 @@ public enum StackInputParameterKeyEnum {
     CREATE_OPEN_lDAP("CreateOpenLDAP"),
     DOMAIN_NAME_SUFFIX("DomainNameSuffix"),
     HOSTED_ZONE_NAME("HostedZoneName"),
-    CERTIFICATE_ARN("CertificateArn");
-
+    CERTIFICATE_ARN("CertificateArn"),
+    CREATE_VPC("CreateVPC"),
+    MDL_VPC_ID("MdlVpcId"),
+    MDL_PRIVATE_SUBNETS("MdlPrivateSubnets"),
+    MDL_PUBLIC_SUBNETS("MdlPublicSubnets");
     private String key;
 
     StackInputParameterKeyEnum(String key) {

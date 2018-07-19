@@ -34,6 +34,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.AmazonCloudFormation;
 import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
+import com.amazonaws.services.cloudformation.model.AmazonCloudFormationException;
 import com.amazonaws.services.cloudformation.model.CreateStackRequest;
 import com.amazonaws.services.cloudformation.model.DeleteStackRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest;
@@ -333,6 +334,20 @@ public class CloudFormationClient {
             throw new Exception("Stack not found " + stackName);
         }
         return cftStackInfo;
+    }
+
+    public boolean stackExists(String stackName){
+        System.out.println("Check if stack exists or not :" + stackName);
+        DescribeStacksRequest describeStacksRequest = new DescribeStacksRequest();
+        describeStacksRequest.setStackName(stackName);
+        try {
+            List<Stack> stacks = amazonCloudFormation.describeStacks(describeStacksRequest).getStacks();
+        } catch (AmazonCloudFormationException e) {
+            if (e.getErrorCode().equals("ValidationError")){
+                return false;
+            }
+        }
+        return true;
     }
 
     public Stack getStackByNamePrefix(String stackNamePrefix) {

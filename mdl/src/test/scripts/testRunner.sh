@@ -29,7 +29,7 @@ function check_error {
         /opt/aws/bin/cfn-signal -e 1 -r "MDLT deploy and execution failed " ${DeployHostWaitHandle}
         #Save failed or passed mdlt result to s3
         if [ "${saveResult}" = "true" ]; then
-            if [ ${MdltResultS3BucketName} = '' ] ; then
+            if [ "${MdltResultS3BucketName}" = '' ] ; then
                 MdltResultS3BucketName=${MdltBucketName}
             fi
             # Upload the all log files if mdlt failed in the middle

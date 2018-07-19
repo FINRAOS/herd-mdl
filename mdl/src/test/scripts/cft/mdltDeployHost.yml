@@ -89,6 +89,23 @@ Parameters:
   DomainNameSuffix:
     Description: Domain name suffix for MDL Domains
     Type: String
+  CreateVPC:
+    Default: 'false'
+    Description: Create VPC - true || false
+    AllowedValues: [true, false]
+    Type: String
+  MdlVpcId:
+    Description: use existing VPC id for mdl stack
+    Type: String
+  MdlPrivateSubnets:
+    Description: use existing private subnet ids for mdl stack
+    Type: String
+  MdlPublicSubnets:
+    Description: use existing public subnet ids for mdlt stack
+    Type: String
+  MDLTWrapperInstanceName:
+    Description: instance name for wrapper stack
+    Type: String
 Resources:
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -191,6 +208,10 @@ Resources:
                   - !Ref MDLInstanceName
                   - |+
 
+                  - MDLTWrapperInstanceName=
+                  - !Ref MDLTWrapperInstanceName
+                  - |+
+
                   - MdltBucketName=
                   - !Join ['-', [!Ref 'AWS::AccountId', !Ref MDLInstanceName, 'mdlt']]
                   - |+
@@ -212,7 +233,7 @@ Resources:
                   - |+
 
                   - DeployHostWaitHandle=
-                  - !Ref DeployHostWaitHandle
+                  - !Join ['', ['"', !Ref DeployHostWaitHandle, '"']]
                   - |+
 
                   - ReleaseVersion=
@@ -249,6 +270,26 @@ Resources:
 
                   - CertificateArn=
                   - !Ref CertificateArn
+                  - |+
+
+                  - MdltResultS3BucketName=
+                  - !Ref MdltResultS3BucketName
+                  - |+
+
+                  - CreateVPC=
+                  - !Ref CreateVPC
+                  - |+
+
+                  - MdlVpcId=
+                  - !Ref MdlVpcId
+                  - |+
+
+                  - MdlPrivateSubnets=
+                  - !Ref MdlPrivateSubnets
+                  - |+
+
+                  - MdlPublicSubnets=
+                  - !Ref MdlPublicSubnets
                   - |+
 
             /etc/cfn/cfn-hup.conf:

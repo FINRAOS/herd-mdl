@@ -71,17 +71,174 @@ Parameters:
     Description: Domain name suffix for MDL Domains
     Type: String
     Default: poc.aws.cloudfjord.com
+  CreateVPC:
+    Default: 'true'
+    Description: Create VPC - true || false
+    AllowedValues: [true, false]
+    Type: String
+  MdlVpcId:
+    Description: use existing VPC id for mdl stack
+    Type: String
+    Default: vpc-19ce3b63
+  MdlPrivateSubnets:
+    Description: use existing private subnet ids for mdl stack
+    Type: String
+    Default: subnet-b4ac019a,subnet-7ecbbc34
+  MdlPublicSubnets:
+    Description: use existing public subnet ids for mdlt stack
+    Type: String
+    Default: subnet-bfb51891,subnet-53ceb919
+  Environment:
+    Description: Application environment
+    Default: prod
+    Type: String
+Conditions:
+    CreateVPCCondition: !Equals [!Ref CreateVPC, true]
 Resources:
-  DeployHostHttpsWithAuth:
+  DeployBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:PutObjectAcl
+                Resource: '*'
+  ArtifactCopyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import os
+          import cfnresponse
+          import boto3
+          import urllib.request
+
+          def handler(event, context):
+              release_version = event['ResourceProperties']['ReleaseVersion']
+              deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
+
+              # TODO this url should change to git hub location
+              deploy_host_yml_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdltDeployHost.yml'.replace('{releaseVersion}', release_version)
+              mdl_vpc_yml_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdlVpc.yml'.replace('{releaseVersion}', release_version)
+
+              s3 = boto3.client('s3')
+              physical_id = "CopyArtifactsLambdaPhysicalID"
+              response_data = {}
+
+              if event['RequestType'] == 'Create':
+                  response_data['Message'] = 'Copied mdlt deployHost yaml to staging bucket: {}.'.format(deployment_bucket_name)
+
+                  try:
+                      os.makedirs('/tmp/downloads/')
+                      local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('mdltDeployHost.yml'))
+                      urllib.request.urlretrieve(deploy_host_yml_location, local_deploy_file)
+
+                      local_vpc_file = '/tmp/downloads/{}'.format(os.path.basename('mdlVpc.yml'))
+                      urllib.request.urlretrieve(mdl_vpc_yml_location, local_vpc_file)
+
+                      s3_resource = boto3.resource('s3')
+                      upload_to_s3(s3_resource, deployment_bucket_name, "mdltDeployHost.yml")
+                      upload_to_s3(s3_resource, deployment_bucket_name, "mdlVpc.yml")
+
+                      response_data['Message'] = 'Successfully uploaded artifacts to staging location and create vpc related ssm.'
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Delete':
+                  response_data['Message'] = 'Deleted artifacts from bucket: {}'.format(deployment_bucket_name)
+
+                  objects_to_delete = []
+
+                  try:
+                      for key in s3.list_objects_v2(Bucket=deployment_bucket_name, MaxKeys=1000)['Contents']:
+                          objects_to_delete.append({
+                              'Key': key['Key']
+                          })
+
+                      print('Deleting {} objects from staging bucket: {}'.format(len(objects_to_delete), deployment_bucket_name))
+                      s3.delete_objects(
+                          Bucket=deployment_bucket_name,
+                          Delete={
+                              'Objects': objects_to_delete
+                          }
+                      )
+                      print('Deleted {} objects'.format(len(objects_to_delete)))
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Update':
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+          def upload_to_s3(s3_resource, deployment_bucket_name, file_name):
+              s3_resource.Bucket(deployment_bucket_name).upload_file("/tmp/downloads/{}".format(file_name),  file_name, ExtraArgs={'ACL': 'public-read'})
+
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  ArtifactCopyCustomResource:
+    Type: Custom::ArtifactCopierResource
+    Properties:
+      ServiceToken: !GetAtt 'ArtifactCopyLambdaFunction.Arn'
+      ReleaseVersion: !Ref ReleaseVersion
+      BucketArn: !GetAtt DeployBucket.Arn
+      DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
+      WaitOnVpcIfCreate: !If [CreateVPCCondition, !Ref CreateVPC, 'UseExistingVPC']
+  CreateVPCStack:
+    Condition: CreateVPCCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      # TODO this url should change to git hub location
-      # https://github.com/FINRAOS/herd-mdl/releases/download/mdlt-v1.1.0/mdltDeployHost.yml
-      TemplateURL: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdltDeployHost.yml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVPC.yml'
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        CustomTagName: 'application'
+        CustomTagValue: 'herd-mdl'
+  DeployHostHttpsWithAuth:
+    DependsOn: ArtifactCopyCustomResource
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpsauth'
+        MDLStackName: !Sub '${MDLInstanceName}httpsauth'
         KeyName: !Ref KeyName
         InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
@@ -94,14 +251,22 @@ Resources:
         CertificateArn: !Ref CertificateArn
         HostedZoneName: !Ref HostedZoneName
         DomainNameSuffix: !Ref DomainNameSuffix
+        Environment: !Ref Environment
+        CreateVPC: !Ref CreateVPC
+        MdlVpcId: !Ref MdlVpcId
+        MdlPrivateSubnets: !Ref MdlPrivateSubnets
+        MdlPublicSubnets: !Ref MdlPublicSubnets
+        MDLTWrapperInstanceName: !Ref MDLInstanceName
   DeployHostHttpWithoutAuth:
+    DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/mdltDeployHost.yml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpnauth'
+        MDLStackName: !Sub '${MDLInstanceName}httpnauth'
         KeyName: !Ref KeyName
         InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
@@ -114,3 +279,9 @@ Resources:
         CertificateArn: ''
         HostedZoneName: ''
         DomainNameSuffix: ''
+        Environment: !Ref Environment
+        CreateVPC: !Ref CreateVPC
+        MdlVpcId: !Ref MdlVpcId
+        MdlPrivateSubnets: !Ref MdlPrivateSubnets
+        MdlPublicSubnets: !Ref MdlPublicSubnets
+        MDLTWrapperInstanceName: !Ref MDLInstanceName

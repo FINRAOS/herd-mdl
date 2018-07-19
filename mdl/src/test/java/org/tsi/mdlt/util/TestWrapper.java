@@ -27,9 +27,11 @@ import java.util.Properties;
 
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
 import com.amazonaws.services.cloudformation.model.Parameter;
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
+import org.tsi.mdlt.aws.SsmUtil;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 
@@ -44,6 +46,7 @@ public class TestWrapper {
 
     private static final String OUTPUT_NAME_HERD_HOSTNAME = "HerdHostname";
     private static final String OUTPUT_NAME_HERD_URL = "HerdURL";
+    private static final Properties TEST_PROPERTIES = TestProperties.getProperties();
 
     public static void main(String[] args) {
         try {
@@ -52,13 +55,15 @@ public class TestWrapper {
                 System.exit(1);
             }
             //Getting properties
-            Properties testProperties = TestProperties.getProperties();
-            String instanceName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
-            String stackName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_STACK_NAME.getKey());
+            String instanceName = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
+            String stackName = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_STACK_NAME.getKey());
             boolean rollbackOnFailure = Boolean.valueOf(System.getProperty(StackInputParameterKeyEnum.ROLLBACK_ON_FAILURE.getKey()));
             String command = args[0];
 
             if (SETUP_CMD.equals(command)) {
+                LOGGER.info("Create VPC SSM if creating new mdl stack");
+                createVpcSsmIfNotExistingStack(stackName, instanceName);
+
                 LOGGER.info("Create application wrapper stack, wait for completion and save outputs for testing");
                 createStackAndWaitForCompletion(stackName, rollbackOnFailure);
                 saveStackInputProperties(instanceName, stackName);
@@ -97,6 +102,33 @@ public class TestWrapper {
         }
     }
 
+    private static void createVpcSsmIfNotExistingStack(String stackName, String instanceName) throws Exception {
+        if (!new CloudFormationClient(stackName).stackExists(stackName)) {
+            String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
+
+            String vpcKeyFormat = "/global/%s/%s/VPC/ID";
+            String privateSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/private";
+            String publicSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/public";
+            String vpcKey = String.format(vpcKeyFormat, instanceName, environment);
+            String privateSubnetsKey = String.format(privateSubnetsKeyFormat, instanceName, environment);
+            String publicSubnetsKey = String.format(publicSubnetsKeyFormat, instanceName, environment);
+
+            String mdltWrapperInstanceName = TEST_PROPERTIES.getProperty("MDLTWrapperInstanceName");
+            String vpcValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_VPC_ID.getKey());
+            String privateSubnetsValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_PRIVATE_SUBNETS.getKey());
+            String publicSubnetsValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_PUBLIC_SUBNETS.getKey());
+
+            if (BooleanUtils.toBoolean(TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.CREATE_VPC.getKey()))) {
+                vpcValue = SsmUtil.getPlainParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue();
+                privateSubnetsValue = SsmUtil.getPlainParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue();
+                publicSubnetsValue = SsmUtil.getPlainParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue();
+            }
+            SsmUtil.putParameter(vpcKey, vpcValue);
+            SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
+            SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
+        }
+    }
+
     private static Map<String, String> createStackParameters() {
         Properties testProperties = TestProperties.getProperties();
         String enableSslAndAuth = testProperties.getProperty(StackInputParameterKeyEnum.ENABLE_SSL_AUTH.getKey());
@@ -115,11 +147,12 @@ public class TestWrapper {
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENABLE_SSL_AUTH, parameters);
         //when enableSslAndAuth is true, set parameter createOpenLdap to true
         parameters.put(StackInputParameterKeyEnum.CREATE_OPEN_lDAP.getKey(), enableSslAndAuth);
+        parameters.put(StackInputParameterKeyEnum.CREATE_VPC.getKey(), "false");
         return parameters;
     }
 
-    private static void addTestInputPropertyToParameterMap(StackInputParameterKeyEnum keyEnum, Map<String, String> parameters){
-        parameters.put(keyEnum.getKey(),  TestProperties.getProperties().getProperty(keyEnum.getKey()));
+    private static void addTestInputPropertyToParameterMap(StackInputParameterKeyEnum keyEnum, Map<String, String> parameters) {
+        parameters.put(keyEnum.getKey(), TestProperties.getProperties().getProperty(keyEnum.getKey()));
     }
 
     private static void saveStackOutputProperties(String instanceName, String stackName) throws Exception {
@@ -153,8 +186,8 @@ public class TestWrapper {
 
             CloudFormationClient cfClient = new CloudFormationClient(stackName);
             Parameter env = cfClient.getStackByName(stackName).getParameters().stream()
-                    .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
-                    .findFirst().get();
+                .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
+                .findFirst().get();
 
             writer.write(env.getParameterKey() + "=" + env.getParameterValue());
             writer.newLine();
@@ -162,7 +195,7 @@ public class TestWrapper {
     }
 
     private static void writeEntryToWriter(Entry<String, String> entry, BufferedWriter writer)
-            throws IOException {
+        throws IOException {
         switch (entry.getKey()) {
             case OUTPUT_NAME_HERD_URL:
                 String herdURLValue = entry.getValue();
@@ -170,7 +203,7 @@ public class TestWrapper {
                 writer.newLine();
 
                 writer.write(OUTPUT_NAME_HERD_HOSTNAME + "="
-                        + herdURLValue.substring(0, herdURLValue.indexOf("/herd-app")));
+                    + herdURLValue.substring(0, herdURLValue.indexOf("/herd-app")));
                 writer.newLine();
                 break;
             default:
