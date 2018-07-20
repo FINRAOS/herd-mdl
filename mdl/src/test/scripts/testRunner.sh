@@ -70,7 +70,7 @@ execute_cmd "wget ${InstallMdlYmlUrl} -O ${wrapperStackYml}"
 #no need to save to mdlt, can create stack using ec2 local file
 execute_cmd "aws s3 cp ${wrapperStackYml} s3://${MdltBucketName}/cft/InstallMDL.yml"
 
-##3. Copy mdlt yaml files to s3 bucket
+##3. Copy mdlt yaml files to s3 bucket to be used in mdlt
 execute_cmd "aws s3 cp --recursive mdlt/scripts/cft s3://${MdltBucketName}/cft"
 
 testPropsFile="/home/ec2-user/mdlt/conf/test.props"

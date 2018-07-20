@@ -45,7 +45,7 @@ testPropsFile=$2
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
-#TODO need to remove this once mdl fix the version issue
+#TODO need to remove this once test version same as release version
 releaseVersion='1.2.0'
 execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
 
@@ -73,7 +73,7 @@ fi
 # download herd uploader jar
 execute_cmd "rm -rf mdl"
 execute_cmd "mkdir -p mdl/herd"
-#TODO Get from stackout after herd issue fixed
+#TODO need to remove this once herd issue fixed
 herdVersion="0.72.0"
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ./mdl/herd/herd-uploader-app.jar"
 

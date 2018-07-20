@@ -35,12 +35,6 @@ Parameters:
     Default: 1.1.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
-  InstallMdlYmlUrl:
-    AllowedPattern : '.+'
-  #TODO this value should come from mdlt.yml, remove this default value when commit
-    Default: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
-    Description: Url of the install mdl yml location
-    Type: String
   EnableSSLAndAuth:
     Default: 'false'
     Description: Whether to enable HTTPS and SSL
@@ -249,7 +243,7 @@ Resources:
                   - |+
 
                   - InstallMdlYmlUrl=
-                  - !Ref InstallMdlYmlUrl
+                  - !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
                   - |+
 
                   - Environment=

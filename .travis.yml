@@ -48,6 +48,8 @@ deploy:
     file:
       -   '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/herd-mdl-${component_version}-dist.zip'
       -   '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/herd-mdlt-${component_version}-dist.zip'
+      -   '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/mdlt/scripts/cft/mdlt.yml'
+      -   '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/cft/installMDL.yml'
     skip_cleanup: true
     on:
       repo: FINRAOS/herd-mdl
