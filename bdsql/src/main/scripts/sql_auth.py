@@ -123,11 +123,14 @@ def get_ldap_info():
     info_response = ssm_client.get_parameter(Name='{}/HostName'.format(base_ssm_key))
     info['hostname'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/MdlAppUsername'.format(base_ssm_key))
+    info_response = ssm_client.get_parameter(Name='{}/User/Admin'.format(base_ssm_key))
     info['user'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/MDLAppPassword'.format(base_ssm_key),WithDecryption=True)
+    info_response = ssm_client.get_parameter(Name='{}/Password/Admin'.format(base_ssm_key),WithDecryption=True)
     info['pass'] = info_response['Parameter']['Value']
+
+    info_response = ssm_client.get_parameter(Name='{}/AuthGroup/Admin'.format(base_ssm_key),WithDecryption=True)
+    info['auth_group'] = info_response['Parameter']['Value']
 
     info_response = ssm_client.get_parameter(Name='{}/BaseDN'.format(base_ssm_key))
     info['base_dn'] = info_response['Parameter']['Value']
@@ -302,7 +305,7 @@ def get_ldap_conn():
 
     print ldap_info
 
-    full_bind_user='uid=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
+    full_bind_user='uid=%s,ou=%s,%s' % (ldap_info['user'],ldap_info['auth_group'],ldap_info['base_dn'])
 
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_REFERRALS,0)
