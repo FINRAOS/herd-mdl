@@ -129,6 +129,15 @@ These parameters define the basic parameters used across various components
 | **Allowed Pattern** | \[a-z0-9_\]* |
 | **Max Length** | 4 |
 
+**CloudWatchRetentionDays**
+
+|   |   |
+| ----- | ----- |
+| **Name** | CloudWatchRetentionDays |
+| **Description** | Retention days for CloudWatch logs |
+| **Required** | Yes |
+| **Default Value** | 90 |
+
 ### Conditional Parameters
 
 These are conditional parameters to decide whether MDL creates certain resources or MDL uses existing resources. In each case where a parameter is false, SSM parameters must be present that allow MDL to reference the resources that have been created prior to running the Herd-MDL automated install. 

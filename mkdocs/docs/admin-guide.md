@@ -268,6 +268,78 @@ result: 0 Success
 \# numEntries: 9
 ```
   
+## How to find Herd-MDL logs in CloudWatch
+Note: Logs are created in cloudwatch only when the log content is not empty, therefore, some of the log streams mentioned below may not be found if the logs are empty.
+
+### Logs inside customized stack log group
+
+**Steps:**
+
+*   Login to AWS Console and navigate to CloudWatch
+*   Click on 'Logs' in the left panel
+*   Filter Log Groups with stack cloudwatch log group name
+    *   **where to find stack log group name?**: please find the value for the key "CloudWatchLogGroupName" from the outputs section of the MDL stack.(Example: logtest-MdlStack-10IBXFGDHF94M)
+*   Click on above filtered stack log group to open it, inside this stack log group folder, you can find most of herd-mdl logs saved as log stream
+
+**Elastic Search Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| CodeDeploy Logs | elasticsearch/codedeploy/*
+| Apache Logs | elasticsearch/apache/*
+| Elastic Search Logs | elasticsearch/*
+  
+**Herd Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | herd/codedeploy/*
+| **Apache Logs** | herd/apache/*
+| **Tomcat Logs** | herd/tomcat/*
+
+**Metastor Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Logs** | metastor/codedeploy/*
+
+
+**Bdsql Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **EMR bootstrap Logs** | /bdsql/bootstrap/*
+| **EMR hadoop step Logs** | /bdsql/hadoop/step/*
+
+**OpenLdap Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | openldap/codedeploy/*
+
+
+### Logs with aws default log group
+
+**Rds Log Group:**
+
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Rds Log** | /aws/rds/instance/{{RdsInstanceName}}/{{logType}}/{{RdsInstanceName}} |  <table><tr><td>/aws/rds/instance/logtest-prod-metastor/error</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/general</td></tr><td>/aws/rds/instance/logtest-prod-metastor/audit</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/slowquery</td></tr></table>|
+
+
+**Lambda Log Group:**
+
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Lambda Log** | /aws/lambda/{{lambda_function_name}}	| /aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4 |
+
 
 ## Troubleshooting
 
