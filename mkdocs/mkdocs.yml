@@ -5,6 +5,7 @@ pages:
   - What is Herd-MDL?: index.md
   - Basic Install: basic-install.md
   - User Guide: user-guide.md
+  - Developer guide: dev-guide.md
   - Administration: admin-guide.md
   - Technical Overview: tech-overview.md
   - Advanced Install: advanced-install.md
