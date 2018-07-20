@@ -37,9 +37,11 @@ function execute_cmd {
 
 #MAIN
 deployPropertiesFile=$1
+testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
+. ${testPropsFile}
 
 #Copy mdlt files(which stores mdl stack output parameters) to ec2 ?? which file
 execute_cmd "cd /home/ec2-user"

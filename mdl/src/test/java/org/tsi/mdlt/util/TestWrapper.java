@@ -21,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -66,11 +67,10 @@ public class TestWrapper {
 
                 LOGGER.info("Create application wrapper stack, wait for completion and save outputs for testing");
                 createStackAndWaitForCompletion(stackName, rollbackOnFailure);
-                saveStackInputProperties(instanceName, stackName);
-                saveStackOutputProperties(instanceName, stackName);
+                saveStackInputProperties(stackName);
+                saveStackOutputProperties(stackName);
             }
-            else if (SHUTDOWN_CMD.equals(command)) {
-                //Note: Delete app wrapper stack first, then prereq wrapper stack
+            else if (SHUTDOWN_CMD.equals(command) && TEST_PROPERTIES.get("existingStack").equals("true")) {
                 shutdownStack(stackName);
             }
             else {
@@ -126,6 +126,18 @@ public class TestWrapper {
             SsmUtil.putParameter(vpcKey, vpcValue);
             SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
             SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
+
+            LOGGER.info("Save existingStack=false to file test.props" );
+            BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
+            writer.write("existingStack" + "=" +"false");
+            writer.newLine();
+            writer.close();
+        } else {
+            LOGGER.info("Save existingStack=true to file test.props" );
+            BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
+            writer.write("existingStack" + "=" +"true");
+            writer.newLine();
+            writer.close();
         }
     }
 
@@ -155,17 +167,13 @@ public class TestWrapper {
         parameters.put(keyEnum.getKey(), TestProperties.getProperties().getProperty(keyEnum.getKey()));
     }
 
-    private static void saveStackOutputProperties(String instanceName, String stackName) throws Exception {
+    private static void saveStackOutputProperties(String stackName) throws Exception {
 
-        LOGGER.info("Save stack outputs to file test.props for instanceName: " + instanceName);
+        LOGGER.info("Save stack outputs to file test.props for stack: " + stackName);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props"), true))) {
 
             LOGGER.info("Get all output value from wrapper and nested stacks and write them to test.props");
-
-            writer.write(StackOutputKeyEnum.MDL_INSTANCE_NAME.getKey() + "=" + instanceName);
-            writer.newLine();
-
             writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + stackName);
             writer.newLine();
 
@@ -180,16 +188,23 @@ public class TestWrapper {
         }
     }
 
-    private static void saveStackInputProperties(String instanceName, String stackName) throws Exception {
-        LOGGER.info("Save some stack inputs to file test.props for instanceName: " + instanceName);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")))) {
+    private static void saveStackInputProperties(String stackName) throws Exception {
+        LOGGER.info("Save some stack inputs to file test.props for stack: " + stackName);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props"), true))) {
 
             CloudFormationClient cfClient = new CloudFormationClient(stackName);
-            Parameter env = cfClient.getStackByName(stackName).getParameters().stream()
+            List<Parameter> stackInputParameters = cfClient.getStackByName(stackName).getParameters();
+            Parameter env = stackInputParameters.stream()
                 .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
                 .findFirst().get();
 
             writer.write(env.getParameterKey() + "=" + env.getParameterValue());
+            writer.newLine();
+
+            Parameter instanceName = stackInputParameters.stream()
+                .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()))
+                .findFirst().get();
+            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()+ "=" + instanceName);
             writer.newLine();
         }
     }

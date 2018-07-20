@@ -37,10 +37,11 @@ function execute_cmd {
 
 #MAIN
 deployPropertiesFile=$1
+testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
-
+. ${testPropsFile}
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack

@@ -28,7 +28,6 @@ Parameters:
     Description: Application Name:Unique name to be associated with the stack, max length 5 as LB name has 32 chars length limitation
     Type: String
     AllowedPattern: '[a-z0-9]*'
-    MaxLength: 5
   ReleaseVersion:
     Default: 1.1.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
@@ -92,8 +91,17 @@ Parameters:
     Description: Application environment
     Default: prod
     Type: String
+  MdlAuthStackName:
+    Description: name of existing or to be created mdl auth stack, auth stack will not be created if this value is empty
+    Type: String
+  MdlNoAuthStackName:
+    Default: mdltNoAuth
+    Description: name of existing or to be created mdl stack without auth, noAuth stack will not be created if this value is empty
+    Type: String
 Conditions:
     CreateVPCCondition: !Equals [!Ref CreateVPC, true]
+    CreateAuthCondition: !Not [!Equals [!Ref MdlAuthStackName, '']]
+    CreateNoAuthCondition: !Not [!Equals [!Ref MdlNoAuthStackName, '']]
 Resources:
   DeployBucket:
     Type: 'AWS::S3::Bucket'
@@ -230,6 +238,7 @@ Resources:
         CustomTagName: 'application'
         CustomTagValue: 'herd-mdl'
   DeployHostHttpsWithAuth:
+    Condition: CreateAuthCondition
     DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -238,7 +247,7 @@ Resources:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpsauth'
-        MDLStackName: !Sub '${MDLInstanceName}httpsauth'
+        MDLStackName: !Ref MdlAuthStackName
         KeyName: !Ref KeyName
         InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
@@ -258,6 +267,7 @@ Resources:
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
   DeployHostHttpWithoutAuth:
+    Condition: CreateNoAuthCondition
     DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -266,7 +276,7 @@ Resources:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpnauth'
-        MDLStackName: !Sub '${MDLInstanceName}httpnauth'
+        MDLStackName: !Ref MdlNoAuthStackName
         KeyName: !Ref KeyName
         InstallMdlYmlUrl: https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml
         ReleaseVersion: !Ref ReleaseVersion
