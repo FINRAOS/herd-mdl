@@ -42,12 +42,13 @@ testPropsFile=$2
 # Source the properties
 . ${deployPropertiesFile}
 . ${testPropsFile}
-
 execute_cmd "cd /home/ec2-user"
 
 # Shutdown mdl stack
 #TODO need to remove this once test version same as release version
 releaseVersion='1.2.0'
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar org.tsi.mdlt.util.TestWrapper shutdown"
+if [ "${existingStack}" = "false" ] ; then
+    execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar org.tsi.mdlt.util.TestWrapper shutdown"
+fi
 
 exit 0

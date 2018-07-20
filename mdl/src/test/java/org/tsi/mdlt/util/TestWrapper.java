@@ -70,7 +70,7 @@ public class TestWrapper {
                 saveStackInputProperties(stackName);
                 saveStackOutputProperties(stackName);
             }
-            else if (SHUTDOWN_CMD.equals(command) && TEST_PROPERTIES.get("existingStack").equals("true")) {
+            else if (SHUTDOWN_CMD.equals(command)) {
                 shutdownStack(stackName);
             }
             else {
@@ -204,7 +204,7 @@ public class TestWrapper {
             Parameter instanceName = stackInputParameters.stream()
                 .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()))
                 .findFirst().get();
-            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()+ "=" + instanceName);
+            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()+ "=" + instanceName.getParameterValue());
             writer.newLine();
         }
     }

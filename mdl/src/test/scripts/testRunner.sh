@@ -30,10 +30,10 @@ function check_error {
         #Save failed or passed mdlt result to s3
         if [ "${saveResult}" = "true" ]; then
             # Upload the all log files if mdlt failed in the middle
-            aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/
-            aws s3 cp /var/log/mdl-func-test.log s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/
-            aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/
-            aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/
+            aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/
+            aws s3 cp /var/log/mdl-func-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/
+            aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/
+            aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/
         fi
         exit 1
     fi
@@ -76,11 +76,11 @@ execute_cmd "aws s3 cp --recursive mdlt/scripts/cft s3://${MdltBucketName}/cft"
 testPropsFile="/home/ec2-user/mdlt/conf/test.props"
 #execute test steps, copy logs and test results
 execute_cmd "./mdlt/scripts/sh/testSetup.sh $deployPropertiesFile $testPropsFile &> /var/log/mdl-setup.log" "true"
-execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/"
+execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
 
 execute_cmd "./mdlt/scripts/sh/testExecute.sh $deployPropertiesFile $testPropsFile &> /var/log/mdl-func-test.log" "true"
-execute_cmd "aws s3 cp /var/log/mdl-func-test.log s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/"
-execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-results/${StackName}_${timestamp}/"
+execute_cmd "aws s3 cp /var/log/mdl-func-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
+execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
 
 #shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
