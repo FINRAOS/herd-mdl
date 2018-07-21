@@ -50,6 +50,12 @@ execute_cmd "cd /home/ec2-user"
 execute_cmd "wget http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar -O mdlt/junit-runner.jar"
 #TODO need to remove this once test version same as release version
 releaseVersion="1.2.0"
-execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
+if [ "${EnableSSLAndAuth}" = "true" ]
+then
+    excludeTestTag="noAuthTest"
+else
+    excludeTestTag="authTest"
+fi
+execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
 
 exit 0

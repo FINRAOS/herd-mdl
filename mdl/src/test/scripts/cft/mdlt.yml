@@ -163,7 +163,7 @@ Resources:
               response_data = {}
 
               if event['RequestType'] == 'Create':
-                  response_data['Message'] = 'Copied mdlt deployHost yaml to staging bucket: {}.'.format(deployment_bucket_name)
+                  response_data['Message'] = 'Copied mdlt needed yml to staging bucket: {}.'.format(deployment_bucket_name)
 
                   try:
                       os.makedirs('/tmp/downloads/')
@@ -179,11 +179,10 @@ Resources:
                       for root, dirs, files in os.walk(local_extract_directory):
                           for filename in files:
                               abs_filepath = os.path.join(root, filename)
-                              directory = os.path.relpath(root, local_extract_directory)
-                              print('Uploading file: {} to bucket: {} with key: {}'.format(abs_filepath, deployment_bucket_name, os.path.join(release_version, directory, filename)))
-                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.join(release_version, directory, filename), ExtraArgs={'ACL': 'public-read'})
+                              print('Uploading file: {} to bucket: {} with key: {}'.format(abs_filepath, deployment_bucket_name, os.path.relpath(abs_filepath, local_extract_directory)))
+                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.relpath(abs_filepath, local_extract_directory), ExtraArgs={'ACL': 'public-read'})
 
-                      response_data['Message'] = 'Successfully uploaded artifacts to staging location and create vpc related ssm.'
+                      response_data['Message'] = 'Successfully uploaded artifacts to staging location.'
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
                   except Exception as e:
                       response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
@@ -217,9 +216,6 @@ Resources:
               elif event['RequestType'] == 'Update':
                   response_data['Message'] = 'Nothing to do.'
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
-
-          def upload_to_s3(s3_resource, deployment_bucket_name, file_name):
-              s3_resource.Bucket(deployment_bucket_name).upload_file("/tmp/downloads/{}".format(file_name),  file_name, ExtraArgs={'ACL': 'public-read'})
 
       Role: !GetAtt 'LambdaExecutionRole.Arn'
       Runtime: 'python3.6'

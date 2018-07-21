@@ -31,6 +31,7 @@ import javax.naming.NamingException;
 import org.junit.Assume;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,7 @@ import org.tsi.mdlt.util.TestProperties;
  * ldap users: mdl_test_1(we should add mdl_app too)
  * bdsql permission schemas: read permission to sec_demo_data
  */
-@BdsqlBaseTest.DisableOnAuthenticationDisabled
-//Note: Conditional disable annotation doesn't work when running as java jar
+@Tag("authTest")
 public class BdsqlSyncTest extends BdsqlBaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,15 +65,9 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
     @BeforeAll
     public static void setup() throws NamingException, IOException, InterruptedException {
-        boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        if (!isAuthEnabled) {
-            LOGGER.info("Skip bdsql sync testcases as enableAuth is disabled");
-            Assume.assumeTrue(isAuthEnabled);
-        } else {
-            LOGGER.info("Ldap User list in before all");
-            cleanupLdapUsers();
-            LdapUtil.listEntries();
-        }
+        LOGGER.info("Ldap User list in before all");
+        cleanupLdapUsers();
+        LdapUtil.listEntries();
     }
 
     @AfterAll
