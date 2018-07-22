@@ -41,7 +41,6 @@ testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
-. ${testPropsFile}
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
@@ -49,6 +48,8 @@ execute_cmd "cd /home/ec2-user"
 releaseVersion='1.2.0'
 execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
 
+#source test properties(stack output properties)
+. ${testPropsFile}
 #Copy ldap certificates to mdlt deploy host
 if [ "${EnableSSLAndAuth}" = 'true' ] ; then
     #1. add LDAP certificate to trusted store

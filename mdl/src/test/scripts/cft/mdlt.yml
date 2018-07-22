@@ -233,7 +233,7 @@ Resources:
     Condition: CreateVPCCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/${ReleaseVersion}/mdlVPC.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVPC.yml'
       Parameters:
         MDLInstanceName: !Ref MDLInstanceName
         Environment: !Ref Environment
@@ -244,7 +244,7 @@ Resources:
     DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/${ReleaseVersion}/scripts/cft/mdltDeployHost.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure

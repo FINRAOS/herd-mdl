@@ -16,8 +16,6 @@
 package org.tsi.mdlt.test.bdsql;
 
 import static org.awaitility.Awaitility.given;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,24 +59,18 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
     private static final User NOAUTH_VALID_JDBC_USER = User.getNoAuthValidJdbcUser();
 
     @TestFactory
+    @Tag("authTest")
     public Stream<DynamicTest> testPrestoAuthentication() {
         return getJdbcTestCases(JDBC_AUTH_TESTCASES)
             .stream().map(
                 (JDBCTestCase command) -> DynamicTest.dynamicTest(COMPONENT + command.getName(), () -> {
-                    if (!IS_AUTH_ENABLED) {
-                        LogVerification("Verify jdbc query response pass with bad credential/permission when enableAuth is false");
-                        List<String> result = JDBCHelper.executeJDBCTestCase(command, envVars);
-                        assertThat(result, containsInAnyOrder(command.getAssertVal()));
-                    }
-                    else {
-                        LogVerification("Verify jdbc query response failure with bad credential/permission when enableAuth is true");
-                        SQLException authenticationException = assertThrows(SQLException.class, () -> {
-                            JDBCHelper.executeJDBCTestCase(command, envVars);
-                        });
-                        List<String> expectErrorMsg = Arrays.asList("Authentication failed", "Connection property 'user' value is empty");
-                        String errorMsg = authenticationException.getMessage();
-                        assertTrue(errorMsg.contains(expectErrorMsg.get(0)) || errorMsg.contains(expectErrorMsg.get(1)));
-                    }
+                    LogVerification("Verify jdbc query response failure with bad credential/permission when enableAuth is true");
+                    SQLException authenticationException = assertThrows(SQLException.class, () -> {
+                        JDBCHelper.executeJDBCTestCase(command, envVars);
+                    });
+                    List<String> expectErrorMsg = Arrays.asList("Authentication failed", "Connection property 'user' value is empty");
+                    String errorMsg = authenticationException.getMessage();
+                    assertTrue(errorMsg.contains(expectErrorMsg.get(0)) || errorMsg.contains(expectErrorMsg.get(1)));
                 }));
     }
 

@@ -28,17 +28,15 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 
-import org.junit.Assume;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.util.LdapUtil;
-import org.tsi.mdlt.util.TestProperties;
 
 /**
  * Application existing ldap/bdsql permission mappings
@@ -65,7 +63,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
     @BeforeAll
     public static void setup() throws NamingException, IOException, InterruptedException {
-        LOGGER.info("Ldap User list in before all");
         cleanupLdapUsers();
         LdapUtil.listEntries();
     }
@@ -77,7 +74,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     }
 
     public static void cleanupLdapUsers() throws NamingException, IOException, InterruptedException {
-        LOGGER.info("Ldap User list");
+        LOGGER.info("Ldap User list before cleanup");
         LdapUtil.listEntries();
         deleteEntryIgnoringError(LDAP_USER_NAMESPACE);
         deleteEntryIgnoringError(LDAP_USER_NEWUSER);

@@ -347,7 +347,7 @@ Resources:
     DependsOn: DeployHostEc2Instance
     Properties:
       Handle: !Ref DeployHostWaitHandle
-      Timeout: '10800'
+      Timeout: '14400'
 Outputs:
   DeployHostDNS:
     Value: !GetAtt

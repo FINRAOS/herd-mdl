@@ -85,7 +85,7 @@ execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-
 #shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
     # echo "Sleep for 60 minutes before cleaning up the stack"
-    execute_cmd "sleep 60m"
+    #execute_cmd "sleep 60m"
 
     . ${testPropsFile}
     if [ "${existingStack}" = "false" ] ; then
