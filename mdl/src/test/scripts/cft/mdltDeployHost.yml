@@ -176,13 +176,21 @@ Resources:
               command: !Join
                 - ''
                 - - |
-                    yum remove -y java-1.7.0-openjdk
-                    curl -sL https://rpm.nodesource.com/setup_0.10 | sudo -E bash -
-                    yum install -y nodejs
-                    echo 'Now trying to install phantomjs and casperjs'
-                    npm install -g phantomjs
-                    npm install -g casperjs
-                    pip install awscli --upgrade
+                    function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
+                    function execute_cmd {         cmd="${1}";         retry="${2}";         echo $cmd;         eval $cmd;         returnCode=${PIPESTATUS[0]};         if [ ${returnCode} -ne 0 ] ; then             if [ ${retry} = "RETRY" ] ; then                 sleep 2m;                 eval $cmd;                 check_error ${PIPESTATUS[0]} "$cmd";             fi;         else             check_error ${returnCode} "$cmd";         fi;          }
+                    configFile="/tmp/logs.props"
+                    . ${configFile}
+                    execute_cmd "wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py" "RETRY" 2&>1
+                    execute_cmd "chmod +x ./awslogs-agent-setup.py"
+                    execute_cmd "sudo python awslogs-agent-setup.py -n -r ${region} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf"
+                    execute_cmd "sudo service awslogs restart"
+                    execute_cmd "yum remove -y java-1.7.0-openjdk"
+                    execute_cmd "curl -sL https://rpm.nodesource.com/setup_0.10 | sudo -E bash -"
+                    execute_cmd "yum install -y nodejs"
+                    execute_cmd "pip install awscli --upgrade"
+                    execute_cmd "aws configure set default.region ${region}"
+                    execute_cmd "aws logs create-log-group --log-group-name ${logGroupName}"
+                    execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days 90"
             2-run-mdlt:
               cwd: /home/ec2-user
               command: !Sub |
@@ -198,6 +206,47 @@ Resources:
                 ./mdlt/scripts/testRunner.sh /home/ec2-user/deployHost.props
 
           files:
+            /var/awslogs/etc/config/codedeploy_logs.conf:
+              content: !Sub |
+                [mdl-setup-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-setup.log
+                log_stream_name = mdl/{instance_id}-setup-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-func-test-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-func-test.log
+                log_stream_name = mdl/{instance_id}-func-test-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-shutdown-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-shutdown-test.log
+                log_stream_name = mdl/{instance_id}-shutdown-test-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-junit-jupiter-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /tmp/sam/TEST-junit-jupiter.xml
+                log_stream_name = mdl/{instance_id}-junit-jupiter-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-cfn-init-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/cfn-init.log
+                log_stream_name = mdl/{instance_id}-cfn-init-log
+                log_group_name = ${AWS::StackName}
+              mode: '000644'
+              owner: root
+              group: root
+            /tmp/logs.props:
+              content: !Sub |
+                region=${AWS::Region}
+                logGroupName=${AWS::StackName}
+              mode: '000644'
+              owner: root
+              group: root
             /home/ec2-user/deployHost.props:
               content: !Join
                 - ''
