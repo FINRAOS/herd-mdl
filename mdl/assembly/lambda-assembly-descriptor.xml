@@ -25,6 +25,7 @@
     <file>
       <source>${project.basedir}/src/main/lambda/keypair_generator_lambda.py</source>
       <outputDirectory />
+      <lineEnding>unix</lineEnding>
     </file>
   </files>
 </assembly>

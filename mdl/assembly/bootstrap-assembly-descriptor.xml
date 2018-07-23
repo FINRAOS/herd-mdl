@@ -25,6 +25,7 @@
     <fileSet>
       <directory>${project.basedir}/src/main/bootstrap</directory>
       <outputDirectory />
+      <lineEnding>unix</lineEnding>
     </fileSet>
   </fileSets>
 </assembly>

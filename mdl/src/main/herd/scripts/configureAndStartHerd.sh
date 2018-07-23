@@ -64,12 +64,17 @@ fi
 execute_cmd "cd /home/mdladmin"
 execute_cmd "aws configure set default.region ${region}"
 
+#Configure cloudwatch log for herd
+execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"
+execute_cmd "sudo bash -c 'echo >> /var/awslogs/etc/config/codedeploy_logs.conf; cat /home/mdladmin/deploy/mdl/conf/logs.conf >> /var/awslogs/etc/config/codedeploy_logs.conf'"
+execute_cmd "sudo service awslogs restart"
+
 # Copy stack tags to Sqs & Cloudfront
 function addStackTagsToSqs(){
-    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags" --output json | jq -c '.[]')
-    isTagExisted=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
+    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags[]" --output json)
+    tagExists=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
 
-    if [ "${isTagExisted}" != "false" ] ; then
+    if [ "${tagExists}" != "false" ] ; then
         echo "tagging sqs"
         sqs_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
         sqs_tags=${sqs_tags//\"/\\\"}
