@@ -90,13 +90,13 @@ if [ "${RollbackOnFailure}" = "true" ] ; then
     . ${testPropsFile}
     if [ "${existingStack}" = "false" ] ; then
         execute_cmd "./mdlt/scripts/sh/testShutdown.sh ${deployPropertiesFile} ${testPropsFile} &> /var/log/mdl-shutdown-test.log" "true"
-        execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
+        execute_cmd "aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
     fi
-    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" ${DeployHostWaitHandle}"
+    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
     # Tests are done. Delete the deploy host
-    execute_cmd "aws cloudformation delete-stack --stack-name ${MDLStackName} --region ${RegionName}"
+    execute_cmd "aws cloudformation delete-stack --stack-name ${MDLTWrapperStackName} --region ${RegionName}"
 else
-    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" ${DeployHostWaitHandle}"
+    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
 fi
 
 

@@ -100,6 +100,9 @@ Parameters:
   MDLTWrapperInstanceName:
     Description: instance name for wrapper stack
     Type: String
+  MDLTWrapperStackName:
+    Description: stack name for wrapper stack
+    Type: String
 Resources:
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -204,6 +207,10 @@ Resources:
 
                   - MDLTWrapperInstanceName=
                   - !Ref MDLTWrapperInstanceName
+                  - |+
+
+                  - MDLTWrapperStackName=
+                  - !Ref MDLTWrapperStackName
                   - |+
 
                   - MdltBucketName=

@@ -67,7 +67,7 @@ public class TagTest extends BaseTest {
     private static final String ES_EC2_IP = StackOutputPropertyReader.get(StackOutputKeyEnum.ES_EC2_IP);
 
     private static final String EC_2_FILTER_PRIVATE_IP = "private-ip-address";
-    private static final String DEPLOY_HOST_SG_SUFFIX = "DelpyHostSecurityGroup";
+    private static final String DEPLOY_HOST_SG_SUFFIX = "DeployHostSecurityGroup";
 
     @Test
     public void testSqsTagsAreSameAsHerdEC2Stack() throws Exception {

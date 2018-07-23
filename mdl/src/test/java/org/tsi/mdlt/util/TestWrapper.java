@@ -228,6 +228,7 @@ public class TestWrapper {
         }
     }
 
+    //TODO, need to retry only on specific errors for deleting stack
     private static void shutdownStack(String stackName) throws Exception {
         CloudFormationClient cfClient = new CloudFormationClient(stackName);
         int retryTimes = 3;

@@ -281,6 +281,7 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
+        MDLTWrapperStackName: !Ref 'AWS::StackName'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     DependsOn: ArtifactCopyCustomResource
@@ -309,3 +310,4 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
+        MDLTWrapperStackName: !Ref 'AWS::StackName'
