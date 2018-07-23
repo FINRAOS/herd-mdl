@@ -56,6 +56,12 @@ then
 else
     excludeTestTag="authTest"
 fi
-execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
+#don't check error code if rollbackOnFailure is true
+if [ "${RollbackOnFailure}" = "true" ]
+then
+    java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors
+else
+    execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/uber-herd-mdl-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
+fi
 
 exit 0

@@ -61,12 +61,12 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-  VpcId:
+  MdltVpcIdParameterKey:
     Description: aws existing VPC Id
-    Type: 'AWS::EC2::VPC::Id'
-  PublicSubnetId:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+  MdltPublicSubnetsParameter:
     Description: Existing aws subnet id
-    Type: 'AWS::EC2::Subnet::Id'
+    Type: 'AWS::SSM::Parameter::Value<String>'
   Environment:
     Description: Application environment
     Default: prod
@@ -106,7 +106,7 @@ Resources:
     Properties:
       GroupName: !Sub '${MDLInstanceName}-DeployHostSecurityGroup'
       GroupDescription: Allow ssh & all outgoing traffic
-      VpcId: !Ref VpcId
+      VpcId: !Ref MdltVpcIdParameterKey
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -330,7 +330,7 @@ Resources:
           DeviceIndex: "0"
           GroupSet:
             - !Ref DeployHostSecurityGroup
-          SubnetId: !Ref PublicSubnetId
+          SubnetId: !Select [0, !Split [',', !Ref MdltPublicSubnetsParameter]]
       Tags:
         - Key: Name
           Value: !Sub '${MDLInstanceName}-DeployHostEc2Node'

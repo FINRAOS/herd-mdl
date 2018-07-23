@@ -127,15 +127,16 @@ public class TestWrapper {
             SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
             SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
 
-            LOGGER.info("Save existingStack=false to file test.props" );
+            LOGGER.info("Save existingStack=false to file test.props");
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
-            writer.write("existingStack" + "=" +"false");
+            writer.write("existingStack" + "=" + "false");
             writer.newLine();
             writer.close();
-        } else {
-            LOGGER.info("Save existingStack=true to file test.props" );
+        }
+        else {
+            LOGGER.info("Save existingStack=true to file test.props");
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
-            writer.write("existingStack" + "=" +"true");
+            writer.write("existingStack" + "=" + "true");
             writer.newLine();
             writer.close();
         }
@@ -204,7 +205,7 @@ public class TestWrapper {
             Parameter instanceName = stackInputParameters.stream()
                 .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()))
                 .findFirst().get();
-            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()+ "=" + instanceName.getParameterValue());
+            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey() + "=" + instanceName.getParameterValue());
             writer.newLine();
         }
     }
@@ -229,7 +230,17 @@ public class TestWrapper {
 
     private static void shutdownStack(String stackName) throws Exception {
         CloudFormationClient cfClient = new CloudFormationClient(stackName);
-        cfClient.deleteStack();
+        int retryTimes = 3;
+        while (retryTimes > 0) {
+            try {
+                cfClient.deleteStack();
+                break;
+            }
+            catch (Exception e) {
+                retryTimes--;
+                LOGGER.error("Failed to delete stack, remaining retry times :" + retryTimes);
+            }
+        }
     }
 
 }

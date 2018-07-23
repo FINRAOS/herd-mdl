@@ -44,12 +44,6 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-  VpcId:
-    Description: aws existing VPC Id
-    Type: 'AWS::EC2::VPC::Id'
-  PublicSubnetId:
-    Description: Existing aws subnet id
-    Type: 'AWS::EC2::Subnet::Id'
   DeployComponents:
     Type: String
     Default: All
@@ -58,6 +52,7 @@ Parameters:
   MdltResultS3BucketName:
      Description: Provide your s3 bucket name if you want to save mdlt results to your s3 bucket, otherwise, mdlt result will be saved to mdlt default bucket
      Type: String
+     Default: mdl-build-bucket
   CertificateArn:
     Description: Certificate Arn for MDL
     Type: String
@@ -78,15 +73,15 @@ Parameters:
   MdlVpcId:
     Description: use existing VPC id for mdl stack
     Type: String
-    Default: vpc-19ce3b63
+    Default: vpc-6c9a6a14
   MdlPrivateSubnets:
     Description: use existing private subnet ids for mdl stack
     Type: String
-    Default: subnet-b4ac019a,subnet-7ecbbc34
+    Default: subnet-9742f5f3,subnet-9b2f20b7,subnet-3a468971,subnet-450c0c1f
   MdlPublicSubnets:
     Description: use existing public subnet ids for mdlt stack
     Type: String
-    Default: subnet-bfb51891,subnet-53ceb919
+    Default: subnet-8458efe0,subnet-622a254e,subnet-904b84db,subnet-2611117c
   Environment:
     Description: Application environment
     Default: prod
@@ -99,7 +94,8 @@ Parameters:
     Description: name of existing or to be created mdl stack without auth, noAuth stack will not be created if this value is empty
     Type: String
 Conditions:
-    CreateVPCCondition: !Equals [!Ref CreateVPC, true]
+    CreateVPCTrueCondition: !Equals [!Ref CreateVPC, 'true']
+    CreateVPCFalseCondition: !Equals [!Ref CreateVPC, 'false']
     CreateAuthCondition: !Not [!Equals [!Ref MdlAuthStackName, '']]
     CreateNoAuthCondition: !Not [!Equals [!Ref MdlNoAuthStackName, '']]
 Resources:
@@ -228,9 +224,11 @@ Resources:
       ReleaseVersion: !Ref ReleaseVersion
       BucketArn: !GetAtt DeployBucket.Arn
       DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
-      WaitOnVpcIfCreate: !If [CreateVPCCondition, !Ref CreateVPC, 'UseExistingVPC']
+      WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPC, 'UseExistingVPC']
+      WaitMdltVpcIdSsm: !If [CreateVPCFalseCondition, !Ref MdltVPCParameter, 'CreateVPC']
+      WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltPublicSubnetsParameter, 'CreateVPC']
   CreateVPCStack:
-    Condition: CreateVPCCondition
+    Condition: CreateVPCTrueCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVPC.yml'
@@ -239,6 +237,22 @@ Resources:
         Environment: !Ref Environment
         CustomTagName: 'application'
         CustomTagValue: 'herd-mdl'
+  MdltVPCParameter:
+    Condition: CreateVPCFalseCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+      Type: String
+      Value: !Ref MdlVpcId
+      Description: VPC id for MDLT
+  MdltPublicSubnetsParameter:
+    Condition: CreateVPCFalseCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
+      Type: String
+      Value: !Ref MdlPublicSubnets
+      Description: public subnet ids for MDLT
   DeployHostHttpsWithAuth:
     Condition: CreateAuthCondition
     DependsOn: ArtifactCopyCustomResource
@@ -254,8 +268,8 @@ Resources:
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcId: !Ref VpcId
-        PublicSubnetId: !Ref PublicSubnetId
+        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPublicSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: !Ref CertificateArn
@@ -282,8 +296,8 @@ Resources:
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcId: !Ref VpcId
-        PublicSubnetId: !Ref PublicSubnetId
+        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPublicSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: ''

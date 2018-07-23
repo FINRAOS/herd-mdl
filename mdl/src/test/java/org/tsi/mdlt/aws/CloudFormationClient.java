@@ -165,7 +165,6 @@ public class CloudFormationClient {
 
         DescribeStacksResult describeStacksResult = amazonCloudFormation.describeStacks();
         for (Stack currentStack : describeStacksResult.getStacks()) {
-            //TODO: Filter stacks that are not in DELETE_COMPLETE state?
             if (rootStackId.equals(currentStack.getRootId()) || rootStackId
                     .equals(currentStack.getStackId())) {
                 System.out.println("stackId   =   " + currentStack.getStackId());
