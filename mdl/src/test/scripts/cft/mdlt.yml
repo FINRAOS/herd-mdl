@@ -32,7 +32,7 @@ Parameters:
     Default: 1.2.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
-  KeyName:
+  KeyPairName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
   ImageId:
@@ -85,6 +85,48 @@ Parameters:
     Default: mdltNoAuth
     Description: name of existing or to be created mdl stack without auth, noAuth stack will not be created if this value is empty
     Type: String
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Deployment Parameters
+        Parameters:
+          - ReleaseVersion
+          - DeployComponents
+      - Label:
+          default: Resources - Conditional Parameters
+        Parameters:
+          - CreateVPC
+          - RollbackOnFailure
+      - Label:
+          default: Generic Parameters
+        Parameters:
+          - MDLInstanceName
+          - Environment
+          - MdltResultS3BucketName
+      - Label:
+          default: Mdl Stack Name Parameters
+        Parameters:
+          - MdlAuthStackName
+          - MdlNoAuthStackName
+      - Label:
+          default: Instance Parameters
+        Parameters:
+          - ImageId
+          - InstanceType
+          - KeyPairName
+      - Label:
+          default: Web Domain and Certificate Parameters
+        Parameters:
+          - CertificateArn
+          - DomainNameSuffix
+          - HostedZoneName
+      - Label:
+          default: AWS VPC Parameter
+        Parameters:
+          - MdlVpcId
+          - MdlPublicSubnets
+          - MdlPrivateSubnets
 Conditions:
     CreateVPCTrueCondition: !Equals [!Ref CreateVPC, 'true']
     CreateVPCFalseCondition: !Equals [!Ref CreateVPC, 'false']
@@ -257,7 +299,7 @@ Resources:
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpsauth'
         MDLStackName: !Ref MdlAuthStackName
-        KeyName: !Ref KeyName
+        KeyName: !Ref KeyPairName
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
@@ -286,7 +328,7 @@ Resources:
         RollbackOnFailure: !Ref RollbackOnFailure
         MDLInstanceName: !Sub '${MDLInstanceName}httpnauth'
         MDLStackName: !Ref MdlNoAuthStackName
-        KeyName: !Ref KeyName
+        KeyName: !Ref KeyPairName
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
