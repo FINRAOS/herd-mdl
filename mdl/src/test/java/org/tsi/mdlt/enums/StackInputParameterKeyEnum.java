@@ -21,7 +21,6 @@ package org.tsi.mdlt.enums;
 public enum StackInputParameterKeyEnum {
     MDL_INSTANCE_NAME("MDLInstanceName"),
     MDL_STACK_NAME("MDLStackName"),
-    DEPLOYMENT_BUCKET_NAME("DeploymentBucketName"),
     RELEASE_VERSION("ReleaseVersion"),
     CREATE_DEMO_OBJECT("CreateDemoObjects"),
     ENABLE_SSL_AUTH("EnableSSLAndAuth"),

@@ -77,6 +77,11 @@ public class SsmUtil {
         return parameterResult.getParameter();
     }
 
+    /**
+     * Put string parameter to aws ssm
+     * @param parameterKey ssm parameter key
+     * @param parameterValue ssm parameter value
+     */
     public static void putParameter(String parameterKey, String parameterValue) {
         LOGGER.info(String.format("put ssm parameter key %s; with value: %s ", parameterKey, parameterValue));
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();

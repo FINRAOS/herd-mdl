@@ -82,21 +82,21 @@ execute_cmd "./mdlt/scripts/sh/testExecute.sh $deployPropertiesFile $testPropsFi
 execute_cmd "aws s3 cp /var/log/mdl-func-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
 execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
 
+#signal mdlt deploy host success
+execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
+
 #shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
     # echo "Sleep for 60 minutes before cleaning up the stack"
-    #execute_cmd "sleep 60m"
+    execute_cmd "sleep 60m"
 
     . ${testPropsFile}
     if [ "${existingStack}" = "false" ] ; then
         execute_cmd "./mdlt/scripts/sh/testShutdown.sh ${deployPropertiesFile} ${testPropsFile} &> /var/log/mdl-shutdown-test.log" "true"
         execute_cmd "aws s3 cp /var/log/mdl-shutdown-test.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
     fi
-    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
     # Tests are done. Delete the deploy host
     execute_cmd "aws cloudformation delete-stack --stack-name ${MDLTStackName} --region ${RegionName}"
-else
-    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
 fi
 
 

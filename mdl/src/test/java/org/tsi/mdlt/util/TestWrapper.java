@@ -160,6 +160,7 @@ public class TestWrapper {
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENABLE_SSL_AUTH, parameters);
         //when enableSslAndAuth is true, set parameter createOpenLdap to true
         parameters.put(StackInputParameterKeyEnum.CREATE_OPEN_lDAP.getKey(), enableSslAndAuth);
+        //DeployHostEc2 will never createVpc, mdlt wrapper yml file(mdlt.yml) will create vpc if createVpc is true
         parameters.put(StackInputParameterKeyEnum.CREATE_VPC.getKey(), "false");
         return parameters;
     }

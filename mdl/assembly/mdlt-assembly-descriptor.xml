@@ -27,7 +27,7 @@
             <outputDirectory/>
         </file>
         <file>
-            <source>${project.build.directory}/uber-herd-mdl-${project.version}.jar</source>
+            <source>${project.build.directory}/mdlt-dependencies-${project.version}.jar</source>
             <outputDirectory/>
         </file>
         <file>

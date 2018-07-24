@@ -342,7 +342,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <finalName>uber-${artifactId}-${version}</finalName>
+                    <finalName>mdlt-dependencies-${version}</finalName>
                 </configuration>
             </plugin>
             <!-- Creates a nested zip file with all individual components to publish as a monolithic artifact -->

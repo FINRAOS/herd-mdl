@@ -33,7 +33,6 @@ Parameters:
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
   KeyName:
-    Default: APP_MDL_PROD
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
   ImageId:
@@ -52,19 +51,15 @@ Parameters:
   MdltResultS3BucketName:
      Description: Provide your s3 bucket name if you want to save mdlt results to your s3 bucket, otherwise, mdlt result will be saved to mdlt default bucket
      Type: String
-     Default: mdl-build-bucket
   CertificateArn:
     Description: Certificate Arn for MDL
     Type: String
-    Default: arn:aws:acm:us-east-1:328703175456:certificate/f9bd4060-21e8-484a-9f4e-e000da7f29c0
   HostedZoneName:
     Description: Hosted Zone Name to create Route53 record set group for the given domain
     Type: String
-    Default: poc.aws.cloudfjord.com.
   DomainNameSuffix:
     Description: Domain name suffix for MDL Domains
     Type: String
-    Default: poc.aws.cloudfjord.com
   CreateVPC:
     Default: 'true'
     Description: Create VPC - true || false
@@ -73,15 +68,12 @@ Parameters:
   MdlVpcId:
     Description: use existing VPC id for mdl stack
     Type: String
-    Default: vpc-6c9a6a14
   MdlPrivateSubnets:
     Description: use existing private subnet ids for mdl stack
     Type: String
-    Default: subnet-9742f5f3,subnet-9b2f20b7,subnet-3a468971,subnet-450c0c1f
   MdlPublicSubnets:
     Description: use existing public subnet ids for mdlt stack
     Type: String
-    Default: subnet-8458efe0,subnet-622a254e,subnet-904b84db,subnet-2611117c
   Environment:
     Description: Application environment
     Default: prod

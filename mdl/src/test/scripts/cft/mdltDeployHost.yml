@@ -199,7 +199,6 @@ Resources:
                 #copy mdlt artifacts to ec2
                 mkdir -p mdlt
                 cd mdlt
-                #TODO this need to changed to github location
                 wget https://s3.amazonaws.com/${AWS::AccountId}-${MDLTWrapperInstanceName}-mdlt-staging-${Environment}/herd-mdlt-dist.zip -O mdlt.zip
                 unzip mdlt.zip
                 rm -f mdlt.zip
@@ -266,7 +265,7 @@ Resources:
                   - |+
 
                   - MdltBucketName=
-                  - !Join ['-', [!Ref 'AWS::AccountId', !Ref MDLInstanceName, 'mdlt']]
+                  - !Join ['-', [!Ref 'AWS::AccountId', !Ref MDLInstanceName, 'mdlt', !Ref Environment]]
                   - |+
 
                   - MDLStackName=
@@ -279,10 +278,6 @@ Resources:
 
                   - RollbackOnFailure=
                   - !Ref RollbackOnFailure
-                  - |+
-
-                  - DeploymentBucketName=
-                  - !Join ['-', [!Ref MDLInstanceName, 'mdl-staging-bucket']]
                   - |+
 
                   - DeployHostWaitHandle=

@@ -19,6 +19,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -60,10 +61,14 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.GetCallerIdentityRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.util.TagsReader;
 import org.tsi.mdlt.util.TestProperties;
 
 public class CloudFormationClient {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private AmazonCloudFormation amazonCloudFormation;
     private Properties propertyValues;
@@ -99,7 +104,7 @@ public class CloudFormationClient {
             .getCallerIdentity(new GetCallerIdentityRequest())
             .getAccount();
         masterCFTLocation = s3BucketURLPrefix
-                .concat(accountId + "-" + propertyValues.getProperty("MDLInstanceName") + "-" + "mdlt" + "/")
+                .concat(accountId + "-" + propertyValues.getProperty("MDLInstanceName") + "-mdlt-" + propertyValues.getProperty("Environment")+ "/")
                 .concat("cft" + "/")
                 .concat(cftTemplateName);
         System.out.println("Using master CFT location : " + masterCFTLocation);
@@ -130,14 +135,14 @@ public class CloudFormationClient {
         createStackRequest.setTags(TagsReader.getStackTags());
 
         amazonCloudFormation.createStack(createStackRequest);
-        System.out.println("Stack creation initiated");
+        LOGGER.info("Stack creation initiated");
 
         String rootStackId = getStackInfo().stackId(); // Use the stack id to track the create operation
-        System.out.println("rootStackId   =   " + rootStackId);
+        LOGGER.info("rootStackId   =   " + rootStackId);
 
         CFTStackStatus cftStackStatus = waitForCompletionAndGetStackStatus(amazonCloudFormation,
                 rootStackId);
-        System.out.println(String
+        LOGGER.info(String
                 .format("Stack %s creation completed with status: %s and reasons %s", stackName,
                         cftStackStatus.stackStatus,
                         cftStackStatus.stackReason));
@@ -156,7 +161,7 @@ public class CloudFormationClient {
 
         CFTStackInfo cftStackInfo = getStackInfo();
         String rootStackId = cftStackInfo.stackId(); // Use the stack id to track the delete operation
-        System.out.println("rootStackId   =   " + rootStackId);
+        LOGGER.info("rootStackId   =   " + rootStackId);
 
         // Go through the stack and pick up resources that we want
         // to finalize before deleting the stack.
@@ -167,7 +172,7 @@ public class CloudFormationClient {
         for (Stack currentStack : describeStacksResult.getStacks()) {
             if (rootStackId.equals(currentStack.getRootId()) || rootStackId
                     .equals(currentStack.getStackId())) {
-                System.out.println("stackId   =   " + currentStack.getStackId());
+                LOGGER.info("stackId   =   " + currentStack.getStackId());
                 DescribeStackResourcesRequest describeStackResourcesRequest = new DescribeStackResourcesRequest();
                 describeStackResourcesRequest.setStackName(currentStack.getStackName());
                 List<StackResource> stackResources = amazonCloudFormation
@@ -192,13 +197,13 @@ public class CloudFormationClient {
                     .withRegion(Regions.getCurrentRegion().getName())
                     .withCredentials(new InstanceProfileCredentialsProvider(true))
                     .build();
-            System.out.println("Cluster termination initiated, " + clusterIds);
+            LOGGER.info("Cluster termination initiated, " + clusterIds);
             TerminateJobFlowsRequest terminateJobFlowRequest = new TerminateJobFlowsRequest();
             terminateJobFlowRequest.setJobFlowIds(clusterIds);
             amazonElasticMapReduce.terminateJobFlows(terminateJobFlowRequest);
 
             waitForClusterTermination(amazonElasticMapReduce, clusterIds, cftStackInfo);
-            System.out.println("Cluster termination completed");
+            LOGGER.info("Cluster termination completed");
         }
 
         // Now empty S3 buckets, clean up will be done when the stack is deleted
@@ -206,7 +211,7 @@ public class CloudFormationClient {
                 .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         for (String s3BucketPhysicalId : s3BucketIds) {
             String s3BucketName = s3BucketPhysicalId;
-            System.out.println("Empyting S3 bucket, " + s3BucketName);
+            LOGGER.info("Empyting S3 bucket, " + s3BucketName);
             ObjectListing objectListing = amazonS3.listObjects(s3BucketName);
             while (true) {
                 for (Iterator<?> iterator = objectListing.getObjectSummaries().iterator(); iterator
@@ -227,11 +232,11 @@ public class CloudFormationClient {
         DeleteStackRequest deleteRequest = new DeleteStackRequest();
         deleteRequest.setStackName(stackName);
         amazonCloudFormation.deleteStack(deleteRequest);
-        System.out.println("Stack deletion initiated");
+        LOGGER.info("Stack deletion initiated");
 
         CFTStackStatus cftStackStatus = waitForCompletionAndGetStackStatus(amazonCloudFormation,
                 rootStackId);
-        System.out.println(
+        LOGGER.info(
                 "Stack deletion completed, the stack " + stackName + " completed with " + cftStackStatus);
 
         // Throw exception if failed
@@ -250,7 +255,7 @@ public class CloudFormationClient {
     public Map<String, String> getStackOutput() throws Exception {
 
         String rootStackId = getStackInfo().stackId();
-        System.out.println("rootStackId   =   " + rootStackId);
+        LOGGER.info("rootStackId   =   " + rootStackId);
         Map<String, String> outputs = new HashMap<>();
         outputs.put("rootStackId", rootStackId);
 
@@ -262,7 +267,7 @@ public class CloudFormationClient {
                     && (rootStackId.equals(currentStack.getRootId())
                     || rootStackId.equals(currentStack.getStackId()))) {
                 for (Output output : currentStack.getOutputs()) {
-                    System.out.println(output.getOutputKey() + "   =   " + output.getOutputValue());
+                    LOGGER.info(output.getOutputKey() + "   =   " + output.getOutputValue());
                     outputs.put(output.getOutputKey(), output.getOutputValue());
                 }
             }
@@ -312,7 +317,7 @@ public class CloudFormationClient {
                 Thread.sleep(stackStatusPollingInterval);
             }
         }
-        System.out.println("done");
+        LOGGER.info("done");
 
         CFTStackStatus cftStackStatus = new CFTStackStatus(stackStatus, stackReason);
         return cftStackStatus;
@@ -336,7 +341,7 @@ public class CloudFormationClient {
     }
 
     public boolean stackExists(String stackName){
-        System.out.println("Check if stack exists or not :" + stackName);
+        LOGGER.info("Check if stack exists or not :" + stackName);
         DescribeStacksRequest describeStacksRequest = new DescribeStacksRequest();
         describeStacksRequest.setStackName(stackName);
         try {
@@ -385,7 +390,7 @@ public class CloudFormationClient {
             }
             else {
                 for (ClusterSummary cluster : clusters) {
-                    //System.out.println("cluster -> " + cluster.getName() + " - " + cluster.getStatus());
+                    //LOGGER.info("cluster -> " + cluster.getName() + " - " + cluster.getStatus());
                     if (!cluster.getStatus().getState().equals(ClusterState.TERMINATED.toString()) &&
                             !cluster.getStatus().getState()
                                     .equals(ClusterState.TERMINATED_WITH_ERRORS.toString())) {
@@ -402,12 +407,12 @@ public class CloudFormationClient {
                 Thread.sleep(stackStatusPollingInterval);
             }
         }
-        System.out.println("done");
+        LOGGER.info("done");
 
         //Print a summary of the termination status for all the clusters
         if (clusters != null) {
             for (ClusterSummary cluster : clusters) {
-                System.out.println(
+                LOGGER.info(
                         "Cluster " + cluster.getName() + " terminated with status " + cluster.getStatus()
                                 .getState());
             }
