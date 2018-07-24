@@ -94,7 +94,7 @@ if [ "${RollbackOnFailure}" = "true" ] ; then
     fi
     execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
     # Tests are done. Delete the deploy host
-    execute_cmd "aws cloudformation delete-stack --stack-name ${MDLTWrapperStackName} --region ${RegionName}"
+    execute_cmd "aws cloudformation delete-stack --stack-name ${MDLTStackName} --region ${RegionName}"
 else
     execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
 fi

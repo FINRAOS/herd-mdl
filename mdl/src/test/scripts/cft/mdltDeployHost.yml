@@ -100,8 +100,11 @@ Parameters:
   MDLTWrapperInstanceName:
     Description: instance name for wrapper stack
     Type: String
-  MDLTWrapperStackName:
-    Description: stack name for wrapper stack
+  InstallMdlYmlUrl:
+    Description: installMDL yaml file URL
+    Type: String
+  WaitOnVpcIfCreate:
+    Description: wait on Vpc if createVPC=true
     Type: String
 Resources:
   DeployHostSecurityGroup:
@@ -189,7 +192,6 @@ Resources:
                     execute_cmd "yum install -y nodejs"
                     execute_cmd "pip install awscli --upgrade"
                     execute_cmd "aws configure set default.region ${region}"
-                    execute_cmd "aws logs create-log-group --log-group-name ${logGroupName}"
                     execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days 90"
             2-run-mdlt:
               cwd: /home/ec2-user
@@ -198,7 +200,7 @@ Resources:
                 mkdir -p mdlt
                 cd mdlt
                 #TODO this need to changed to github location
-                wget https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip -O mdlt.zip
+                wget https://s3.amazonaws.com/${AWS::AccountId}-${MDLTWrapperInstanceName}-mdlt-staging-${Environment}/herd-mdlt-dist.zip -O mdlt.zip
                 unzip mdlt.zip
                 rm -f mdlt.zip
                 find ./ -name "*.sh" -exec chmod +x {} \;
@@ -244,6 +246,7 @@ Resources:
               content: !Sub |
                 region=${AWS::Region}
                 logGroupName=${AWS::StackName}
+                MDLTWrapperInstanceName=${MDLTWrapperInstanceName}
               mode: '000644'
               owner: root
               group: root
@@ -258,8 +261,8 @@ Resources:
                   - !Ref MDLTWrapperInstanceName
                   - |+
 
-                  - MDLTWrapperStackName=
-                  - !Ref MDLTWrapperStackName
+                  - MDLTStackName=
+                  - !Ref 'AWS::StackName'
                   - |+
 
                   - MdltBucketName=
@@ -299,7 +302,7 @@ Resources:
                   - |+
 
                   - InstallMdlYmlUrl=
-                  - !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
+                  - !Ref InstallMdlYmlUrl
                   - |+
 
                   - Environment=

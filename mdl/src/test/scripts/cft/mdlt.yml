@@ -152,7 +152,7 @@ Resources:
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
 
               # TODO this url should change to git hub location
-              release_artifact_location = ' https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip '.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -164,14 +164,16 @@ Resources:
                   try:
                       os.makedirs('/tmp/downloads/')
                       os.makedirs('/tmp/extracts/')
-                      local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('mdl.zip'))
+                      local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('herd-mdlt-dist.zip'))
                       urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
+
+                      s3_resource = boto3.resource('s3')
+                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip', ExtraArgs={'ACL': 'public-read'})
 
                       local_extract_directory = '/tmp/extracts/{}'.format(release_version)
                       with zipfile.ZipFile(local_deploy_file, 'r') as zip_ref:
                           zip_ref.extractall(local_extract_directory)
 
-                      s3_resource = boto3.resource('s3')
                       for root, dirs, files in os.walk(local_extract_directory):
                           for filename in files:
                               abs_filepath = os.path.join(root, filename)
@@ -224,14 +226,14 @@ Resources:
       ReleaseVersion: !Ref ReleaseVersion
       BucketArn: !GetAtt DeployBucket.Arn
       DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
-      WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPC, 'UseExistingVPC']
       WaitMdltVpcIdSsm: !If [CreateVPCFalseCondition, !Ref MdltVPCParameter, 'CreateVPC']
       WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltPublicSubnetsParameter, 'CreateVPC']
   CreateVPCStack:
     Condition: CreateVPCTrueCondition
+    DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVPC.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVpc.yml'
       Parameters:
         MDLInstanceName: !Ref MDLInstanceName
         Environment: !Ref Environment
@@ -255,7 +257,6 @@ Resources:
       Description: public subnet ids for MDLT
   DeployHostHttpsWithAuth:
     Condition: CreateAuthCondition
-    DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
@@ -277,14 +278,14 @@ Resources:
         DomainNameSuffix: !Ref DomainNameSuffix
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        MDLTWrapperStackName: !Ref 'AWS::StackName'
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
-    DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
@@ -306,8 +307,9 @@ Resources:
         DomainNameSuffix: ''
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        MDLTWrapperStackName: !Ref 'AWS::StackName'
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
