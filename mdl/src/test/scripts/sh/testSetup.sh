@@ -45,8 +45,8 @@ execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
 #TODO need to remove this once test version same as release version
-releaseVersion='1.2.0'
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/mdlt-dependencies-${releaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
+ReleaseVersion='1.2.0'
+execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
 
 #source test properties(stack output properties)
 . ${testPropsFile}

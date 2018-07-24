@@ -49,7 +49,7 @@ execute_cmd "cd /home/ec2-user"
 # Execute the test cases
 execute_cmd "wget http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar -O mdlt/junit-runner.jar"
 #TODO need to remove this once test version same as release version
-releaseVersion="1.2.0"
+ReleaseVersion="1.2.0"
 if [ "${EnableSSLAndAuth}" = "true" ]
 then
     excludeTestTag="noAuthTest"
@@ -59,9 +59,9 @@ fi
 #don't check error code if rollbackOnFailure is true
 if [ "${RollbackOnFailure}" = "true" ]
 then
-    java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/mdlt-dependencies-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors
+    java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors
 else
-    execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${releaseVersion}-tests.jar:mdlt/mdlt-dependencies-${releaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
+    execute_cmd "java -DDeployPropertiesFile=${deployPropertiesFile} -jar mdlt/junit-runner.jar -p org.tsi.mdlt.test -T ${excludeTestTag} --details verbose --cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar --reports-dir /tmp/sam --disable-ansi-colors"
 fi
 
 exit 0

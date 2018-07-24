@@ -64,7 +64,7 @@ Parameters:
   MdltVpcIdParameterKey:
     Description: aws existing VPC Id
     Type: 'AWS::SSM::Parameter::Value<String>'
-  MdltPublicSubnetsParameter:
+  MdltSubnetsParameter:
     Description: Existing aws subnet id
     Type: 'AWS::SSM::Parameter::Value<String>'
   Environment:
@@ -378,13 +378,10 @@ Resources:
       ImageId: !Ref ImageId
       KeyName: !Ref KeyName
       InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - !Ref DeployHostSecurityGroup
+      SubnetId: !Select [0, !Split [',', !Ref MdltSubnetsParameter]]
       IamInstanceProfile: !Ref DeployHostInstanceProfile
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet:
-            - !Ref DeployHostSecurityGroup
-          SubnetId: !Select [0, !Split [',', !Ref MdltPublicSubnetsParameter]]
       Tags:
         - Key: Name
           Value: !Sub '${MDLInstanceName}-DeployHostEc2Node'

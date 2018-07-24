@@ -219,7 +219,7 @@ Resources:
       BucketArn: !GetAtt DeployBucket.Arn
       DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
       WaitMdltVpcIdSsm: !If [CreateVPCFalseCondition, !Ref MdltVPCParameter, 'CreateVPC']
-      WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltPublicSubnetsParameter, 'CreateVPC']
+      WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltSubnetsParameter, 'CreateVPC']
   CreateVPCStack:
     Condition: CreateVPCTrueCondition
     DependsOn: ArtifactCopyCustomResource
@@ -239,11 +239,11 @@ Resources:
       Type: String
       Value: !Ref MdlVpcId
       Description: VPC id for MDLT
-  MdltPublicSubnetsParameter:
+  MdltSubnetsParameter:
     Condition: CreateVPCFalseCondition
     Type: 'AWS::SSM::Parameter'
     Properties:
-      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
       Type: String
       Value: !Ref MdlPublicSubnets
       Description: public subnet ids for MDLT
@@ -262,7 +262,7 @@ Resources:
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
-        MdltPublicSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
+        MdltSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: !Ref CertificateArn
@@ -291,7 +291,7 @@ Resources:
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
-        MdltPublicSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
+        MdltSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: ''
