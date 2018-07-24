@@ -172,7 +172,7 @@
         <instanceDefinitions>
             <masterInstances>
                 <instanceCount>1</instanceCount>
-                <instanceType>m4.xlarge</instanceType>
+                <instanceType>m4.large</instanceType>
             </masterInstances>
         </instanceDefinitions>
         <terminationProtection>false</terminationProtection>
