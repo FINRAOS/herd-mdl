@@ -71,10 +71,10 @@ execute_cmd "sudo service awslogs restart"
 
 # Copy stack tags to Sqs & Cloudfront
 function addStackTagsToSqs(){
-    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags" --output json | jq -c '.[]')
-    isTagExisted=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
+    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags[]" --output json)
+    tagExists=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
 
-    if [ "${isTagExisted}" != "false" ] ; then
+    if [ "${tagExists}" != "false" ] ; then
         echo "tagging sqs"
         sqs_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
         sqs_tags=${sqs_tags//\"/\\\"}

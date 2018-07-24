@@ -29,6 +29,9 @@ Parameters:
   MDLServerDeploymentRole:
     Description: 'Metastor Service Deployment role '
     Type: AWS::SSM::Parameter::Value<String>
+  PrestoMaxMemoryPerNode:
+    Description: query.max-memory-per-node parameter for Presto
+    Type: String
   DeploymentBucketName:
     Description: Deployment bucket where the code resides
     Type: String
@@ -268,7 +271,7 @@ Resources:
             http-server.http.enabled: 'true'
             http-server.http.port: '8889'
             query.max-history: '100'
-            query.max-memory-per-node: 10GB
+            query.max-memory-per-node: !Ref PrestoMaxMemoryPerNode
             query.max-memory: 40GB
             query.initial-hash-partitions: '4'
             query.client.timeout: 20m
