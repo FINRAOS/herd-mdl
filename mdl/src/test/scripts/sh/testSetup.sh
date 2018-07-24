@@ -44,8 +44,6 @@ testPropsFile=$2
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
-#TODO need to remove this once test version same as release version
-ReleaseVersion='1.2.0'
 execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
 
 #source test properties(stack output properties)
@@ -80,7 +78,9 @@ execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finr
 
 # download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
 execute_cmd "mkdir -p mdl/bdsql"
-execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v1.0.0/bdsql-1.0.0-dist.zip -O bdsql.zip"
+#TODO change this version to 1.1.0
+BdsqlReleaseVersion='1.0.0'
+execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${BdsqlReleaseVersion}/bdsql-${BdsqlReleaseVersion}-dist.zip -O bdsql.zip"
 execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
 execute_cmd "rm -rf bdsql.zip"
 execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/scripts/sh/presto/sql_auth.sh"

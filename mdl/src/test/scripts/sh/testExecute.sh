@@ -48,8 +48,6 @@ execute_cmd "cd /home/ec2-user"
 
 # Execute the test cases
 execute_cmd "wget http://central.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.0.0-M4/junit-platform-console-standalone-1.0.0-M4.jar -O mdlt/junit-runner.jar"
-#TODO need to remove this once test version same as release version
-ReleaseVersion="1.2.0"
 if [ "${EnableSSLAndAuth}" = "true" ]
 then
     excludeTestTag="noAuthTest"
