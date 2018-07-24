@@ -8,7 +8,8 @@ pages:
   - Administration: admin-guide.md
   - Technical Overview: tech-overview.md
   - Advanced Install: advanced-install.md
- 
+  - MDLT: mdlt.md
+
 # Configuration
 theme:
   name: null
