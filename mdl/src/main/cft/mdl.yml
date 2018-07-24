@@ -23,6 +23,9 @@ Parameters:
   CertificateInfo:
     Description: Format - CN=<>,OU=<>,O=<>,L=<>,ST=<>,C=<>
     Type: String
+  PrestoMaxMemoryPerNode:
+    Description: query.max-memory-per-node parameter for Presto
+    Type: String
   MDLInstanceName:
     Description: MDL Instance Name, lowercase letters and numbers with max length 15
     Type: String
@@ -33,7 +36,7 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   HerdVersion:
-    Default: '0.70.0'
+    Default: '0.74.0'
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
@@ -380,6 +383,7 @@ Resources:
         CertificateArn: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
         LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
         Environment: !Ref Environment
+        PrestoMaxMemoryPerNode: !Ref PrestoMaxMemoryPerNode
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         BdsqlMasterInstanceType: !Ref BdsqlMasterInstanceType
         BdsqlCoreInstanceType: !Ref BdsqlCoreInstanceType
