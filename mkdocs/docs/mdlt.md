@@ -13,9 +13,9 @@ These are prerequisites that are necessary for installing MDL components for Bas
 *   Existing EC2 Key Value Pair
 
 
-## Simple MDLT Execution
+## Simple MDLT Execution(Stack Without auth)
 
-*   Download the attached [[mdlt.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.2.0/mdlt.yml) file to local file system
+*   Download the attached [mdlt.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.2.0/mdlt.yml) file to local file system
 *   Login to AWS console and navigate to [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html)
 *   Create the stack using option "Upload a template to Amazon S3" - Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) for selecting a local template
 *   Choose the mdlt.yml file from local file system
@@ -27,9 +27,17 @@ These are prerequisites that are necessary for installing MDL components for Bas
     * Please refer to MDLT Stack Parameters Specifications for creating Herd-MDL stack with authentication/authorization.
 *   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
 *   Review the parameters, and create the stack as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html)
-*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.
-*   Checkout bellow cloudwatch documentation for test execution results.
-*   Delete mdlt stack stack
+*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(gross wait time is 3 hours)
+*   Checkout bellow cloudwatch documentation to find test execution results.
+*   Delete mdlt wrapper stack from aws CloudFormation console.(All nested stacks are deleted automatically by mdlt)
+
+## MDLT with Auth stack
+*   Same steps as above Simple Installation, but in stack parameters edit page, filling valid values for following parameters.
+    *   [MdlAuthStackName]((https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  ):  empty parameter value for MdlNoAuthStackName, and enter auth stack name in parameter MdlAuthStackName
+    *   [CertificateArn](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html):  valid aws certificate ARN, refer to Herd-MDL Advanced install[advanced-install.md] for more information
+    *   [DomainNameSuffix](https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html):  domain name suffix, refer to Herd-MDL Advanced install[advanced-install.md] for more information
+    *   [HostedZoneName](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html):  hosted zone name, refer to Herd-MDL Advanced install[advanced-install.md] for more information
+
 
 ## MDLT against Existing stack
 *   Same steps as above Simple Installation, but in stack parameters edit page, filling different values for following parameters
@@ -38,12 +46,6 @@ These are prerequisites that are necessary for installing MDL components for Bas
     *   Enter correct value for [MdlPublicSubnets](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack PublicSubnets value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
     *   Enter correct value for [MdlVpcId](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack vpc id value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
 
-## MDLT with Auth stack
-*   Same steps as above Simple Installation, but in stack parameters edit page, filling valid values for following parameters.
-    *   [MdlAuthStackName]((https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  ):  empty parameter value for MdlNoAuthStackName, and enter auth stack name in parameter MdlAuthStackName
-    *   [CertificateArn](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html):  valid aws certificate ARN, refer to Herd-MDL Advanced install[advanced-install.md] for more information
-    *   [DomainNameSuffix](https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html):  domain name suffix, refer to Herd-MDL Advanced install[advanced-install.md] for more information
-    *   [HostedZoneName](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html):  hosted zone name, refer to Herd-MDL Advanced install[advanced-install.md] for more information
 
 ## MDLT CFT Specifications
 
@@ -60,7 +62,7 @@ These parameters are related to which version and components to deploy.
 | **Description** | Release version of MDL application to install |
 | **Required** | Yes |
 | **Default Value** | 1.2.0 |
-| **Allowed Value** | 1.1.0, 1.2.0 |
+| **Allowed Value** | 1.2.0 |
 
 **DeployComponents**
 
@@ -116,17 +118,20 @@ These parameters define the herd-mdl stack names, either existing stack or stack
 |   |   |
 | ----- | ----- |
 | **Name** | MdlNoAuthStackName |
-| **Description** | stack name for the herd-mdl stack to be created without auth, when this value leaves empty, mdlt will not create MDL stack without authentication|
+| **Description** | stack name of existing noAuth herd-mdl stack, or stack name to be used for new herd-mdl noAuth stack creation; when this value leaves empty, mdlt will not create MDL noAuth stack|
 | **Required** | NO |
 | **Default Value** | mdltNoAuth |
+| **Constraint** | must be a non-existing stack name if wants mdlt to create new herd-mdl stack |
+
 
 **MdlAuthStackName**
 
 |   |   |
 | ----- | ----- |
 | **Name** | MdlAuthStackName |
-| **Description** | stack name for the herd-mdl stack to be created with auth, when this value leaves empty, mdlt will not create MDL stack with authentication|
+| **Description** | stack name of existing auth herd-mdl stack, or stack name to be used for new herd-mdl auth stack creation; when this value leaves empty, mdlt will not create MDL auth stack|
 | **Required** | NO |
+| **Constraint** | must be a non-existing stack name if wants mdlt to create new herd-mdl stack |
 
 ### Conditional Parameters
 
@@ -149,7 +154,7 @@ These are conditional parameters to decide whether MDL creates certain resources
 |   |   |
 | ----- | ----- |
 | **Name** | CreateVPC |
-| **Description** | Specifies whether to shutdown herd-mdl stack after mdlt execution. When set to true, herd-mdl stack that created by mdlt will be deleted automatically after test execution, otherwise, herd-mdl stack created by mdlt will not be deleted|
+| **Description** | Specifies whether to shutdown herd-mdl stack after mdlt execution, this only has effects on herd-mdl stack created by mdlt; when RollBackOnFailure==true, herd-mdl stack will be deleted automatically after test execution; when set to false, herd-mdl stack created by mdlt will not be deleted; mdlt execution will not delete any existing herd-mdl stack whatever the RollBackOnFailure value is|
 | **Required** | Yes |
 | **Default Value** | true |
 | **Allowed Values** | true, false |
@@ -268,4 +273,5 @@ These parameters are related to Certificates and Domains. These are required onl
       
 ## MDLT Known Issues
 
+*   if CreateVPC==true while creating mdlt, you need to delete vpc manually(1.find vpc id from createVpc stack output parameter VPC. 2.go to aws vpc console and click Your VPCs 3.enter the vpc id found in step one. 4.choose the found vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete')
 *   mdlt wrapper stack is not auto deleted after test execution, user need to login to aws cloudformation console and delete the wrapper stack( mdlt wrapper stack name is 'mdlt' by default)
