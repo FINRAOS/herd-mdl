@@ -38,7 +38,6 @@ public class TestProperties {
         try (InputStream propFileStream =
                 CloudFormationClient.class.getResourceAsStream("/mdl.props")) {
             propertyValues = new Properties();
-            propertyValues.load(propFileStream);
 
             //replace default test parameters with DeployPropertiesFile
             Properties systemPropertyValues = System.getProperties();
@@ -48,6 +47,7 @@ public class TestProperties {
                     propertyValues.load(new FileInputStream(propertyFileName));
                 }
             }
+            propertyValues.load(propFileStream);
         }
         catch (IOException e) {
             throw new UncheckedIOException("Failed to load resource", e);

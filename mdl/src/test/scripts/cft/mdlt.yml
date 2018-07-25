@@ -22,7 +22,7 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-    Description: Whether rollback on app stack failure
+    Description: Whether shutdown herd-mdl stack after test execution
   MDLInstanceName:
     Default: mdlt
     Description: Application Name:Unique name to be associated with the stack, max length 5 as LB name has 32 chars length limitation
@@ -79,11 +79,11 @@ Parameters:
     Default: prod
     Type: String
   MdlAuthStackName:
-    Description: name of existing or to be created mdl auth stack, auth stack will not be created if this value is empty
+    Description: name of existing Auth stack or name to be used for creating mdl auth stack, auth stack will not be created if this value is empty
     Type: String
   MdlNoAuthStackName:
     Default: mdltNoAuth
-    Description: name of existing or to be created mdl stack without auth, noAuth stack will not be created if this value is empty
+    Description: name of existing noAuth stack or name to be used for creating mdl stack without auth, noAuth stack will not be created if this value is empty
     Type: String
 Metadata:
   'AWS::CloudFormation::Interface':

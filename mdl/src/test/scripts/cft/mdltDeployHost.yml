@@ -340,6 +340,10 @@ Resources:
                   - !Ref MdlPublicSubnets
                   - |+
 
+                  - KeyName=
+                  - !Ref KeyName
+                  - |+
+
             /etc/cfn/cfn-hup.conf:
               content: !Join
                 - ''

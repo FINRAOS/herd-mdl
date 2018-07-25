@@ -34,7 +34,9 @@ public enum StackInputParameterKeyEnum {
     CREATE_VPC("CreateVPC"),
     MDL_VPC_ID("MdlVpcId"),
     MDL_PRIVATE_SUBNETS("MdlPrivateSubnets"),
-    MDL_PUBLIC_SUBNETS("MdlPublicSubnets");
+    MDL_PUBLIC_SUBNETS("MdlPublicSubnets"),
+    KEY_PAIR_NAME("KeyName");
+
     private String key;
 
     StackInputParameterKeyEnum(String key) {

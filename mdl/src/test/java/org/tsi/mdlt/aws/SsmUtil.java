@@ -45,7 +45,17 @@ public class SsmUtil {
      * @return Parameter
      */
     public static Parameter getPlainLdapParameter(SsmParameterKeyEnum parameterKey) {
-        return getLdapParameter(parameterKey, false);
+        return getSsmParameter(parameterKey, false);
+    }
+
+    /**
+     * Get parameter using parameter key
+     *
+     * @param parameterKey parameter key
+     * @return Parameter
+     */
+    public static Parameter getPlainVpcParameter(SsmParameterKeyEnum parameterKey) {
+        return getSsmParameter(parameterKey, false);
     }
 
     /**
@@ -55,14 +65,14 @@ public class SsmUtil {
      * @return Parameter
      */
     public static Parameter getDecryptedLdapParameter(SsmParameterKeyEnum parameterKey) {
-        return getLdapParameter(parameterKey, true);
+        return getSsmParameter(parameterKey, true);
     }
 
     public static Parameter getPlainParameter(String parameterKey) {
         return getParameter(parameterKey, false);
     }
 
-    private static Parameter getLdapParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
+    private static Parameter getSsmParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
         return getParameter(parameterKey.getParameterKey(), isEncrypted);
     }
 

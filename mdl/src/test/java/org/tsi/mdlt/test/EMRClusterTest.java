@@ -19,6 +19,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
@@ -31,6 +33,7 @@ import com.amazonaws.services.ec2.model.DescribeVpcsRequest;
 import com.amazonaws.services.ec2.model.KeyPairInfo;
 import com.amazonaws.services.ec2.model.Subnet;
 import com.amazonaws.services.ec2.model.Vpc;
+import org.apache.commons.lang3.BooleanUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -38,8 +41,12 @@ import org.junit.jupiter.api.TestFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
+import org.tsi.mdlt.aws.SsmUtil;
+import org.tsi.mdlt.enums.SsmParameterKeyEnum;
+import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 import org.tsi.mdlt.util.StackOutputPropertyReader;
+import org.tsi.mdlt.util.TestProperties;
 import org.tsi.mdlt.util.shell.ShellCommandProperty;
 
 public class EMRClusterTest extends BaseTest {
@@ -64,9 +71,9 @@ public class EMRClusterTest extends BaseTest {
         cftClient = new CloudFormationClient(stackName);
         Map<String, String> parameters = new HashMap<>();
         parameters.put("MDLInstanceName", instanceName);
-        parameters.put("VpcId", getAnyVpcId());
-        parameters.put("SubnetId", getAnySubnetId());
-        parameters.put("KeyPairName", getAnyKeyPairName());
+        parameters.put("VpcId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.VPC_ID).getValue());
+        parameters.put("SubnetId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.PRIVATE_SUBNETS).getValue());
+        parameters.put("KeyPairName", TestProperties.getProperties().getProperty(StackInputParameterKeyEnum.KEY_PAIR_NAME.getKey()));
 
         try {
             cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true);
@@ -98,29 +105,5 @@ public class EMRClusterTest extends BaseTest {
         catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private static String getAnyVpcId(){
-        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
-        Optional<Vpc>  vpc= ec2.describeVpcs().getVpcs().stream().findAny();
-        assert vpc.isPresent();
-        return vpc.get().getVpcId();
-    }
-
-    private static String getAnySubnetId(){
-        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
-        Optional<Subnet>  subnet = ec2.describeSubnets().getSubnets().stream().findAny();
-        assert subnet.isPresent();
-        return subnet.get().getSubnetId();
-    }
-
-    private static String getAnyKeyPairName(){
-        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
-        Optional<KeyPairInfo>  keyPairInfo = ec2.describeKeyPairs().getKeyPairs().stream().findAny();
-        assert keyPairInfo.isPresent();
-        return keyPairInfo.get().getKeyName();
     }
 }
