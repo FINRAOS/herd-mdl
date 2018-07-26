@@ -94,7 +94,7 @@ docker create --name <container-name> \
 
 7\. Copy the parameters file to the container
 
-`docker cp default-parameters.json <container-name>:/data/default-parameters.json`
+`docker cp default-parameters.json <container-name>:/herd-mdl/default-parameters.json`
 
 8\. Launch the container 
 
