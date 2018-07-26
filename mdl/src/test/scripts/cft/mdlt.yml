@@ -185,7 +185,7 @@ Resources:
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
 
-              # TODO this url should change to git hub location
+              #TODO this url should change to git hub location
               release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
@@ -317,7 +317,8 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/installMDL.yml'
+        #TODO change this to use release 1.2.0 version
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
@@ -346,4 +347,5 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
+        #TODO change this to use release 1.2.0 version
         InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
