@@ -13,7 +13,7 @@ These are prerequisites that are necessary for installing MDL components for Bas
 *   Existing EC2 Key Value Pair
 
 
-## Simple MDLT Execution(Stack Without auth)
+## Simple MDLT Execution(noAuth)
 
 *   Download the attached [mdlt.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.2.0/mdlt.yml) file to local file system
 *   Login to AWS console and navigate to [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html)
@@ -27,8 +27,11 @@ These are prerequisites that are necessary for installing MDL components for Bas
     * Please refer to MDLT Stack Parameters Specifications for creating Herd-MDL stack with authentication/authorization.
 *   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
 *   Review the parameters, and create the stack as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html)
-*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(gross wait time is 3 hours)
-*   Checkout bellow cloudwatch documentation to find test execution results.
+*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(gross wait time here is 2 hours)
+*   Checkout bellow cloudwatch documentation to find test execution results
+*   Wait for the mdlt DeployHost stack to be deleted.((gross wait time here is 1.5 hour)
+    *  **mdlt DeployHost stack name format**: ${MDLInstanceName}-DeployHostHttpWithoutAuth-${awsUniqueNumber}(eg. mdlt-DeployHostHttpWithoutAuth-A9915FUEU3JI)
+*   if CreateVPC==true while creating mdlt, you need to delete vpc manually, steps see Well Known Issues
 *   Delete mdlt wrapper stack from aws CloudFormation console.(All nested stacks are deleted automatically by mdlt)
 
 ## MDLT with Auth stack
@@ -42,6 +45,7 @@ These are prerequisites that are necessary for installing MDL components for Bas
 ## MDLT against Existing stack
 *   Same steps as above Simple Installation, but in stack parameters edit page, filling different values for following parameters
     *   If existing stack is noAuth stack, enter existing stack name in parameter [MdlNoAuthStackName](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html) ; if existing stack is auth stack, empty parameter value for MdlNoAuthStackName, and enter existing stack name in parameter [MdlAuthStackName]((https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  )
+    *   set parameter CreateVPC value to false
     *   Enter correct value for [MdlPrivateSubnets](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack PrivateSubnets value(can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
     *   Enter correct value for [MdlPublicSubnets](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack PublicSubnets value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
     *   Enter correct value for [MdlVpcId](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack vpc id value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
@@ -273,5 +277,14 @@ These parameters are related to Certificates and Domains. These are required onl
       
 ## MDLT Known Issues
 
-*   if CreateVPC==true while creating mdlt, you need to delete vpc manually(1.find vpc id from createVpc stack output parameter VPC. 2.go to aws vpc console and click Your VPCs 3.enter the vpc id found in step one. 4.choose the found vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete')
-*   mdlt wrapper stack is not auto deleted after test execution, user need to login to aws cloudformation console and delete the wrapper stack( mdlt wrapper stack name is 'mdlt' by default)
+### The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted
+*   Solution Steps to delete vpc manually:
+    *   find vpc id from createVpc stack output parameter VPC. 
+    *   go to aws vpc console and click Your VPCs 
+    *   enter the vpc id found in step one. 
+    *   choose the found vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete'
+    
+### After MDLT execution, mdlt wrapper stack is not deleted automatically.
+*   Solution steps to delete mdlt wrapper stack maunally:
+    *   login to aws cloudformation console
+    *   search by mdlt wrapper stack name, choose the mdlt wrapper stack, click Actions, select 'Delete Stack'.( mdlt wrapper stack name is the stackName you used when creating mdlt stack)
