@@ -166,7 +166,6 @@ public class CloudFormationClient {
         // Go through the stack and pick up resources that we want
         // to finalize before deleting the stack.
         List<String> s3BucketIds = new ArrayList<>();
-        List<String> clusterIds = new ArrayList<>();
 
         DescribeStacksResult describeStacksResult = amazonCloudFormation.describeStacks();
         for (Stack currentStack : describeStacksResult.getStacks()) {
@@ -183,27 +182,9 @@ public class CloudFormationClient {
                         if (stackResource.getResourceType().equals("AWS::S3::Bucket")) {
                             s3BucketIds.add(stackResource.getPhysicalResourceId());
                         }
-                        if (stackResource.getResourceType().equals("AWS::EMR::Cluster")) {
-                            clusterIds.add(stackResource.getPhysicalResourceId());
-                        }
                     }
                 }
             }
-        }
-
-        // Terminate any clusters
-        if (!clusterIds.isEmpty()) {
-            AmazonElasticMapReduce amazonElasticMapReduce = AmazonElasticMapReduceClientBuilder.standard()
-                    .withRegion(Regions.getCurrentRegion().getName())
-                    .withCredentials(new InstanceProfileCredentialsProvider(true))
-                    .build();
-            LOGGER.info("Cluster termination initiated, " + clusterIds);
-            TerminateJobFlowsRequest terminateJobFlowRequest = new TerminateJobFlowsRequest();
-            terminateJobFlowRequest.setJobFlowIds(clusterIds);
-            amazonElasticMapReduce.terminateJobFlows(terminateJobFlowRequest);
-
-            waitForClusterTermination(amazonElasticMapReduce, clusterIds, cftStackInfo);
-            LOGGER.info("Cluster termination completed");
         }
 
         // Now empty S3 buckets, clean up will be done when the stack is deleted
