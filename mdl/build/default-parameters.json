@@ -18,7 +18,7 @@
     },
     {
       "ParameterKey": "CreateVPC",
-      "ParameterValue": "false"
+      "ParameterValue": "true"
     },
     {
       "ParameterKey": "EnableSSLAndAuth",
