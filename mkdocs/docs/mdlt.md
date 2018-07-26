@@ -27,12 +27,12 @@ These are prerequisites that are necessary for installing MDL components for Bas
     * Please refer to MDLT Stack Parameters Specifications for creating Herd-MDL stack with authentication/authorization.
 *   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
 *   Review the parameters, and create the stack as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html)
-*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(gross wait time here is 2 hours)
-*   Checkout bellow cloudwatch documentation to find test execution results
-*   Wait for the mdlt DeployHost stack to be deleted.((gross wait time here is 1.5 hour)
+*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(approximate wait time here is 2 hours)
+*   Checkout below cloudwatch documentation to find test execution results
+*   Wait for the mdlt DeployHost stack to be deleted.(approximate wait time here is 1.5 hour)
     *  **mdlt DeployHost stack name format**: ${MDLInstanceName}-DeployHostHttpWithoutAuth-${awsUniqueNumber}(eg. mdlt-DeployHostHttpWithoutAuth-A9915FUEU3JI)
-*   if CreateVPC==true while creating mdlt, you need to delete vpc manually, steps see Well Known Issues
-*   Delete mdlt wrapper stack from aws CloudFormation console.(All nested stacks are deleted automatically by mdlt)
+*   if CreateVPC==true while creating mdlt, you need to delete vpc manually, steps see [MDLT Known Issues](#mdlt-known-issues) 
+*   Delete mdlt wrapper stack from aws CloudFormation console, step below [MDLT Known Issues](#mdlt-known-issues).(All nested stacks are deleted automatically by mdlt)
 
 ## MDLT with Auth stack
 *   Same steps as above Simple Installation, but in stack parameters edit page, filling valid values for following parameters.
@@ -111,7 +111,6 @@ These parameters define the basic parameters used across various components
 | **Name** | MdltResultS3BucketName |
 | **Description** | existing s3 bucket name to save mdlt test execution results, if this parameter leaves empty, test execution results will be saved to mdlt staging bucket: ${AWS::AccountId}-${MDLInstanceName}-mdlt-${Environment} |
 | **Required** | NO |
-| **Max Length** | 4 |
 
 ### MDL Stack Name Parameters
 
