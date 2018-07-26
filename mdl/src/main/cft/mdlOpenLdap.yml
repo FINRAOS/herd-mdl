@@ -276,6 +276,10 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'AWSLX${MDLInstanceName}-OpenLdap-${Environment}'
+        - Key: Purpose
+          Value: !Ref MDLInstanceName
+        - Key: Environment
+          Value: !Ref Environment
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
