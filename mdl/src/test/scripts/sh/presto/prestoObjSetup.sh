@@ -50,7 +50,7 @@ function execute_curl_cmd {
 }
 
 function execute_uploader_cmd {
-        cmd="java -jar ./mdl/herd/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60"
+        cmd="java -jar ./mdl/herd/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60 -disableHostnameVerification true"
         echo $cmd
         cmdWithCredentials="${cmd} -u ${ldapAppUsername} -w ${ldapAppPassword}"
         eval $cmdWithCredentials

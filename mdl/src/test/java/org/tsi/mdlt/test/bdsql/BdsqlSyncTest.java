@@ -28,16 +28,14 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 
-import org.junit.Assume;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.util.LdapUtil;
-import org.tsi.mdlt.util.TestProperties;
 
 /**
  * Application existing ldap/bdsql permission mappings
@@ -49,8 +47,7 @@ import org.tsi.mdlt.util.TestProperties;
  * ldap users: mdl_test_1(we should add mdl_app too)
  * bdsql permission schemas: read permission to sec_demo_data
  */
-@BdsqlBaseTest.DisableOnAuthenticationDisabled
-//Note: Conditional disable annotation doesn't work when running as java jar
+@Tag("authTest")
 public class BdsqlSyncTest extends BdsqlBaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -64,19 +61,19 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     private static final String LDAP_USER_DELETEUSER = "ldap_deleteuser";
 
     @BeforeAll
-    public static void setup() throws NamingException {
-        boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        if (!isAuthEnabled) {
-            LOGGER.info("Skip bdsql sync testcases as enableAuth is disabled");
-            Assume.assumeTrue(isAuthEnabled);
-        } else {
-            LdapUtil.listEntries();
-        }
+    public static void setup() throws NamingException, IOException, InterruptedException {
+        cleanupLdapUsers();
+        LdapUtil.listEntries();
     }
 
     @AfterAll
+    public static void teardown() throws InterruptedException, NamingException, IOException {
+        cleanupLdapUsers();
+        syncBdsqlAuth();
+    }
+
     public static void cleanupLdapUsers() throws NamingException, IOException, InterruptedException {
-        LOGGER.info("Ldap User list");
+        LOGGER.info("Ldap User list before cleanup");
         LdapUtil.listEntries();
         deleteEntryIgnoringError(LDAP_USER_NAMESPACE);
         deleteEntryIgnoringError(LDAP_USER_NEWUSER);
@@ -87,7 +84,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
         LOGGER.info("Ldap User list after cleanup");
         LdapUtil.listEntries();
-        syncBdsqlAuth();
     }
 
     private static void deleteEntryIgnoringError(String username) {

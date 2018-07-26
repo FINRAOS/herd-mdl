@@ -18,9 +18,22 @@ package org.tsi.mdlt.test;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Stack;
 import java.util.stream.Stream;
 
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.ec2.model.DescribeSubnetsRequest;
+import com.amazonaws.services.ec2.model.DescribeVpcsRequest;
+import com.amazonaws.services.ec2.model.KeyPairInfo;
+import com.amazonaws.services.ec2.model.Subnet;
+import com.amazonaws.services.ec2.model.Vpc;
+import org.apache.commons.lang3.BooleanUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -28,8 +41,12 @@ import org.junit.jupiter.api.TestFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
+import org.tsi.mdlt.aws.SsmUtil;
+import org.tsi.mdlt.enums.SsmParameterKeyEnum;
+import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 import org.tsi.mdlt.util.StackOutputPropertyReader;
+import org.tsi.mdlt.util.TestProperties;
 import org.tsi.mdlt.util.shell.ShellCommandProperty;
 
 public class EMRClusterTest extends BaseTest {
@@ -54,8 +71,12 @@ public class EMRClusterTest extends BaseTest {
         cftClient = new CloudFormationClient(stackName);
         Map<String, String> parameters = new HashMap<>();
         parameters.put("MDLInstanceName", instanceName);
+        parameters.put("VpcId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.VPC_ID).getValue());
+        parameters.put("SubnetId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.PRIVATE_SUBNETS).getValue());
+        parameters.put("KeyPairName", TestProperties.getProperties().getProperty(StackInputParameterKeyEnum.KEY_PAIR_NAME.getKey()));
+
         try {
-            cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true, true);
+            cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true);
         }
         catch (AlreadyExistsException e) {
             LOGGER.info("Stack already exist, reuse existing running stack");
@@ -67,6 +88,7 @@ public class EMRClusterTest extends BaseTest {
         envVars.putAll(emrPrereqOutputs);
 
     }
+
 
     @TestFactory
     public Stream<DynamicTest> testShellCommandsForEMRClusterTest() {
@@ -84,5 +106,4 @@ public class EMRClusterTest extends BaseTest {
             e.printStackTrace();
         }
     }
-
 }
