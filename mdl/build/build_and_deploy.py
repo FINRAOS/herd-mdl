@@ -74,6 +74,9 @@ def main():
     _build_deploy_artifact()
 
     if os.getenv('action') in actions:
+        # clean bucket from the prefix
+        _clean_bucket()
+
         # upload artifact to S3
         _upload_artifact()
 
@@ -203,7 +206,7 @@ def _get_template_path():
 
 def _replace_template(template_path):
     """
-    replace the artificats url in the installMDL.yml
+    replace the artifact url in the installMDL.yml
     :return: template_body
     """
     logging.info('replace template: {}'.format(template_path))
@@ -212,7 +215,7 @@ def _replace_template(template_path):
 
     s3_artifacts_location_url = _get_artifact_url(os.getenv('s3_bucket'), os.getenv('s3_bucket_prefix'))
     git_hub_artifacts_url = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{' \
-                            'releaseVersion}-dist.zip '
+                            'releaseVersion}-dist.zip'
     template_body = template_body.replace(git_hub_artifacts_url, s3_artifacts_location_url)
 
     return template_body
@@ -224,13 +227,13 @@ def _upload_artifact():
 
     artifact = glob.glob('herd-mdl-*.zip', recursive=True)[0]
     logging.info('artifact name: {}'.format(artifact))
-    s3 = get_s3_client(os.getenv(('proxy')).strip())
+    s3 = get_s3_client(os.getenv('proxy').strip())
 
     # upload artifact and give it public access
     logging.info('uploading artifact to S3. Bucket: {}, Prefix: {}'.format(os.getenv('s3_bucket'),
                                                                            os.getenv('s3_bucket_prefix')))
     data = open('./{}'.format(artifact), 'rb')
-    s3.Bucket(os.getenv(('s3_bucket'))) \
+    s3.Bucket(os.getenv('s3_bucket')) \
         .put_object(ACL='public-read',
                     Key='{}/{}'.format(os.getenv('s3_bucket_prefix'), artifact),
                     Body=data,
@@ -288,6 +291,40 @@ def _load_cft_overrides():
         return data['Parameters']
 
 
+def _clean_bucket():
+    """
+       Deletes all objects from the specified prefix.
+       :return: None
+       """
+    s3 = boto3.client('s3')
+    bucket_name = os.getenv('s3_bucket')
+    prefix = os.getenv('s3_bucket_prefix')
+
+    try:
+        bucket = boto3.resource('s3').Bucket(bucket_name)
+        size = sum(1 for _ in bucket.objects.all())
+        print('Found {} objects.'.format(size))
+
+        while size is not 0:
+            objects_to_delete = []
+            for key in s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=1000)['Contents']:
+                objects_to_delete.append({
+                    'Key': key['Key']
+                })
+
+            logging.info('Deleting {} objects from bucket: {}'.format(len(objects_to_delete), bucket_name))
+            s3.delete_objects(
+                Bucket=bucket_name,
+                Delete={
+                    'Objects': objects_to_delete
+                }
+            )
+            size = sum(1 for _ in bucket.objects.all())
+
+    except Exception as ex:
+        logging.error('deletion failed: {}'.format(ex))
+
+
 def _get_artifact_url(bucket_name, prefix):
     """
     Gets the uploaded artifact S3 URL
@@ -319,7 +356,7 @@ def _deploy_stack():
 
     client = boto3.client('cloudformation')
     stack = client.create_stack(
-        StackName=os.getenv(('default_stack_name')),
+        StackName=os.getenv('default_stack_name'),
         TemplateBody=template_body,
         Parameters=parameters,
         DisableRollback=True,
