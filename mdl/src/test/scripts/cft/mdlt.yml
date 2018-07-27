@@ -311,7 +311,7 @@ Resources:
         DomainNameSuffix: !Ref DomainNameSuffix
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
-        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
@@ -340,7 +340,7 @@ Resources:
         DomainNameSuffix: ''
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
-        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
