@@ -44,38 +44,38 @@ environment- please skip the steps below and read the instructions [here](#runni
  
 
 ```
-action=deploy               ## build|deploy
-build_from=remote           ## remote|local
+action=deploy              
+build_from=remote          
 branch=develop
-s3_bucket=herd-mdl-deploy-bucket
-s3_bucket_prefix=sid
+s3_bucket=s3_bucket_name
+s3_bucket_prefix=prefix
 default_stack_name=demo-stack
-proxy=<proxy-host>          ## optional
+proxy=<proxy-host>          
 parameter_file_name=default-parameters.json  
-custom_tags=[{'Key': 'CustomKey','Value': 'CustomValue'}]      ## optional
+custom_tags=[{'Key': 'CustomKey','Value': 'CustomValue'}]      
 local_repo_path=/path/to/your/repo
 remote_repo_path=https://github.com/<username>/herd-mdl.git
-show_output=True            ## True|False
+show_output=True          
 
 ```
 
 #### Parameters
 
-|   |   |   |
-| ----- | ----- | ----- |
-| **Parameter name** | **Possible value(s)** | **Description** |
-| action | build <br> deploy | Builds the artifact and upload to S3. <br> Builds, uploads to S3 and launches a new stack.
-| build_from | remote <br><br> local | Clones remote repository to the container, switches to the specified branch and uses it to build artifacts. <br> Uses your local repository (needs to be mounted to the docker container)
-| branch | <git branch\> | The Git branch you want to build artifacts from.
-| s3_bucket | <s3bucket\>| Name of the S3 bucket you want to upload the build-artifacts to.
-| s3_bucket_prefix | <prefix\> | An optional prefix to use when uploading the build-artifact.
-| default_stack_name | <CloudFormation stack-name\> | The name to use when launching the MDL stack. Please note that there shouldn't be an existing stack with this name or the deployment will fail.
-| proxy | <proxyhost:port\> | An optional proxy used by the boto3 client to connect to AWS.
-| parameter_file_name | default_parameters_file.json | Name of the parameters file which is used to populate when launching the CloudFormation stack. This could be any valid JSON file with the same format as the one included in the herd-mdl repository [link]
-| custom_tags | json_array | An optional set of tags you want applied to your CloudFormation stack.
-| local_repo_path | /path/to/your/local/repo | fully-qualified path to your local repo. Please note that this directory also needs to be mounted on the docker container as a bind-mount.
-| remote_repo_path | https://remote/repo/location.git | Remote repository location eg: `https://github.com/<username>/herd-mdl.git`
-| show_output | True <br> False | Show output from system commands <br> Suppress system command outputs
+|       |       |       |       |
+| ----- | ----- | ----- | ----- |
+| **Parameter name** | **Required** | **Possible value(s)** | **Description** |
+| action | Y |build <br> deploy | Builds the artifact and upload to S3. <br> Builds, uploads to S3 and launches a new stack.
+| build_from | Y |remote <br><br><br> local | Clones remote repository to the container, switches to the specified branch and uses it to build artifacts. <br> Uses your local repository (needs to be mounted to the docker container)
+| branch | N | <git branch\> | The Git branch you want to build artifacts from.
+| s3_bucket | N | <s3bucket\>| Name of the S3 bucket you want to upload the build-artifacts to.
+| s3_bucket_prefix | N | <prefix\> | An optional prefix to use when uploading the build-artifact.
+| default_stack_name | Y | <CloudFormation stack-name\> | The name to use when launching the MDL stack. Please note that there shouldn't be an existing stack with this name or the deployment will fail.
+| proxy | N | <proxyhost:port\> | An optional proxy used by the boto3 client to connect to AWS.
+| parameter_file_name | Y | default_parameters_file.json | Name of the parameters file which is used to populate when launching the CloudFormation stack. This could be any valid JSON file with the same format as the one included in the herd-mdl repository [link]
+| custom_tags | N | json_array | An optional set of tags you want applied to your CloudFormation stack.
+| local_repo_path | N | /path/to/your/local/repo | fully-qualified path to your local repo. Please note that this directory also needs to be mounted on the docker container as a bind-mount.
+| remote_repo_path | N | https://remote/repo/location.git | Remote repository location eg: `https://github.com/<username>/herd-mdl.git`
+| show_output | N | True <br> False | Show output from system commands <br> Suppress system command outputs
 
 6\. Prepare to launch your docker container
 
