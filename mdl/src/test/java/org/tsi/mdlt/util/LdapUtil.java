@@ -174,7 +174,7 @@ public class LdapUtil {
             }
         }
         catch (NamingException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
     }
 

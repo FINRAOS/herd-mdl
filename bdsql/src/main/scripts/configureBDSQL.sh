@@ -96,18 +96,6 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     execute_cmd "sudo scripts/sql_auth.sh"
 fi
 
-mdlInstanceRowCount=0
-# Wait infinitely till the smoke testing data shows up. If the data does not show up for any reason, CFT will timeout
-while [ ${mdlInstanceRowCount} -ne 3 ] ; do
-    echo "Waiting for the smokeTesting data to show-up in Presto"
-    echo "presto-cli --catalog hive --schema mdl --execute \"select * from mdl.mdl_object_mdl_txt\""
-    echo "------------------------------------------------------"
-    presto-cli --catalog hive --schema mdl --execute "select * from mdl.mdl_object_mdl_txt"
-    echo "------------------------------------------------------"
-    mdlInstanceRowCount=`presto-cli --catalog hive --schema mdl --execute "select * from mdl.mdl_object_mdl_txt" | grep ${mdlInstanceName} | wc -l`
-    sleep 1m
-done
-
 echo "Everything looks good"
 
 exit 0

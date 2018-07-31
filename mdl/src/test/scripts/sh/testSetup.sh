@@ -37,19 +37,19 @@ function execute_cmd {
 
 #MAIN
 deployPropertiesFile=$1
+testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
-
 execute_cmd "cd /home/ec2-user"
 
-export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
-
 #mdlt setup: bring up mdl stack
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/herd-mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper setup"
+execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar org.tsi.mdlt.util.TestWrapper setup"
 
+#source test properties(stack output properties)
+. ${testPropsFile}
 #Copy ldap certificates to mdlt deploy host
-if [ "${EnableSSLAndAuth}" == 'true' ] ; then
+if [ "${EnableSSLAndAuth}" = 'true' ] ; then
     #1. add LDAP certificate to trusted store
     execute_cmd "aws configure set default.region ${RegionName}"
     LDAP_SERVER=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/LDAP/HostName" --output text --query Parameter.Value)
@@ -72,15 +72,16 @@ fi
 # download herd uploader jar
 execute_cmd "rm -rf mdl"
 execute_cmd "mkdir -p mdl/herd"
-#Todo Passing from parameter after using wrapper mdl
-herdVersion="0.70.0"
+#TODO need to remove this once herd issue fixed
+herdVersion="0.72.0"
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ./mdl/herd/herd-uploader-app.jar"
 
 # download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
 execute_cmd "mkdir -p mdl/bdsql"
-execute_cmd "aws s3 cp s3://${DeploymentBucketName}/${ReleaseVersion}/bdsql/bdsql.zip ."
+BdsqlReleaseVersion='1.1.0'
+execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${BdsqlReleaseVersion}/bdsql-${BdsqlReleaseVersion}-dist.zip -O bdsql.zip"
 execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
 execute_cmd "rm -rf bdsql.zip"
-execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/mdlt/build/${MDLTBranch}/scripts/sh/presto/sql_auth.sh"
+execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/scripts/sh/presto/sql_auth.sh"
 
 exit 0

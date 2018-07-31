@@ -73,17 +73,21 @@ public class HttpsAndAuthTest extends BaseTest {
     public void testOutputUrlHttpAndHttpsPrefix() {
         String httpsPrefix = "https";
         String httpPrefix = "http";
+        String bdsqlAuthSuffix = "443/hive";
+        String bdsqlNoAuthSuffix = "80/hive";
         if (IS_SSLAUTH_ENABLED) {
             LogVerification("Verify output url prefix is :" + httpsPrefix);
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.HERD_LB_URL).startsWith(httpsPrefix), "Herd LB url is not started with https");
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.HERD_URL).startsWith(httpsPrefix), "Herd URL is not started with https");
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.SHEPHERD_URL).startsWith(httpsPrefix), "Shepherd URl is not started with https");
+            assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.BDSQL_URL).endsWith(bdsqlAuthSuffix), "Bdsq URl is not ends with" + bdsqlAuthSuffix);
         }
         else {
             LogVerification("Verify output url prefix is :" + httpPrefix);
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.HERD_LB_URL).startsWith(httpPrefix), "Herd LB url is not started with http");
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.HERD_URL).startsWith(httpPrefix), "Herd URL is not started with http");
             assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.SHEPHERD_URL).startsWith(httpPrefix), "Shepherd URl is not started with http:");
+            assertTrue(StackOutputPropertyReader.get(StackOutputKeyEnum.BDSQL_URL).endsWith(bdsqlNoAuthSuffix), "Bdsq URl is not correct");
         }
     }
 

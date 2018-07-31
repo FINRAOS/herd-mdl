@@ -16,8 +16,6 @@
 package org.tsi.mdlt.test.bdsql;
 
 import static org.awaitility.Awaitility.given;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,7 +28,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.slf4j.Logger;
@@ -59,41 +59,38 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
     private static final User NOAUTH_VALID_JDBC_USER = User.getNoAuthValidJdbcUser();
 
     @TestFactory
-    //@DisableOnAuthenticationDisabled
+    @Tag("authTest")
     public Stream<DynamicTest> testPrestoAuthentication() {
-        if (!IS_AUTH_ENABLED) {
-            LOGGER.info("Testcases skipped as auth is disabled");
-            return null;
-        }
         return getJdbcTestCases(JDBC_AUTH_TESTCASES)
-                .stream().map(
-                        (JDBCTestCase command) -> DynamicTest.dynamicTest(COMPONENT + command.getName(), () -> {
-                            if (!IS_AUTH_ENABLED) {
-                                LogVerification("Verify jdbc query response pass with bad credential/permission when enableAuth is false");
-                                List<String> result = JDBCHelper.executeJDBCTestCase(command, envVars);
-                                assertThat(result, containsInAnyOrder(command.getAssertVal()));
-                            }
-                            else {
-                                LogVerification("Verify jdbc query response failure with bad credential/permission when enableAuth is true");
-                                SQLException authenticationException = assertThrows(SQLException.class, () -> {
-                                    JDBCHelper.executeJDBCTestCase(command, envVars);
-                                });
-                                List<String> expectErrorMsg = Arrays.asList("Authentication failed", "Connection property 'user' value is empty");
-                                String errorMsg = authenticationException.getMessage();
-                                assertTrue(errorMsg.contains(expectErrorMsg.get(0)) || errorMsg.contains(expectErrorMsg.get(1)));
-                            }
-                        }));
+            .stream().map(
+                (JDBCTestCase command) -> DynamicTest.dynamicTest(COMPONENT + command.getName(), () -> {
+                    LogVerification("Verify jdbc query response failure with bad credential/permission when enableAuth is true");
+                    SQLException authenticationException = assertThrows(SQLException.class, () -> {
+                        JDBCHelper.executeJDBCTestCase(command, envVars);
+                    });
+                    List<String> expectErrorMsg = Arrays.asList("Authentication failed", "Connection property 'user' value is empty");
+                    String errorMsg = authenticationException.getMessage();
+                    assertTrue(errorMsg.contains(expectErrorMsg.get(0)) || errorMsg.contains(expectErrorMsg.get(1)));
+                }));
     }
 
     @Test
-    //@DisableOnAuthenticationDisabled
-    //TO disable condition annotation is NOT working somehow
-    public void testPrestoReadWriteToLdapUserSchema() throws SQLException, ClassNotFoundException {
-        if (!IS_AUTH_ENABLED) {
-            LOGGER.info("Testcases skipped as auth is disabled");
-            return;
-        }
+    @Tag("authTest")
+    public void testPrestoReadWithUpperCaseUsername() {
+        String jdbcUrl = getValidPrestoJdbcUrl("sec_market_data");
+        String selectQuery = "select * from securitydata_mdl_txt";
+        LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
+        User ldapUser = User.getLdapMdlAppUser();
+        ldapUser.setUsername(ldapUser.getUsername().toUpperCase());
+        SQLException authorizationException = assertThrows(SQLException.class, () -> {
+            executePrestoSelect(selectQuery, jdbcUrl, ldapUser);
+        });
+        assertTrue(authorizationException.getMessage().contains("Access Denied"), "expect message not correct:" + authorizationException.getMessage());
+    }
 
+    @Test
+    @Tag("authTest")
+    public void testPrestoReadWriteToLdapUserSchema() throws SQLException, ClassNotFoundException {
         String ldapUser = LDAP_APP_USER.getUsername();
         String jdbcUrl = getValidPrestoJdbcUrl("user_" + ldapUser);
         String tableName = "write_test_table_1";
@@ -104,10 +101,10 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
 
         LogStep("Wait for table created");
         given().atMost(10, TimeUnit.MINUTES).pollInterval(30, TimeUnit.SECONDS)
-                .untilAsserted(() -> {
-                    String showTableQuery = "show tables from user_" + ldapUser;
-                    assertTrue(executePrestoSelect(showTableQuery, jdbcUrl, LDAP_APP_USER).contains(tableName));
-                });
+            .untilAsserted(() -> {
+                String showTableQuery = "show tables from user_" + ldapUser;
+                assertTrue(executePrestoSelect(showTableQuery, jdbcUrl, LDAP_APP_USER).contains(tableName));
+            });
 
         LOGGER.info("Before Insertion:");
         String selectQuery = "select * from " + tableName;
@@ -144,61 +141,54 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
     }
 
     @Test
+    @Tag("authTest")
     public void testPrestoWriteWithoutPermission() throws SQLException, ClassNotFoundException {
         String jdbcUrl = getValidPrestoJdbcUrl("mdl");
         String tableName = "test_write_table";
         String createTableQuery = String.format("create table IF NOT EXISTS %s (my_id bigint, my_string varchar)", tableName);
-        if (!IS_AUTH_ENABLED) {
-            LOGGER.info("Testcase testPrestoWriteWithoutPermission skipped when authentication is not enabled");
-        }
-        else {
-            LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
-            SQLException authorizationException = assertThrows(SQLException.class, () -> {
-                executePrestoUpdate(createTableQuery, jdbcUrl, LDAP_APP_USER);
-            });
-            assertTrue(authorizationException.getMessage().contains("Access Denied"));
-        }
+        LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
+        SQLException authorizationException = assertThrows(SQLException.class, () -> {
+            executePrestoUpdate(createTableQuery, jdbcUrl, LDAP_APP_USER);
+        });
+        assertTrue(authorizationException.getMessage().contains("Access Denied"));
     }
 
     @Test
     //TODO mdl issue for dropping table
+    @Disabled
+    @Tag("noAuthTest")
     public void testPrestoCreateInsertSelectDropTableIfNoAuth() throws SQLException, ClassNotFoundException {
-        if (!IS_AUTH_ENABLED) {
-            LogStep("Create Schema");
-            String jdbUrlWithoutSchema = StackOutputPropertyReader.get(StackOutputKeyEnum.BDSQL_URL);
-            executePrestoUpdate("create schema IF NOT EXISTS mdlt_test_schema", jdbUrlWithoutSchema, NOAUTH_VALID_JDBC_USER);
+        LogStep("Create Schema");
+        String jdbUrlWithoutSchema = StackOutputPropertyReader.get(StackOutputKeyEnum.BDSQL_URL);
+        executePrestoUpdate("create schema IF NOT EXISTS mdlt_test_schema", jdbUrlWithoutSchema, NOAUTH_VALID_JDBC_USER);
 
-            String jdbcUrl = getValidPrestoJdbcUrl("mdlt_test_schema");
-            String tableName = "test_write_table";
-            LogVerification("Verify jdbc query to create/insert/query/drop table pass when enableAuth is false");
-            LogStep("Create table");
-            String createTableQuery = String.format("create table IF NOT EXISTS %s (my_id bigint, my_string varchar)", tableName);
-            executePrestoUpdate(createTableQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER);
+        String jdbcUrl = getValidPrestoJdbcUrl("mdlt_test_schema");
+        String tableName = "test_write_table";
+        LogVerification("Verify jdbc query to create/insert/query/drop table pass when enableAuth is false");
+        LogStep("Create table");
+        String createTableQuery = String.format("create table IF NOT EXISTS %s (my_id bigint, my_string varchar)", tableName);
+        executePrestoUpdate(createTableQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER);
 
-            LogStep("Insert record");
-            String selectQuery = String.format("select * from %s", tableName);
-            int oldRecords = executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size();
-            String insertQuery = String.format("insert into %s values (1,'abcd')", tableName);
-            assertEquals(1, executePrestoUpdate(insertQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER));
+        LogStep("Insert record");
+        String selectQuery = String.format("select * from %s", tableName);
+        int oldRecords = executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size();
+        String insertQuery = String.format("insert into %s values (1,'abcd')", tableName);
+        assertEquals(1, executePrestoUpdate(insertQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER));
 
-            LogStep("Select record");
-            executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).forEach(LOGGER::info);
-            assertEquals(oldRecords + 1, executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size());
+        LogStep("Select record");
+        executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).forEach(LOGGER::info);
+        assertEquals(oldRecords + 1, executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size());
 
-            LogStep("Delete record");
-            String deleteQuery = String.format("delete from %s", tableName);
-            executePrestoUpdate(deleteQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER);
+        LogStep("Delete record");
+        String deleteQuery = String.format("delete from %s", tableName);
+        executePrestoUpdate(deleteQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER);
 
-            LogStep("Select record after deletion");
-            executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).forEach(LOGGER::info);
-            assertEquals(0, executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size(), "expect size is 0");
+        LogStep("Select record after deletion");
+        executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).forEach(LOGGER::info);
+        assertEquals(0, executePrestoSelect(selectQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER).size(), "expect size is 0");
 
-            LogStep("Drop table");
-            String dropQuery = String.format("drop table %s", tableName);
-            assertEquals(1, executePrestoUpdate(dropQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER));
-        }
-        else {
-            LOGGER.info("Testcase testPrestoCreateInsertSelectDropTableIfNoAuth skipped when authentication is enabled");
-        }
+        LogStep("Drop table");
+        String dropQuery = String.format("drop table %s", tableName);
+        assertEquals(1, executePrestoUpdate(dropQuery, jdbcUrl, NOAUTH_VALID_JDBC_USER));
     }
 }
