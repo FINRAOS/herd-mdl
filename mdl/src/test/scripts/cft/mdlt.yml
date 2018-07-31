@@ -185,8 +185,7 @@ Resources:
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
 
-              #TODO this url should change to git hub location
-              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip'.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -312,13 +311,12 @@ Resources:
         DomainNameSuffix: !Ref DomainNameSuffix
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
-        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        #TODO change this to use release 1.2.0 version
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
@@ -342,10 +340,9 @@ Resources:
         DomainNameSuffix: ''
         Environment: !Ref Environment
         CreateVPC: !Ref CreateVPC
-        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, 'UseExistingVPC']
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MdlVpcId: !Ref MdlVpcId
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        #TODO change this to use release 1.2.0 version
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'

@@ -41,6 +41,7 @@ testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
+
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
@@ -78,8 +79,7 @@ execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finr
 
 # download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
 execute_cmd "mkdir -p mdl/bdsql"
-#TODO change this version to 1.1.0
-BdsqlReleaseVersion='1.0.0'
+BdsqlReleaseVersion='1.1.0'
 execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${BdsqlReleaseVersion}/bdsql-${BdsqlReleaseVersion}-dist.zip -O bdsql.zip"
 execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
 execute_cmd "rm -rf bdsql.zip"
