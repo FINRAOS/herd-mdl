@@ -28,6 +28,8 @@ function init() {
     export LDAP_ADMIN_USER="ldap_admin_user"
     export MDL_APP_USER="ldap_mdl_app_user"
     export SEC_APP_USER="ldap_sec_app_user"
+    export HERD_ADMIN_USER="ldap_herd_admin_user"
+    export HERD_RO_USER="ldap_herd_ro_user"
     export AUTH_GROUP="ou=People"
 
     # source bash_profile to load logger and utils
@@ -58,14 +60,23 @@ function init_params() {
 
     MDL_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
     SEC_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
+    HERD_ADMIN_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
+    HERD_RO_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
 
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AdministratorPassword --value ${LDAP_ADMIN_PASS} --type SecureString --description \"LDAP administrative password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword --value ${MDL_APP_PASS} --type SecureString --description \"LDAP application/service password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/SecAppPassword --value ${SEC_APP_PASS} --type SecureString --description \"LDAP sec account password\" --overwrite"
 
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/HerdAdminUsername --value ${HERD_ADMIN_USER} --type String --description \"Herd admin username\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/HerdRoUsername --value ${HERD_RO_USER} --type String --description \"Herd readonly username\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/HerdAdminPassword --value ${HERD_ADMIN_PASS} --type SecureString --description \"Herd admin user password\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/HerdRoPassword --value ${HERD_RO_PASS} --type SecureString --description \"Herd readonly user password\" --overwrite"
+
     LDAP_ADMIN_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${LDAP_ADMIN_PASS}")
     MDL_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${MDL_APP_PASS}")
     SEC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${SEC_APP_PASS}")
+    HERD_ADMIN_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${HERD_ADMIN_PASS}")
+    HERD_RO_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${HERD_RO_PASS}")
 
     BASE_DN=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN --output text --query Parameter.Value)
 }
@@ -199,14 +210,47 @@ EOF
     echo "$USER_LDIF" > new_user.ldif
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
+    # Herd Admin account
+    read -r -d '' USER_LDIF << EOF
+dn: uid=${HERD_ADMIN_USER},${AUTH_GROUP},${BASE_DN}
+changetype: add
+uid: ${HERD_ADMIN_USER}
+cn: ${HERD_ADMIN_USER}
+sn: null
+objectClass: inetOrgPerson
+userPassword: ${HERD_ADMIN_PASS_CRYPT}
+EOF
+    echo "$USER_LDIF" > new_user.ldif
+    ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
+
+    # Herd ReadOnly account
+    read -r -d '' USER_LDIF << EOF
+dn: uid=${HERD_RO_USER},${AUTH_GROUP},${BASE_DN}
+changetype: add
+uid: ${HERD_RO_USER}
+cn: ${HERD_RO_USER}
+sn: null
+objectClass: inetOrgPerson
+userPassword: ${HERD_RO_PASS_CRYPT}
+EOF
+    echo "$USER_LDIF" > new_user.ldif
+    ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
+
     # Create MDL LDAP group and add service account to group
     MDL_AD="APP_MDL_ACL_RO_mdl"
     SEC_AD="APP_MDL_ACL_RO_sec_market_data"
+    create_group "APP_MDL_Users" "${MDL_APP_USER}"
     create_group "${MDL_AD}" "${MDL_APP_USER}"
     create_group "${SEC_AD}" "${SEC_APP_USER}"
+    create_group "${ADMIN_AD}" "${MDL_APP_USER}"
+    create_group "${RO_AD}" "${SEC_APP_USER}"
 
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAdGroup --value "${MDL_AD}" --type String --description \"LDAP mdl schema AD group\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/SecAdGroup --value "${SEC_AD}" --type String --description \"LDAP sec_market_data schema AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --value "${MDL_AD}" --type String --description \"LDAP mdl schema AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --value "${SEC_AD}" --type String --description \"LDAP sec_market_data schema AD group\" --overwrite"
+
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --value "${MDL_AD}" --type String --description \"LDAP HERD Admin AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --value "${MDL_AD}" --type String --description \"LDAP Herd Readonly AD group\" --overwrite"
+
 
     execute_cmd "/etc/init.d/slapd restart"
 }
