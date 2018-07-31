@@ -37,8 +37,7 @@ function execute_cmd {
 
 # Curl commands need to be retried multiple times to avoid network errors
 function execute_curl_cmd {
-  mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -63,6 +62,8 @@ fi
 
 execute_cmd "cd /home/mdladmin"
 execute_cmd "aws configure set default.region ${region}"
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
 
 #Configure cloudwatch log for herd
 execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"

@@ -36,7 +36,7 @@ function execute_cmd {
 }
 
 function execute_curl_cmd {
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -58,7 +58,8 @@ fi
 . ${configFile}
 
 execute_cmd "echo \"From $0\""
-mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
 
 if [ "${refreshDatabase}" = "true" ] ; then
 
