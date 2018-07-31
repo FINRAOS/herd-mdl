@@ -239,17 +239,20 @@ EOF
     # Create MDL LDAP group and add service account to group
     MDL_AD="APP_MDL_ACL_RO_mdl"
     SEC_AD="APP_MDL_ACL_RO_sec_market_data"
+    HERD_ADMIN_AD="HERD_ADMIN"
+    HERD_RO_AD="HERD_RO"
+
     create_group "APP_MDL_Users" "${MDL_APP_USER}"
     create_group "${MDL_AD}" "${MDL_APP_USER}"
     create_group "${SEC_AD}" "${SEC_APP_USER}"
-    create_group "${ADMIN_AD}" "${MDL_APP_USER}"
-    create_group "${RO_AD}" "${SEC_APP_USER}"
+    create_group "${HERD_ADMIN_AD}" "${HERD_ADMIN_USER}"
+    create_group "${HERD_RO_AD}" "${HERD_RO_USER}"
 
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --value "${MDL_AD}" --type String --description \"LDAP mdl schema AD group\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --value "${SEC_AD}" --type String --description \"LDAP sec_market_data schema AD group\" --overwrite"
 
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --value "${MDL_AD}" --type String --description \"LDAP HERD Admin AD group\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --value "${MDL_AD}" --type String --description \"LDAP Herd Readonly AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --value "${HERD_ADMIN_AD}" --type String --description \"LDAP HERD Admin AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --value "${HERD_RO_AD}" --type String --description \"LDAP Herd Readonly AD group\" --overwrite"
 
 
     execute_cmd "/etc/init.d/slapd restart"
