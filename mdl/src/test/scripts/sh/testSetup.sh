@@ -41,7 +41,6 @@ testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
-
 execute_cmd "cd /home/ec2-user"
 
 #mdlt setup: bring up mdl stack
