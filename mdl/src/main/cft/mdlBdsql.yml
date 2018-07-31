@@ -350,6 +350,13 @@ Resources:
         Type: CNAME
         TTL: '900'
         ResourceRecords: [!GetAtt [BdsqlLoadBalancer, DNSName]]
+  BdsqlClusterIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Bdsql/ClusterId'
+      Type: String
+      Value: !Ref BdsqlEMRPrestoCluster
+      Description: Bdsql Cluster Id
 Outputs:
   BdsqlLoadBalancerURL:
     Value: !Join

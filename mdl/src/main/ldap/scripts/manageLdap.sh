@@ -278,6 +278,12 @@ function delete_object(){
 
 }
 
+function sync_bdsql(){
+   BdsqlEMRPrestoCluster=$(aws ssm get-parameter --name "/app/MDL/$PURPOSE/$ENVIRONMENT/Bdsql/ClusterId" --output text --query Parameter.Value)
+   DeploymentBucketName=$(aws ssm get-parameter --name "/app/MDL/$PURPOSE/$ENVIRONMENT/S3/MDL" --output text --query Parameter.Value)
+   aws emr add-steps --cluster-id ${BdsqlEMRPrestoCluster} --steps Type=CUSTOM_JAR,Name=BdsqlSyncStep,ActionOnFailure=CONTINUE,Jar=s3://elasticmapreduce/libs/script-runner/script-runner.jar,Args=s3://${DeploymentBucketName}//BDSQL/sql_auth.sh
+}
+
 parse_args "$@"
 
 if [[ "$1" == '--help' || "$1" == 'help' ]]; then
@@ -289,12 +295,16 @@ init_ldap_info
 
 if [[ "$ACTION" == "create_user" ]]; then
   create_user "$USER_NAME"
+  sync_bdsql
 elif [[ "$ACTION" == "create_group" ]]; then
   create_group "$GROUP" "$USER_NAME"
+  sync_bdsql
 elif [[ "$ACTION" == "add_user_to_group" ]]; then
   add_user_to_group "$GROUP" "$USER_NAME"
+  sync_bdsql
 elif [[ "$ACTION" == "delete_object" ]]; then
   delete_object "$DN"
+  sync_bdsql
 elif [[ "$ACTION" == "show_directory" ]]; then
   show_directory
 else

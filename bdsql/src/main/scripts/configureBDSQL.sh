@@ -94,6 +94,7 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
 
     # Execute authorization codebase
     execute_cmd "sudo scripts/sql_auth.sh"
+    execute_cmd "sudo aws s3 cp scripts/sql_auth.sh s3://${mdlStagingBucketName}/BDSQL/sql_auth.sh"
 fi
 
 echo "Everything looks good"

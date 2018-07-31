@@ -200,7 +200,13 @@ EOF
     ldapmodify -x -w "${LDAP_ADMIN_PASS}" -D "cn=${LDAP_ADMIN_USER},${BASE_DN}" -H "ldaps://${HOSTNAME}" -f new_user.ldif
 
     # Create MDL LDAP group and add service account to group
-    create_group "APP_MDL_Users" "${MDL_APP_USER}"
+    MDL_AD="APP_MDL_ACL_RO_mdl"
+    SEC_AD="APP_MDL_ACL_RO_sec_market_data"
+    create_group "${MDL_AD}" "${MDL_APP_USER}"
+    create_group "${SEC_AD}" "${SEC_APP_USER}"
+
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAdGroup --value "${MDL_AD}" --type String --description \"LDAP mdl schema AD group\" --overwrite"
+    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/SecAdGroup --value "${SEC_AD}" --type String --description \"LDAP sec_market_data schema AD group\" --overwrite"
 
     execute_cmd "/etc/init.d/slapd restart"
 }
