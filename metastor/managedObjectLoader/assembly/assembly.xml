@@ -26,7 +26,7 @@
       <directory>target</directory>
       <outputDirectory>managedObjectLoader</outputDirectory>
       <includes>
-        <include>managedObjectLoader.jar</include>
+        <include>managedObjectLoader-exec.jar</include>
       </includes>
     </fileSet>
     <fileSet>
