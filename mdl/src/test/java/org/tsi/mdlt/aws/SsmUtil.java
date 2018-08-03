@@ -72,6 +72,11 @@ public class SsmUtil {
         return getParameter(parameterKey, false);
     }
 
+    public static Parameter getSecureParameter(String parameterKey) {
+        return getParameter(parameterKey, true);
+    }
+
+
     private static Parameter getSsmParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
         return getParameter(parameterKey.getParameterKey(), isEncrypted);
     }
@@ -80,7 +85,7 @@ public class SsmUtil {
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
             AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
-                .withRegion(Regions.getCurrentRegion().getName()).build();
+                .withRegion(Regions.US_EAST_1).build();
         GetParameterRequest parameterRequest = new GetParameterRequest();
         parameterRequest.withName(parameterKey).setWithDecryption(isEncrypted);
         GetParameterResult parameterResult = simpleSystemsManagementClient.getParameter(parameterRequest);

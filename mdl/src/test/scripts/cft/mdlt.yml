@@ -184,8 +184,8 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
-
-              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
+              #TODO change to release location
+              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -316,7 +316,7 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'

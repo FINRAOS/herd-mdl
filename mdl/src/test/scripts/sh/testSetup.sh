@@ -79,7 +79,7 @@ execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finr
 # download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
 execute_cmd "mkdir -p mdl/bdsql"
 BdsqlReleaseVersion='1.1.0'
-execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${BdsqlReleaseVersion}/bdsql-${BdsqlReleaseVersion}-dist.zip -O bdsql.zip"
+execute_cmd "wget --quiet --random-wait https://s3.amazonaws.com/herd-mdl-deploy-bucket/bdsql/bdsql-1.0.0-dist.zip  -O bdsql.zip"
 execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
 execute_cmd "rm -rf bdsql.zip"
 execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/scripts/sh/presto/sql_auth.sh"

@@ -62,7 +62,7 @@ execute_cmd "aws s3 cp ${deployProps} /home/hadoop/conf/"
 
 # Deploy the package
 execute_cmd "cd /home/hadoop"
-execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${bdsqlVersion}/bdsql-${bdsqlVersion}-dist.zip -O /home/hadoop/bdsql.zip"
+execute_cmd "wget --quiet --random-wait https://s3.amazonaws.com/herd-mdl-deploy-bucket/bdsql/bdsql-1.0.0-dist.zip -O /home/hadoop/bdsql.zip"
 execute_cmd "unzip bdsql.zip"
 execute_cmd "chmod 755 scripts/*"
 
