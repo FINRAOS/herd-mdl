@@ -131,7 +131,7 @@ public class NotificationSender {
 		}
 	}
 
-	String getFormatChangeMsg( FormatChange change, int version, JobDefinition job,
+	protected String getFormatChangeMsg( FormatChange change, int version, JobDefinition job,
 							   HiveTableSchema existing, HiveTableSchema newColumns )
 			throws PebbleException, IOException {
 		PebbleTemplate template = engine.getTemplate( "templates/formatChangeNotificationTemplate.txt" );
