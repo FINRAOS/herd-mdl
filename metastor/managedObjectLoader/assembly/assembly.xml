@@ -30,7 +30,7 @@
       </includes>
     </fileSet>
     <fileSet>
-      <directory>src/main/scripts</directory>
+      <directory>scripts</directory>
       <outputDirectory>managedObjectLoader/scripts</outputDirectory>
     </fileSet>
 	  <fileSet>
