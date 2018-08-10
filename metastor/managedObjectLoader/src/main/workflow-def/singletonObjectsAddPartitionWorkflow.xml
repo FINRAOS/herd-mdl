@@ -136,24 +136,24 @@
 </timerEventDefinition>
 </intermediateCatchEvent>
 <sequenceFlow id="flow21" name="Retry" sourceRef="timerintermediatecatchevent1" targetRef="exclusivegateway1">
-<conditionExpression xsi:type="tFormalExpression">${noOfRetries &lt; maxRetries}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${noOfRetries &lt; maxRetries}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow22" sourceRef="timerintermediatecatchevent1" targetRef="prepareEmailContent">
-<conditionExpression xsi:type="tFormalExpression">${noOfRetries >= maxRetries}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${noOfRetries >= maxRetries}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow33" name="Cluster Failed" sourceRef="createCluster" targetRef="timerintermediatecatchevent1">
-<conditionExpression xsi:type="tFormalExpression">${createCluster_taskStatus == 'ERROR'}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${createCluster_taskStatus == 'ERROR'}</conditionExpression>
 </sequenceFlow>
 <serviceTask id="emailWorkflowFailure" name="Send Email on Workflow Step Failure" activiti:type="mail">
 <extensionElements>
     <activiti:field name="to">
-        <activiti:expression>${MailDL}></activiti:expression>
+        <activiti:expression>${MailDL}</activiti:expression>
     </activiti:field>
     <activiti:field name="subject">
-        <activiti:expression>METASTOR - ${env} - Singleton Object Add Partition failed After ${noOfRetries} Retries for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}></activiti:expression>
+        <activiti:expression>METASTOR - ${env} - Singleton Object Add Partition failed After ${noOfRetries} Retries for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}</activiti:expression>
     </activiti:field>
     <activiti:field name="text">
-        <activiti:expression>${emailmsg}></activiti:expression>
+        <activiti:expression>${emailmsg}</activiti:expression>
     </activiti:field>
 </extensionElements>
 </serviceTask>
@@ -162,49 +162,49 @@
 <serviceTask id="getBusinessObjectFormat" name="Get Format Definition to retrieve partition key" activiti:async="true" activiti:class="org.finra.herd.service.activiti.task.GetBusinessObjectFormat">
 <extensionElements>
     <activiti:field name="namespace">
-        <activiti:expression>${notification_businessObjectDefinitionNamespace}></activiti:expression>
+        <activiti:expression>${notification_businessObjectDefinitionNamespace}</activiti:expression>
     </activiti:field>
     <activiti:field name="businessObjectDefinitionName">
-        <activiti:expression>${notification_businessObjectDefinitionName}></activiti:expression>
+        <activiti:expression>${notification_businessObjectDefinitionName}</activiti:expression>
     </activiti:field>
     <activiti:field name="businessObjectFormatUsage">
-        <activiti:expression>${notification_businessObjectFormatUsage}></activiti:expression>
+        <activiti:expression>${notification_businessObjectFormatUsage}</activiti:expression>
     </activiti:field>
     <activiti:field name="businessObjectFormatFileType">
-        <activiti:expression>${notification_businessObjectFormatFileType}></activiti:expression>
+        <activiti:expression>${notification_businessObjectFormatFileType}</activiti:expression>
     </activiti:field>
 </extensionElements>
 </serviceTask>
 <serviceTask id="save_to_db" name="Save To DB" activiti:class="org.finra.herd.service.activiti.task.ExecuteJdbc">
 <extensionElements>
     <activiti:field name="contentType">
-        <activiti:string>json></activiti:string>
+        <activiti:string>json</activiti:string>
     </activiti:field>
     <activiti:field name="jdbcExecutionRequest">
-        <activiti:expression>${jdbcExecutionRequest}></activiti:expression>
+        <activiti:expression>${jdbcExecutionRequest}</activiti:expression>
     </activiti:field>
 </extensionElements>
 </serviceTask>
 <sequenceFlow id="flow55" sourceRef="save_to_db" targetRef="exclusivegateway1">
-<conditionExpression xsi:type="tFormalExpression">${save_to_db_taskStatus == 'SUCCESS'}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${save_to_db_taskStatus == 'SUCCESS'}</conditionExpression>
 </sequenceFlow>
 <serviceTask id="mailtask1" name="Send Email on savetodb failure" activiti:type="mail">
 <extensionElements>
     <activiti:field name="to">
-        <activiti:expression>${MailDL}></activiti:expression>
+        <activiti:expression>${MailDL}</activiti:expression>
     </activiti:field>
     <activiti:field name="subject">
-        <activiti:expression>METASTOR - ${env} - Save to DB failed for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}></activiti:expression>
+        <activiti:expression>METASTOR - ${env} - Save to DB failed for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}</activiti:expression>
     </activiti:field>
     <activiti:field name="text">
         <activiti:expression>Save to DB failed for ${notification_businessObjectDefinitionNamespace}-${notification_businessObjectDefinitionName}-${notification_businessObjectFormatUsage}-${notification_businessObjectFormatFileType}-${stepDates}
 
-    ${save_to_db_taskErrorMessage}></activiti:expression>
+    ${save_to_db_taskErrorMessage}</activiti:expression>
     </activiti:field>
 </extensionElements>
 </serviceTask>
 <sequenceFlow id="flow59" sourceRef="save_to_db" targetRef="timerintermediatecatchevent2">
-<conditionExpression xsi:type="tFormalExpression">${save_to_db_taskStatus != 'SUCCESS'}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${save_to_db_taskStatus != 'SUCCESS'}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow60" sourceRef="mailtask1" targetRef="end_workflow"></sequenceFlow>
 <sequenceFlow id="flow62" sourceRef="scripttask1" targetRef="save_to_db"></sequenceFlow>
@@ -237,14 +237,14 @@
 <sequenceFlow id="flow63" sourceRef="exclusivegateway1" targetRef="updateVariables"></sequenceFlow>
 <sequenceFlow id="flow64" sourceRef="updateVariables" targetRef="createCluster"></sequenceFlow>
 <sequenceFlow id="flow66" sourceRef="start_workflow" targetRef="getBusinessObjectFormat">
-<conditionExpression xsi:type="tFormalExpression">${notification_businessObjectData == '?'}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${notification_businessObjectData == '?'}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow67" sourceRef="getBusinessObjectFormat" targetRef="scripttask1"></sequenceFlow>
 <sequenceFlow id="flow68" sourceRef="start_workflow" targetRef="scripttask1">
-<conditionExpression xsi:type="tFormalExpression">${notification_businessObjectData != '?'}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${notification_businessObjectData != '?'}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow69" name="Using Existing Cluster" sourceRef="createCluster" targetRef="end_workflow">
-<conditionExpression xsi:type="tFormalExpression">${createCluster_taskStatus == 'SUCCESS' }></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${createCluster_taskStatus == 'SUCCESS' }</conditionExpression>
 </sequenceFlow>
 <intermediateCatchEvent id="timerintermediatecatchevent2" name="TimerCatchEvent">
 <timerEventDefinition>
@@ -252,7 +252,7 @@
 </timerEventDefinition>
 </intermediateCatchEvent>
 <sequenceFlow id="flow71" sourceRef="timerintermediatecatchevent2" targetRef="mailtask1">
-<conditionExpression xsi:type="tFormalExpression">${noOfDBRetries >= maxDBRetries}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${noOfDBRetries >= maxDBRetries}</conditionExpression>
 </sequenceFlow>
 <scriptTask id="updateDBRetry" name="updateDBRetry" activiti:async="true" scriptFormat="javascript" activiti:autoStoreVariables="false">
 <script>       var rt = parseInt(execution.getVariable("noOfDBRetries"))+1;
@@ -260,7 +260,7 @@
 </script>
 </scriptTask>
 <sequenceFlow id="flow72" sourceRef="timerintermediatecatchevent2" targetRef="updateDBRetry">
-<conditionExpression xsi:type="tFormalExpression">${noOfDBRetries &lt; maxDBRetries}></conditionExpression>
+<conditionExpression xsi:type="tFormalExpression">${noOfDBRetries &lt; maxDBRetries}</conditionExpression>
 </sequenceFlow>
 <sequenceFlow id="flow73" sourceRef="updateDBRetry" targetRef="save_to_db"></sequenceFlow>
         </process>
