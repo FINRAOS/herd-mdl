@@ -65,13 +65,21 @@ metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${
 
 if [ "${refreshDatabase}" = "true" ] ; then
 
+    # create namespace
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+
     # addPartitionWorkflow
     execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
+    # singletonObjectsAddPartitionWorkflow
+    execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
 
     # Replace values for cluster definition
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
