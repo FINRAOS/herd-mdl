@@ -258,10 +258,6 @@ Resources:
         MDLInstanceName: !Ref MDLInstanceName
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         Environment: !Ref Environment
-        LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
-        LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         LogGroupName: !Ref AWS::StackName
         CloudWatchRetentionDays: !Ref CloudWatchRetentionDays
@@ -299,8 +295,8 @@ Resources:
         ImageId: !Ref ImageId
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/AdministratorName]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/AdministratorPassword]]
         HerdInstanceType: !Ref HerdInstanceType
         RefreshDatabase: !Ref RefreshDatabase
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
@@ -348,8 +344,8 @@ Resources:
         ImageId: !Ref ImageId
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MDLAppPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/AdministratorName]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/AdministratorPassword]]
         RefreshDatabase: !Ref RefreshDatabase
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
@@ -381,7 +377,7 @@ Resources:
         MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
         MDLInstanceName: !Ref MDLInstanceName
         CertificateArn: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/MdlAppUsername]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/AdministratorName]]
         Environment: !Ref Environment
         PrestoMaxMemoryPerNode: !Ref PrestoMaxMemoryPerNode
         EnableSSLAndAuth: !Ref EnableSSLAndAuth

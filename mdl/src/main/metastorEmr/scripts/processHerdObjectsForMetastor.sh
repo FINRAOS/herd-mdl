@@ -44,8 +44,8 @@ deployLocation="/home/hadoop"
 execute_cmd "aws configure set default.region ${region}"
 
 hivePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-ldapMdlAppUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
 
 execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/managedObjectLoader-${metastorVersion}-dist.zip -O ${deployLocation}/managedObjectLoader.zip"
 execute_cmd "cd ${deployLocation}"
@@ -56,7 +56,7 @@ config_file_location="${deployLocation}/managedObjectLoader/scripts/config/appli
 # Change the application.properties for metastor
 execute_cmd "sed -i \"s/{{DM_REST_URL}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}\/herd-app\/rest\//g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${config_file_location}"
-execute_cmd "sed -i \"s/{{METASTOR_SVC_ACCOUNT}}/${ldapMdlAppUsername}/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{METASTOR_SVC_ACCOUNT}}/${herdAdminUsername}/g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{DM_DATA_BUCKET}}/${herdS3BucketName}/g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{ENV_GROUP}}/${environment}/g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{MS_HIVE_0_13_USER}}/MS_Hive_0_13/g\" ${config_file_location}"
@@ -81,7 +81,7 @@ sed -i "s/{{{MS_HIVE_0_13_PWD}}}/${hivePassword}/g" ${config_file_location}
 check_error $? "sed {{HIVE_PASSWORD}} application.props"
 
 execute_cmd "mkdir -p /home/hadoop/dmCreds/"
-echo -n "${ldapMdlAppUsername}:${mdlUserLdapPassword}" | base64 > /home/hadoop/dmCreds/dmPass.base64
+echo -n "${herdAdminUsername}:${herdAdminPassword}" | base64 > /home/hadoop/dmCreds/dmPass.base64
 
 # Execute the metastor script
 execute_cmd "cd ${deployLocation}/managedObjectLoader/scripts"

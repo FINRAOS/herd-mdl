@@ -35,6 +35,20 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+execute_cmd "aws configure set default.region ${region}"
+
+# Get admin user and password from parameter store
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 # Curl commands need to be retried multiple times to avoid network errors
 function execute_curl_cmd {
 	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
@@ -51,19 +65,7 @@ function execute_curl_cmd {
   fi
 }
 
-
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
 execute_cmd "cd /home/mdladmin"
-execute_cmd "aws configure set default.region ${region}"
-herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
-herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
 
 #Configure cloudwatch log for herd
 execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"
@@ -84,11 +86,6 @@ function addStackTagsToSqs(){
         execute_cmd "aws sqs tag-queue --queue-url ${herdInQueueUrl} --tags \"$sqs_tags\""
         execute_cmd "aws sqs tag-queue --queue-url ${esearchQueueUrl} --tags \"$sqs_tags\""
     fi
-}
-
-function addStackTagsToCloudFront(){
-    stack_tags=$(aws cloudformation describe-stacks --stack-name tagsqs --query "Stacks[*].Tags" --output json | jq -c '.[]')
-    #TODO: difficulty in getting cloudfront arn by cli get command directly
 }
 
 execute_cmd "echo \"From $0\""
@@ -139,36 +136,46 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
 fi
 
+if [ "${enableSSLAndAuth}" = "true" ] ; then
+
+    # Get app users from the parameter store
+    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    hub_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdHubUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    etlmgmt_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdEtlmgmtUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    basic_read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdBasicUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+
+    # Create namespaces
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"HUB\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"ETLMGMT\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+
+    # Add READ/WRITE permissions for the MDL user on the MDL namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ/WRITE permissions for the SEC user on the SEC namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ/WRITE permissions for the HUB user on the HUB namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${hub_read_write_user}\",\"namespace\":\"HUB\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ/WRITE permissions for the ETLMGMT user on the ETLMGMT namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${etlmgmt_read_write_user}\",\"namespace\":\"ETLMGMT\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ permissions for the RO user on the SEC, MDL, HUB and ETLMGMT namespaces
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"HUB\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"ETLMGMT\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+fi
+
 # Execute the demo script if asked
 if [ "${createDemoObjects}" = "true" ] ; then
     execute_cmd "${deployLocation}/scripts/demoHerd.sh"
     execute_cmd "${deployLocation}/scripts/demoES.sh"
-fi
-
-if [ "${enableSSLAndAuth}" = "true" ] ; then
-
-    # Get admin user and password from parameter store
-    admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    admin_pass=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
-
-    # Get app users from the parameter store
-    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/SecAppUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-
-    # Create Namespace
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-
-    # Add READ/WRITE permissions for the MDL user on the MDL namespace
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ/WRITE permissions for the SEC user on the SEC namespace
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ permissions for the RO user on the SEC & MDL namespaces
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-    execute_curl_cmd "curl --request POST --user ${admin_user}:${admin_pass} --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
 fi
 
 # Signal to Cloud Stack

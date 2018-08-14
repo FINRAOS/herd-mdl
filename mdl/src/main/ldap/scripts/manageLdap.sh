@@ -103,16 +103,16 @@ function init_ldap_info(){
     --output text --query Parameter.Value)
 
   ADMIN_USER=$(aws ssm get-parameter \
-    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/AdministratorName" \
+    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/User/AdministratorName" \
     --output text --query Parameter.Value)
   ADMIN_PASS=$(aws ssm get-parameter \
-    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/AdministratorPassword" \
+    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/Password/AdministratorPassword" \
     --with-decryption --output text --query Parameter.Value)
   APP_USER=$(aws ssm get-parameter \
-    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/MdlAppUsername" \
+    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/User/HerdAdminUsername" \
     --output text --query Parameter.Value)
   APP_PASS=$(aws ssm get-parameter \
-    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/MDLAppPassword" \
+    --name "/app/MDL/$PURPOSE/$ENVIRONMENT/LDAP/Password/HerdAdminPassword" \
     --with-decryption --output text --query Parameter.Value)
 
   if [[ -z "$LDAP_HOSTNAME" || -z "$BASE_DN" || -z "$ADMIN_USER" || -z "$ADMIN_PASS" || -z "$APP_USER" || -z "$APP_PASS" ]]; then

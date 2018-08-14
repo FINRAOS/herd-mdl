@@ -50,7 +50,6 @@ Parameters:
     AllowedPattern: ^(dc=[^=]+,)*(dc=[^=]+)$
     ConstraintDescription: Must be 1 or more dc= statements separated by commas. all
       lowercase, no spaces.
-    Default: dc=mdl,dc=org
     Description: 'The DN of the LDAP domain. example: dc=myorg,dc=com'
     Type: String
   MDLServerDeploymentRole:
@@ -293,63 +292,9 @@ Resources:
     DependsOn: LdapEc2Instance
     Properties:
       Handle: !Ref LdapWaitHandle
-      Timeout: '600'
-  LdapBaseDNParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/BaseDN
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, !Ref DN, NoAuthentication]
-      Description: LDAP Base DN parameter
-  LdapMdlAppUsernameParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/MdlAppUsername
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, ldap_mdl_app_user, NoAuthentication]
-      Description: MDL LDAP application/service account username parameter
-  LdapSecAppUsernameParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/SecAppUsername
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, ldap_sec_app_user, NoAuthentication]
-      Description: MDL LDAP sec app account username parameter
-  LdapAdministratorNameParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/AdministratorName
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, ldap_admin_user, NoAuthentication]
-      Description: LDAP administrator name
+      Timeout: '900'
+
+# LDAP General Parameters
   HostNameParameter:
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
@@ -364,7 +309,7 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: LDAP HostName name
-  MDLAppPasswordParameter:
+  LdapBaseDNParameter:
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -374,11 +319,13 @@ Resources:
           - !Ref MDLInstanceName
           - /
           - !Ref Environment
-          - /LDAP/MDLAppPassword
+          - /LDAP/BaseDN
       Type: String
-      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: LDAP sec app account password parameter
-  SecAppPasswordParameter:
+      Value: !If [CreateOpenLDAPCondition, !Ref DN, NoAuthentication]
+      Description: LDAP Base DN parameter
+
+# LDAP Admin parameters
+  LdapAdministratorNameParameter:
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -388,10 +335,316 @@ Resources:
           - !Ref MDLInstanceName
           - /
           - !Ref Environment
-          - /LDAP/SecAppPassword
+          - /LDAP/User/AdministratorName
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, ldap_admin_user, NoAuthentication]
+      Description: LDAP administrator name
+  LdapAdministratorPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/AdministratorPassword
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: LDAP MDLTestPassword
+      Description: LDAP administator account password parameter
+
+# Auth Groups
+
+  LdapHerdAdminAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/Admin
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HERD_ADMIN, NoAuthentication]
+      Description: MDL Herd ADMIN auth group-name parameter
+  LdapHerdRoAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/RO
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HERD_RO, NoAuthentication]
+      Description: MDL Herd Read-Only auth group-name parameter
+  LdapHerdMdlAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/MDL
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_MDL_RW, NoAuthentication]
+      Description: MDL Herd MDL auth group-name parameter
+  LdapHerdSecAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/SEC
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_SEC_RW, NoAuthentication]
+      Description: MDL Herd SEC auth group-name parameter
+  LdapHerdHubAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/HUB
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HUB_RW, NoAuthentication]
+      Description: MDL Herd HUB auth group-name parameter
+  LdapHerdEtlmgmtAuthGroupParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/ETLMGMT
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_ETL_RW, NoAuthentication]
+      Description: MDL Herd ETLMGMT auth group-name parameter
+
+# LDAP usernames and passwords
+  LdapHerdAdminUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdAdminUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, admin_user, NoAuthentication]
+      Description: Herd admin account username parameter
+  LdapHerdAdminPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdAdminPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd admin account password parameter
+
+  LdapHerdRoUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdRoUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, ro_user, NoAuthentication]
+      Description: Herd Read-Only account username parameter
+  LdapHerdRoPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdRoPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd Read-Only account password parameter
+
+  LdapHerdMdlUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdMdlUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, mdl_user, NoAuthentication]
+      Description: Herd MDL account username parameter
+  LdapHerdMdlPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdMdlPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd MDL account password parameter
+
+  LdapHerdSecUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdSecUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, sec_user, NoAuthentication]
+      Description: Herd SEC account username parameter
+  LdapHerdSecPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdSecPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd SEC account password parameter
+
+  LdapHerdHubUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdHubUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, hub_user, NoAuthentication]
+      Description: Herd HUB account username parameter
+  LdapHerdHubPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdHubPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd HUB account password parameter
+
+  LdapHerdEtlmgmtUsernameParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdEtlmgmtUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, etl_user, NoAuthentication]
+      Description: Herd ETLMGMT account username parameter
+  LdapHerdEtlmgmtPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdEtlmgmtPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd ETLMGMT account password parameter
+
+  LdapHerdBasicUsernameParameter:
+      Condition: CreateSsmParametersCondition
+      Type: AWS::SSM::Parameter
+      Properties:
+        Name: !Join
+          - ''
+          - - /app/MDL/
+            - !Ref MDLInstanceName
+            - /
+            - !Ref Environment
+            - /LDAP/User/HerdBasicUsername
+        Type: String
+        Value: !If [CreateOpenLDAPCondition, basic_user, NoAuthentication]
+        Description: Herd ETLMGMT account username parameter
+  LdapHerdBasicUserPasswordParameter:
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdBasicUserPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd ETLMGMT account password parameter
+
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition

@@ -26,6 +26,6 @@ init
 inf "Installing packages for open-ldap"
 execute_cmd "yum update -y aws-cfn-bootstrap"
 execute_cmd "pip install --upgrade awscli"
-execute_cmd "yum install -y openldap openldap-clients openldap-servers nss-pam-ldapd"
+execute_cmd "yum install -y openldap openldap-clients openldap-servers openldap-devel nss-pam-ldapd"
 
 exit 0

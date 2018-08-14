@@ -41,10 +41,10 @@ HERD_REST_URL=$2
 HERD_CREDENTIAL=$3
 
 # Constants required to set before running the script
-CLUSTER_DEF=""
-CLUSTER_NAME=""
-RDS_HOST=""
-DB_USER=""
+CLUSTER_DEF="" #DM get cluster def
+CLUSTER_NAME="" #DM
+RDS_HOST="" #metastor
+DB_USER="" #metastor DB
 DB_PWD=""
 
 # Fail script if any of these values are not set
@@ -84,7 +84,7 @@ back_load_status_by_line=""
 
 function check_for_bad_chars() {
 
-    # This subroutine checks the input string to see if there are any illegal chars present. 
+    # This subroutine checks the input string to see if there are any illegal chars present.
     # This is different for lines and notification names, hence the mode param.
 
     # The ^ symbol in the regex says to match on anything other than the allowed chars
@@ -138,7 +138,7 @@ function add_json_to_file() {
         then
             if [ "X$JSON_FILE" != "X" ]
             then
-                # A json file was provided, add the JSON_TEXT to the new file in place of the __JSON__ line. 
+                # A json file was provided, add the JSON_TEXT to the new file in place of the __JSON__ line.
                 # Otherwise, don't do anything as we don't want a blank line to be present in the new file.
                 echo "$JSON_TEXT" >> $new_file
             fi
@@ -154,9 +154,9 @@ function add_json_to_file() {
 function clean_logfile() {
 
     tr=`which tr`
-    
+
     dos2unix $logfile >/dev/null 2>&1
-    
+
     # Run tr command against the logfile output in case the aws s3 command that is run results in ^M characters
     # appearing in the log which causes mail to fail.
 
@@ -191,7 +191,7 @@ function submit_notifications_for_backloading(){
 function passemail() {
 
     # Run clean_logfile against logfile to remove any ^M symbols that exist in the log to enable email to work.
-    clean_logfile 
+    clean_logfile
 
     if [ $warnings_detected -gt 0 ]
     then
@@ -240,7 +240,7 @@ function leave() {
         for(( i=0; i<${#all_errors[@]}; i++ )); do
             echo ${all_errors[$i]} >> /tmp/all_obj_reg_warnings
         done
-    
+
         echo -e "\n###########################\n" >> /tmp/all_obj_reg_warnings
         cat $logfile >> /tmp/all_obj_reg_warnings
 
@@ -259,7 +259,7 @@ function errtrap() {
   failedcmd="$BASH_COMMAND"
   if [[ "$failedcmd" =~ "return \"\$retval\"" ]] || [[ "$failedcmd" =~ "json_tool_response" ]]
   then
-      echo -e "\nTrapped error code contains retval or is related to a json tool detected error. We are not treating these as an error." 
+      echo -e "\nTrapped error code contains retval or is related to a json tool detected error. We are not treating these as an error."
   else
       errmsg="$delim `date` \"$failedcmd\" exited non-zero status $errcode on line ${BASH_LINENO[0]}. $delim"
       all_errors+=("$errmsg")
@@ -280,7 +280,7 @@ function parse_xml_response() {
     #
     #                      Logic behind dealing with 404 responses to curl commands
     #
-    # A 404 response from the curl commands being run implies that the specified Business object data notification 
+    # A 404 response from the curl commands being run implies that the specified Business object data notification
     # registration with name "XXX" does not exist for the provided namespace.
     #
     # The following shows when 404 errors will be considered as errors, warnings or ignored:
@@ -291,13 +291,13 @@ function parse_xml_response() {
     # 3. Action = "add" and the curl command  = POST named object        - treat as a real error
     # 4. Action = "add" and the curl command  = DELETE named object      - treat as a real error as the temp object should
     #                                                                      exist due to the POST of the named temp object
-    # 5. Action = "drop" and the curl command = DELETE named object      - treat as a WARNING as the specified object 
+    # 5. Action = "drop" and the curl command = DELETE named object      - treat as a WARNING as the specified object
     #                                                                      was not present as expected
-    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist 
+    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist
     # 7. Action = "enable" and the curl command = POST named object      - treat as a WARNING as the specified object
-    #                                                                      was not present as expected 
+    #                                                                      was not present as expected
     # 8. Action = "disable" and the curl command = POST named object     - treat as a WARNING as the specified object
-    #                                                                      was not present as expected 
+    #                                                                      was not present as expected
     # 9. Action = "add" or "enable" or "disable" and the curl            - ignore as the object may not exist
     #    command = PUT named object
     #10. Action = "add" or "enable" or "disable" and the curl            - treat as a real error, business object format
@@ -306,16 +306,16 @@ function parse_xml_response() {
 
     if [[ -s $response_file ]]
     then
-        echo -e "\nRespsone file $response_file contains content." 
+        echo -e "\nRespsone file $response_file contains content."
     else
         echo -e "\nRespsone file $response_file is empty." | tee -a $logfile
         warning_count=$((warning_count+1))
         errors_detected=$((errors_detected+1))
         retval=1
-        return "$retval" 
+        return "$retval"
     fi
 
-    buffer="${buffer} `echo -e "\nResponse file: $response_file"`" 
+    buffer="${buffer} `echo -e "\nResponse file: $response_file"`"
 
     # xmllint doesn't parse xml 1.1 so we need this hack.
     sed -i -e 's/version="1.1"/version="1.0"/' $response_file
@@ -329,15 +329,15 @@ function parse_xml_response() {
         if [ $status_code -ne "200" ]
         then
             # Check to see if this is a 404 status code as we handle these differently depending on the action and curl command being run
-            if [ $status_code -eq "404" ] 
+            if [ $status_code -eq "404" ]
             then
                 if [[ "$response_file" == *metastor_bo_get_response* ]] && [ "$ACTION" = "add" ]
                 then
-                    # Action = "add" and the curl command = GET named object 
+                    # Action = "add" and the curl command = GET named object
                     #        - treat as a WARNING as the specified object may not be present and we don't want to fail the deploy, we simply
-                    #          want to mark this as a WARNING and keep going. This will allow a build to succeed in QA even if the object is 
+                    #          want to mark this as a WARNING and keep going. This will allow a build to succeed in QA even if the object is
                     #          present in QA, but is present in PROD. If we don't do this, the pipeline will not be triggerable in PROD.
-                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`" 
+                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`"
                     error_message=`xmllint --xpath '//errorInformation/message/text()' $response_file`
                     buffer="${buffer} `echo -e "\nWarning message: $error_message"`"
                     warning_count=$((warning_count+1))
@@ -345,43 +345,43 @@ function parse_xml_response() {
                 elif [[ "$response_file" == *metastor_bo_delete_response* ]] && [ "$ACTION" = "add" ]
                 then
                     # 2. Action = "add" and the curl command = DELETE named object - ignore as the object may not exist
-                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary." 
+                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary."
                     retval=0
                 elif ([[ "$response_file" == *metastor_sr_delete_response* ]] || [[ "$response_file" == *metastor_sa_delete_response* ]])
                 then
                     # These 2 were added later on, additional DELETE curl commands associated with the "drop" action. 404 responses may be ignored.
-                    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist 
-                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary." 
+                    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist
+                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary."
                     retval=0
                 elif [[ "$response_file" == *metastor_bo_email_delete_response* ]]
                 then
-                    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist 
-                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary." 
+                    # 6. Action = "drop" and the curl command = DELETE temp named object - ignore as the temp object may not exist
+                    echo -e "\nError code of 404 returned. This is an expected response for this DELETE curl command. No action necessary."
                     retval=0
                 elif [[ "$response_file" == *metastor_bo_delete_response* ]] && [ "$ACTION" = "drop" ]
                 then
-                    # 5. Action = "drop" and the curl command = DELETE named object      
+                    # 5. Action = "drop" and the curl command = DELETE named object
                     #    - treat as a WARNING as the specified object was not present as expected
-                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`" 
+                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`"
                     error_message=`xmllint --xpath '//errorInformation/message/text()' $response_file`
                     buffer="${buffer} `echo -e "\nWarning message: $error_message"`"
                     warning_count=$((warning_count+1))
                     retval=1
                 elif ([[ "$response_file" == *metastor_bo_post_response* ]] || [[ "$response_file" == *metastor_storage_post_response* ]]) && ([ "$ACTION" = "enable" ] || [ "$ACTION" = "disable" ])
                 then
-                    # 7 & 8. Action = "enable" or "disable" and the curl command = POST named object 
+                    # 7 & 8. Action = "enable" or "disable" and the curl command = POST named object
                     #        - treat as a WARNING as the specified object was not present as expected
-                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`" 
+                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`"
                     error_message=`xmllint --xpath '//errorInformation/message/text()' $response_file`
                     buffer="${buffer} `echo -e "\nWarning message: $error_message"`"
                     warning_count=$((warning_count+1))
                     retval=1
                 elif ([[ "$response_file" == *metastor_bo_put_response* ]] || [[ "$response_file" == *metastor_storage_put_response* ]]) && ([ "$ACTION" = "add" ] || [ "$ACTION" = "enable" ] || [ "$ACTION" = "disable" ])
                 then
-                    # 9. Action = "add" or "enable" or "disable" and the curl command = PUT named object 
+                    # 9. Action = "add" or "enable" or "disable" and the curl command = PUT named object
                     #    - return a value of 1 to check if there is an issue with the data given or if
                     #    the business object registration simply does not exist
-                    echo -e "\nError code of 404 returned. This could be due to incorrect business object information or the business object may simply not existing." 
+                    echo -e "\nError code of 404 returned. This could be due to incorrect business object information or the business object may simply not existing."
                     retval=1
                 elif ([[ "$response_file" == *metastor_su_delete_response* ]])
                 then
@@ -392,11 +392,11 @@ function parse_xml_response() {
                 else
                     # 1. Action = "add" and the curl command  = POST temp named object   - treat as a real error
                     # 3. Action = "add" and the curl command  = POST named object        - treat as a real error
-                    # 4. Action = "add" and the curl command  = DELETE temp named object 
+                    # 4. Action = "add" and the curl command  = DELETE temp named object
                     #    - treat as a real error as the temp object should exist due to the POST of the named temp object
                     # 10. Action = "add" or "enable" or "disable" and the curl command = GET business object format
                     #    - treat as a real error, business object format should exist if trying to PUT or POST
-                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`" 
+                    buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`"
                     error_message=`xmllint --xpath '//errorInformation/message/text()' $response_file`
                     buffer="${buffer} `echo -e "\nError message: $error_message"`"
                     warning_count=$((warning_count+1))
@@ -405,7 +405,7 @@ function parse_xml_response() {
                 fi
             else
                 # This is a non-404 error. Mark it and move on.
-                buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`" 
+                buffer="${buffer} `echo -e "\nStatus code from curl command: $status_code"`"
                 error_message=`xmllint --xpath '//errorInformation/message/text()' $response_file`
                 buffer="${buffer} `echo -e "\nError message: $error_message"`"
                 warning_count=$((warning_count+1))
@@ -413,8 +413,8 @@ function parse_xml_response() {
                 retval=1
             fi
         else
-            # Should never end up here, but just in case... 
-            echo -e "\nError code of 200 returned. This implies that no error occurred. No action necessary." 
+            # Should never end up here, but just in case...
+            echo -e "\nError code of 200 returned. This implies that no error occurred. No action necessary."
             retval=0
         fi
     elif [[ "$response_file" == *metastor_bo_get_response* ]] && ([ "$(grep -c "<schema>" $response_file)" -eq 0 ])
@@ -426,10 +426,10 @@ function parse_xml_response() {
 
         retval=2
     else
-        echo -e "\nNo error detected in response file. This implies that the curl command was successful." 
+        echo -e "\nNo error detected in response file. This implies that the curl command was successful."
         retval=0
     fi
-    return "$retval" 
+    return "$retval"
 }
 
 # Register for Storage Unit Notification
@@ -579,10 +579,10 @@ then
     git_branch=`grep "GIT BRANCH:" buildinfo | awk ' { print $NF } '`
     git_commit=`grep "GIT COMMIT:" buildinfo | awk ' { print $NF } '`
 
-    if [ -z "$buildid" ] 
-    then 
-        echo "buildid not set" >> $logfile 
-        exit 1 
+    if [ -z "$buildid" ]
+    then
+        echo "buildid not set" >> $logfile
+        exit 1
     fi
 
     # generate logfile based on ENV, app and date
@@ -606,7 +606,7 @@ then
     echo -e "Current User  : $user"            | tee -a $logfile
 else
     echo -e "\nCould not read the buildinfo file, exiting."   >> $logfile
-    exit  1 
+    exit  1
 fi
 
 #--------------------------------------------------------------------------------------------------------#
@@ -614,7 +614,7 @@ fi
 #--------------------------------------------------------------------------------------------------------#
 
 ##############################################################
-# Run aws command to enable access to the credentials-store: 
+# Run aws command to enable access to the credentials-store:
 echo -e "\n##########\n\nRunning aws command to enable access to the credentials-store: aws configure set s3.signature_version s3v4\n" >> $logfile
 aws configure set s3.signature_version s3v4
 
@@ -632,7 +632,7 @@ then
     # Strip out a) comment lines, b) blank lines and c) the formatting line that starts with namespace
     egrep -v '(^[[:space:]]*#|^[[:space:]]*$|^[[:space:]]*namespace)' $text_file > $text_file_stripped
 
-    # Print all of the lines to be processed to the logfile. 
+    # Print all of the lines to be processed to the logfile.
     echo -e "##########\n\nLines to be processed from the $text_file file:\n" >> $logfile
 
     while read line_a
@@ -646,7 +646,7 @@ then
 
 else
     echo -e "\nCould not read the $text_file file, exiting." >> $logfile
-    exit 1 
+    exit 1
 fi
 
 ##############################################################
@@ -661,14 +661,14 @@ do
     JSON_TEXT=""
     JSON_FILE=""
     json_file_content=""
-    
+
     # Call the check_for_bad_chars subroutine to... If bad chars are present, mark it an move on
     check_for_bad_chars line "$line"
     status=$?
 
     if [ "$status" == 0 ]
     then
-        echo -e "\nNo bad chars in line"  
+        echo -e "\nNo bad chars in line"
     else
         echo -e "\nLine contains bad chars." >> $logfile
         warning_count=$((warning_count+1))
@@ -676,7 +676,7 @@ do
         errors_detected=$((errors_detected+1))
         list_of_warnings_by_line="${list_of_warnings_by_line}\n$line_count: $line - Line contains bad characters."
         continue
-    fi 
+    fi
 
     # Set params based on values in the current line of the prop file. The pipe to perl -lape 's///g' removes leading and trailing spaces from these params.
     NAMESPACE=`echo $line | awk 'BEGIN {FS="|"}{print $1}' | perl -lape 's/^\s+|\s+$//g'`
@@ -710,7 +710,7 @@ do
     # Combine the first four params to form the NOTIFICATION_NAME param
     NOTIFICATION_NAME="${NAMESPACE}_${BO_DEFINITION_NAME}_${BO_FORMAT_USAGE}_${BO_FORMAT_FILE_TYPE}"
 
-    # Use sed to replace any periods ("."), hypens ("-") or spaces in the notification name with underscores ("_") as the ETL library we are using 
+    # Use sed to replace any periods ("."), hypens ("-") or spaces in the notification name with underscores ("_") as the ETL library we are using
     # does not handle these well at this time.
     NOTIFICATION_NAME=`echo $NOTIFICATION_NAME | sed 's/\./_/g'`
 
@@ -759,7 +759,7 @@ do
                 echo -e "\nThe json file contains the following formatting errors:\n\n$json_tool_response" >> $logfile
                 echo -e "\nContent of json file:\n\n$json_file_content" >> $logfile
                 echo -e "\nDue to the json formatting errors, this object will not be registered." >> $logfile
-                
+
                 warning_count=$((warning_count+1))
                 warnings_detected=$((warnings_detected+1))
                 errors_detected=$((errors_detected+1))
@@ -800,7 +800,7 @@ do
         list_of_warnings_by_line="${list_of_warnings_by_line}\n$line_count: $line - Invalid workflow type provided: $WORKFLOW_TYPE "
         continue
     fi
-    
+
     # Check that the ACTION param matches either "add", "drop", "enable", "disable"
     if [ "$ACTION" != "add" ] && [ "$ACTION"  != "drop" ] && [ "$ACTION" != "enable" ] && [ "$ACTION"  != "disable" ]
     then
@@ -829,7 +829,7 @@ do
     sed -i "s/__BO_FORMAT_USAGE__/$BO_FORMAT_USAGE/g" $post_file         >> $logfile 2>&1
     sed -i "s/__BO_DEFINITION_NAME__/$BO_DEFINITION_NAME/g" $post_file   >> $logfile 2>&1
     sed -i "s/__WORKFLOW_TYPE__/$WF_TYPE/g" $post_file                   >> $logfile 2>&1
-    
+
     # PUT FILE:
     sed -i "s/__NAMESPACE__/$NAMESPACE/g" $put_file                      >> $logfile 2>&1
     sed -i "s/__BO_FORMAT_FILE_TYPE__/$BO_FORMAT_FILE_TYPE/g" $put_file  >> $logfile 2>&1
@@ -838,7 +838,7 @@ do
     sed -i "s/__WORKFLOW_TYPE__/$WF_TYPE/g" $put_file                    >> $logfile 2>&1
 
     # Deal with the enable/disable status:
-    if [ "$ACTION" == "enable" ] || [ "$ACTION" == "add" ] 
+    if [ "$ACTION" == "enable" ] || [ "$ACTION" == "add" ]
     then
         sed -i "s/__STATUS__/ENABLED/" $post_file  >> $logfile 2>&1
         sed -i "s/__STATUS__/ENABLED/" $put_file   >> $logfile 2>&1
@@ -854,7 +854,7 @@ do
 
     ##########
 
-    # Run curl commands to register the business objects. 
+    # Run curl commands to register the business objects.
     #
     # 1. Run curl command to PUT the NAMESPACE object if available
     # 2. Run curl command to GET the NAMESPACE object format if the NAMESPACE object is not available
@@ -868,16 +868,16 @@ do
     STORAGE_PUT_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/METASTOR/notificationNames/
     DELETE_URI=notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/METASTOR/notificationNames/$NOTIFICATION_NAME
     STORAGE_DELETE_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/METASTOR/notificationNames/
-    
+
     # Define the URI for the Business Object Format GET commands
     GET_FORMAT_URI=businessObjectFormats/namespaces/$NAMESPACE/businessObjectDefinitionNames/$BO_DEFINITION_NAME/businessObjectFormatUsages/$BO_FORMAT_USAGE/businessObjectFormatFileTypes/$BO_FORMAT_FILE_TYPE
-    
+
 # GET debug command:
 #echo -e "\n\nRunning GET curl command for $line to show status prior to executing $ACTION:" >> $logfile
 #curl --insecure -H "Authorization: Basic ${CREDENTIALS}" -H "Accept: application/xml" -X GET $DM_REST_URL/$DELETE_URI -s >> $logfile 2>&1
 
     ##########
-    if [ "$ACTION" = "add" ] || [ "$ACTION" = "enable" ] || [ "$ACTION" = "disable" ] 
+    if [ "$ACTION" = "add" ] || [ "$ACTION" = "enable" ] || [ "$ACTION" = "disable" ]
     then
     	put=0
         post=0
@@ -902,16 +902,16 @@ do
             # 2. GET FORMAT: Do a business object format GET to determine if the table is registered
             buffer=`echo -e "\n----------\nGET Business Object Format: Running curl get command to GET the business object format:\n"`
             buffer="${buffer} `echo -e "curl --insecure -H \"Authorization: Basic ${CREDENTIALS}\" -H \"Accept: application/xml\" -H \"Content-Type: application/xml\" -X GET $HERD_REST_URL/$GET_FORMAT_URI"`" 2>> $logfile
-            
+
             curl --insecure -H "Authorization: Basic ${CREDENTIALS}" -H "Accept: application/xml" -H "Content-Type: application/xml" -X GET $HERD_REST_URL/$GET_FORMAT_URI -s > /tmp/metastor_bo_get_response.xml 2>> $logfile
 
 			echo -e "Content of the metastor_bo_get_response.xml file:\n" | tee -a $logfile
 			cat /tmp/metastor_bo_get_response.xml | tee -a $logfile
 
             parse_xml_response "/tmp/metastor_bo_get_response.xml"
-            
+
             status=$?
-            
+
             if [ "$status" == 0 ]
             then
                 echo -e "\n----------\nGet notification curl command: successful"
@@ -924,10 +924,10 @@ do
                 echo -e "\nFull curl command output:\n" >> $logfile
                 cat /tmp/metastor_bo_get_response.xml   >> $logfile
             fi
-           
+
             buffer=""
-        fi 
-        
+        fi
+
         ##########
 
         if [ $post -eq 1 ]
@@ -938,18 +938,18 @@ do
 
             curl --insecure -H "Authorization: Basic ${CREDENTIALS}" -H "Accept: application/xml" -H "Content-Type: application/xml" -X POST -d @$post_file $HERD_REST_URL/$POST_URI -s > /tmp/metastor_bo_post_response.xml  2>> $logfile
 
-            parse_xml_response "/tmp/metastor_bo_post_response.xml" 
+            parse_xml_response "/tmp/metastor_bo_post_response.xml"
             status=$?
 
             if [ "$status" == 0 ]
             then
-                echo -e "\n----------\nPost notification curl command: successful" 
+                echo -e "\n----------\nPost notification curl command: successful"
             else
                 echo -e "$buffer" >> $logfile
                 echo -e "\nFull curl command output:\n" >> $logfile
                 cat /tmp/metastor_bo_post_response.xml  >> $logfile
-            fi 
-            
+            fi
+
             buffer=""
 
 		fi
@@ -971,7 +971,7 @@ do
     elif [ "$ACTION" = "drop" ]
     then
         # 1. DELETE NOTIFICATION:
-        buffer=`echo -e "----------\nDELETE NOTIFICATION: Running curl delete command to delete the business object data notification registration:\n"` 
+        buffer=`echo -e "----------\nDELETE NOTIFICATION: Running curl delete command to delete the business object data notification registration:\n"`
         buffer="${buffer} `echo -e "curl --insecure -H \"Authorization: Basic ${CREDENTIALS}\" -H \"Accept: application/xml\" -X DELETE $HERD_REST_URL/$DELETE_URI"`"
 
         curl --insecure -H "Authorization: Basic ${CREDENTIALS}" -H "Accept: application/xml" -X DELETE $HERD_REST_URL/$DELETE_URI -s > /tmp/metastor_bo_delete_response.xml  2>> $logfile
@@ -984,10 +984,10 @@ do
 
         if [ "$status" == 0 ]
         then
-            echo -e "\n----------\nDelete notification curl command: successful" 
+            echo -e "\n----------\nDelete notification curl command: successful"
         else
             echo -e "$buffer" >> $logfile
-        fi 
+        fi
 
         sql="insert into DM_NOTIFICATION (NAMESPACE,OBJECT_DEF_NAME,USAGE_CODE,FILE_TYPE,WF_TYPE, EXECUTION_ID, PARTITION_VALUES) VALUES "
         sql+="('${NAMESPACE}','${BO_DEFINITION_NAME}','${BO_FORMAT_USAGE}','${BO_FORMAT_FILE_TYPE}','7','drop','');"
