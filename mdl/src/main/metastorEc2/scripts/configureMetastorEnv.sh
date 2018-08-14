@@ -35,20 +35,6 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
-# Curl commands need to be retried multiple times to avoid network errors
-function execute_curl_cmd {
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
-	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
-	eval $cmd > /tmp/curlCmdOutput 2>&1
-	returnCode=`cat /tmp/curlCmdOutput | grep "HTTP_CODE" | cut -d":" -f2`
-    if [ "${returnCode}" != "200" ]; then
-        echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${1} has failed with error ${returnCode}"
-    	cat /tmp/curlCmdOutput
-    	echo ""
-        exit 1
-    fi
-}
-
 #MAIN
 configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
 if [ ! -f ${configFile} ] ; then
@@ -57,9 +43,22 @@ if [ ! -f ${configFile} ] ; then
 fi
 . ${configFile}
 
-execute_cmd "echo \"From $0\""
-herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
-herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
+# Curl commands need to be retried multiple times to avoid network errors
+function execute_curl_cmd {
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
+	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
+	eval $cmd > /tmp/curlCmdOutput 2>&1
+	returnCode=`cat /tmp/curlCmdOutput | grep "HTTP_CODE" | cut -d":" -f2`
+    if [ "${returnCode}" != "200"                                                                                                                                                                                         ]; then
+        echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${1} has failed with error ${returnCode}"
+    	cat /tmp/curlCmdOutput
+    	echo ""
+        exit 1
+    fi
+}
 
 metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
 
@@ -70,7 +69,6 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
 
     # Replace values for cluster definition

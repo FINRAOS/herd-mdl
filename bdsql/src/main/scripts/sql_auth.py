@@ -123,10 +123,10 @@ def get_ldap_info():
     info_response = ssm_client.get_parameter(Name='{}/HostName'.format(base_ssm_key))
     info['hostname'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/MdlAppUsername'.format(base_ssm_key))
+    info_response = ssm_client.get_parameter(Name='{}/User/HerdAdminUser'.format(base_ssm_key))
     info['user'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/MDLAppPassword'.format(base_ssm_key),WithDecryption=True)
+    info_response = ssm_client.get_parameter(Name='{}/Password/HerdAdminPassword'.format(base_ssm_key),WithDecryption=True)
     info['pass'] = info_response['Parameter']['Value']
 
     info_response = ssm_client.get_parameter(Name='{}/BaseDN'.format(base_ssm_key))

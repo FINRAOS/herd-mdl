@@ -35,7 +35,7 @@ Parameters:
     AllowedPattern: '[a-z0-9]*'
     MaxLength: 15
     Type: String
-    Default: mdl
+    Default: sidldap
   CreateIAMRoles:
     Default: 'true'
     Description: Create IAM Roles - true || false
@@ -88,7 +88,7 @@ Parameters:
       - 'false'
     Type: String
   CreateOpenLDAP:
-    Default: 'false'
+    Default: 'true'
     Description: Create OpenLDAP for Authentication - true || false
     AllowedValues:
       - 'true'
@@ -107,7 +107,7 @@ Parameters:
     Description: 'The DN of the LDAP domain. example: dc=myorg,dc=com'
     Type: String
   CreateVPC:
-    Default: 'true'
+    Default: 'false'
     Description: Create VPC - true || false
     AllowedValues: [true, false]
     Type: String
@@ -117,12 +117,15 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   CertificateArn:
+    Default: 'arn:aws:acm:us-east-1:328703175456:certificate/f9bd4060-21e8-484a-9f4e-e000da7f29c0'
     Description: Certificate Arn paramter key for MDL
     Type: String
   HostedZoneName:
+    Default: 'poc.aws.cloudfjord.com.'
     Description: Hosted Zone Name to create Route53 record set group for the given domain
     Type: String
   DomainNameSuffix:
+    Default: 'poc.aws.cloudfjord.com'
     Description: Domain name suffix for MDL Domains
     Type: String
   ImageId:
@@ -142,7 +145,7 @@ Parameters:
     ConstraintDescription: Must specify true or false
     Type: String
   EnableSSLAndAuth:
-    Default: 'false'
+    Default: 'true'
     Description: Whether to enable SSL for Load Balancers
     AllowedValues: [true, false]
     ConstraintDescription: Must specify true or false
@@ -154,11 +157,11 @@ Parameters:
   CustomTagName:
     Description: Custom tag name to be applied to all the resources
     Type: String
-    Default: 'application'
+    Default: 'Cost Center'
   CustomTagValue:
     Description: Custom tag value to be applied to all the resources
     Type: String
-    Default: 'herd-mdl'
+    Default: 'SEC303'
   EsInstanceType:
     Description: Elasticsearch EC2 node instance type
     Type: String
@@ -166,21 +169,21 @@ Parameters:
   HerdInstanceType:
     Description: Herd Application EC2 instance type
     Type: String
-    Default: m4.large
+    Default: m4.2xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   MetastorInstanceType:
     Description: Metastor Application EC2 instance type
     Type: String
-    Default: m4.large
+    Default: m4.4xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   BdsqlMasterInstanceType:
     Description: Bdsql Application EMR Master instance type
     Type: String
-    Default: m4.large
+    Default: m4.4xlarge
   BdsqlCoreInstanceType:
     Description: Bdsql Application EMR Core instance type
     Type: String
-    Default: m4.large
+    Default: m4.4xlarge
   LdapInstanceType:
     Default: m4.large
     Description: ldap EC2 instance type
@@ -188,16 +191,16 @@ Parameters:
   NumberOfBdsqlCoreInstances:
     Description: Number of Core Instances for the EMR cluster
     Type: String
-    Default: '1'
+    Default: '12'
   CloudWatchRetentionDays:
     Description: 'Retention days for CloudWatch logs'
     Type: Number
-    Default: 90
+    Default: 14
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
   PrestoMaxMemoryPerNode:
     Description: query.max-memory-per-node parameter for Presto
     Type: String
-    Default: 3GB
+    Default: 48GB
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -319,7 +322,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
-              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://s3.amazonaws.com/mdl-artifacts-storage/sidldap/herd-mdl-1.2.0-dist.zip'
 
               deployment_bucket_name = deployment_bucket_location
               prefix = release_version

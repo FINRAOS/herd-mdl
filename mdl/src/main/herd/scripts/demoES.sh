@@ -34,6 +34,17 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 function execute_curl_cmd {
 	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
@@ -48,17 +59,7 @@ function execute_curl_cmd {
     fi
 }
 
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
 execute_cmd "echo \"From $0\""
-herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
-herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
 
 if [ "${refreshDatabase}" = "true" ] ; then
     # Business object descriptive information

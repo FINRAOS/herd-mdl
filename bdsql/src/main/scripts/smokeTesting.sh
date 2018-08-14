@@ -112,8 +112,8 @@ function main(){
 
 . /home/hadoop/conf/deploy.props
 
-export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --output text --query Parameter.Value)
-export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MDLAppPassword --with-decryption --output text --query Parameter.Value)
+export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --with-decryption --output text --query Parameter.Value)
+export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --output text --query Parameter.Value)
 export PRESTO_PASSWORD="$APP_PASS"
 
 main 2>&1
