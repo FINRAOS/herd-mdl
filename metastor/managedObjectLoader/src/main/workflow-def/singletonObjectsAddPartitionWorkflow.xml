@@ -17,7 +17,7 @@
 <jobDefinitionCreateRequest>
     <namespace>{{NAMESPACE}}</namespace>
     <jobName>singletonObjectsAddPartitionWorkflow</jobName>
-    <description>Siingleton Partitions Workflow</description>
+    <description>Singleton Partitions Workflow</description>
     <activitiJobXml>
         <![CDATA[
     <?xml version="1.0" encoding="UTF-8"?>
@@ -120,7 +120,7 @@
     execution.setVariable("emrStepID", "");
 
     var next_date = new Date();
-    next_date.setDate(next_date.getDate() + 1)
+    next_date.setDate(next_date.getDate() + 1);
     var dd = next_date.getDate();
     var mm = next_date.getMonth() + 1;
     var yy = next_date.getFullYear();
