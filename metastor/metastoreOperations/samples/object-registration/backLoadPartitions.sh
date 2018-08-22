@@ -152,7 +152,7 @@ function insert_notification(){
 
 	echo -e "\nSQL to run: \n$sql"
 
-	mysql -h {{RDS_HOST}} -P 3306 -u MS_Hive_0_13 --password='{{MS_HIVE_0_13_PWD}}' --ssl-ca=/etc/aws-rds/ssl/rds-combined-ca-bundle.pem metastor -e "$sql"
+	mysql -h {{RDS_HOST}} -P 3306 -u {{MS_HIVE_0_13_USER}} --password='{{MS_HIVE_0_13_PWD}}' --ssl-ca=/etc/aws-rds/ssl/rds-combined-ca-bundle.pem metastor -e "$sql"
 
 	handle_error $? "Could not add back load parition request in Herd Notification"
 }

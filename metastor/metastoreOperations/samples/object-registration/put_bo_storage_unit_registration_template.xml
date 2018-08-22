@@ -25,7 +25,7 @@
     </storageUnitNotificationFilter>
     <jobActions>
         <jobAction>
-            <namespace>METASTOR</namespace>
+            <namespace>{{MDL_METASTOR_NAMESPACE}}</namespace>
             <jobName>__WORKFLOW_TYPE__</jobName>
             __JSON__
         </jobAction>

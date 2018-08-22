@@ -15,7 +15,7 @@
 -->
 <storageUnitNotificationRegistrationCreateRequest>
     <storageUnitNotificationRegistrationKey>
-        <namespace>METASTOR</namespace>
+        <namespace>{{MDL_METASTOR_NAMESPACE}}</namespace>
         <notificationName>__NOTIFICATION_NAME__</notificationName>
     </storageUnitNotificationRegistrationKey>
     <storageUnitEventType>STRGE_UNIT_STTS_CHG</storageUnitEventType>

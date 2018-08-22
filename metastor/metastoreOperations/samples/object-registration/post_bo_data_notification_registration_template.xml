@@ -15,7 +15,7 @@
 -->
 <businessObjectDataNotificationRegistrationCreateRequest>
     <businessObjectDataNotificationRegistrationKey>
-        <namespace>METASTOR</namespace>
+        <namespace>{{MDL_METASTOR_NAMESPACE}}</namespace>
         <notificationName>__NOTIFICATION_NAME__</notificationName>
     </businessObjectDataNotificationRegistrationKey>
     <businessObjectDataEventType>BUS_OBJCT_DATA_STTS_CHG</businessObjectDataEventType>
