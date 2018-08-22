@@ -179,6 +179,9 @@ public class TestWrapper {
             writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + stackName);
             writer.newLine();
 
+            writer.write("StackStatusPollingInterval=60");
+            writer.newLine();
+
             CloudFormationClient cfClient = new CloudFormationClient(stackName);
             Map<String, String> clusterOutputs = cfClient.getStackOutput();
 

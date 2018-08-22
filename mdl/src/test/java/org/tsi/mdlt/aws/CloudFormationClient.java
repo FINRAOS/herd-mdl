@@ -104,7 +104,7 @@ public class CloudFormationClient {
             .getCallerIdentity(new GetCallerIdentityRequest())
             .getAccount();
         masterCFTLocation = s3BucketURLPrefix
-                .concat(accountId + "-" + propertyValues.getProperty("MDLInstanceName") + "-mdlt-" + propertyValues.getProperty("Environment")+ "/")
+                .concat(propertyValues.getProperty("MdltBucketName") + "/")
                 .concat("cft" + "/")
                 .concat(cftTemplateName);
         System.out.println("Using master CFT location : " + masterCFTLocation);

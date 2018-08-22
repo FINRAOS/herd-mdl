@@ -18,22 +18,9 @@ package org.tsi.mdlt.test;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Stack;
 import java.util.stream.Stream;
 
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
-import com.amazonaws.services.ec2.AmazonEC2;
-import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.DescribeSubnetsRequest;
-import com.amazonaws.services.ec2.model.DescribeVpcsRequest;
-import com.amazonaws.services.ec2.model.KeyPairInfo;
-import com.amazonaws.services.ec2.model.Subnet;
-import com.amazonaws.services.ec2.model.Vpc;
-import org.apache.commons.lang3.BooleanUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -88,7 +75,6 @@ public class EMRClusterTest extends BaseTest {
         envVars.putAll(emrPrereqOutputs);
 
     }
-
 
     @TestFactory
     public Stream<DynamicTest> testShellCommandsForEMRClusterTest() {

@@ -9,7 +9,7 @@
 	   		"--retry 5 --max-time 120 --retry-delay 7 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
 	   		"-X POST",
 	   		"-H 'Content-Type: application/xml'",
-            "-u ${ldapAppUser}:${ldapAppPassword}",
+            "-u ${herdAdminUser}:${herdAdminPassword}",
 	    	"-d @${InputFilePath}",
 	    	"${HerdHostname}/herd-app/rest/namespaces"
 	     ],
@@ -29,7 +29,7 @@
 	   		"--retry 5 --max-time 120 --retry-delay 7 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
 	   		"-X POST",
 	   		"-H 'Content-Type: application/xml'",
-            "-u ${ldapAppUser}:${ldapAppPassword}",
+            "-u ${herdAdminUser}:${herdAdminPassword}",
 	    	"-d @${InputFilePath}",
 	    	"${HerdHostname}/herd-app/rest/emrClusterDefinitions"
 	     ],
@@ -41,7 +41,7 @@
 },{
 	"name": "Create EMR Cluster",
 	"description": "Create a cluster using the cluster definition",
-	"ignore": false,
+	"ignore": true,
 	"testCase" : {
 		"type": "shell",
 		"workingDirectory":"/home/ec2-user",
@@ -50,7 +50,7 @@
 	   		"--retry 5 --max-time 120 --retry-delay 7 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
 	   		"-X POST",
 	   		"-H 'Content-Type: application/xml'",
-	   		"-u ${ldapAppUser}:${ldapAppPassword}",
+	   		"-u ${herdAdminUser}:${herdAdminPassword}",
 	    	"-d @${InputFilePath}",
 	    	"${HerdHostname}/herd-app/rest/emrClusters"
 	     ],
@@ -58,22 +58,21 @@
 			"InputFilePath": "./mdlt/inputs/rest/herd/cluster/createCluster.xml"
 		 }
 	},
-	"assert": "status code is 200",
-	"waitAfterCompletion": "600000"
+	"assert": "status code is 200"
 },{
 	"name": "Delete EMR Cluster",
 	"description": "Delete the EMR cluster created in the previous test",
-	"testCase" : {
+  "ignore": false,
+  "testCase" : {
 		"type": "shell",
 		"workingDirectory":"/home/ec2-user",
 		"command": "/usr/bin/curl",
 		"arguments": [
 	   		"--retry 5 --max-time 120 --retry-delay 7 -s -k -o /dev/stderr -w '\\nstatus code is %{http_code}'",
 	   		"-X DELETE",
-            "-u ${ldapAppUser}:${ldapAppPassword}",
+            "-u ${herdAdminUser}:${herdAdminPassword}",
 	    	"${HerdHostname}/herd-app/rest/emrClusters/namespaces/MDLT/emrClusterDefinitionNames/MDLTTestCluster/emrClusterNames/${MDLInstanceName}_Cluster?overrideTerminationProtection=true"
 	     ]
 	},
-	"assert": "status code is 200",
-	"waitAfterCompletion": "300000"
+	"assert": "status code is 200"
 }]

@@ -21,11 +21,20 @@ import org.tsi.mdlt.enums.SsmParameterKeyEnum;
 public class User {
     private String username;
     private String password;
+    private String ou;
+
+    private User() {
+    }
 
     public User(String username, String password) {
         this.username = username;
         this.password = password;
     }
+
+    public static Builder withBuilder(){
+        return new Builder();
+    }
+
 
     public String getUsername() {
         return username;
@@ -43,22 +52,72 @@ public class User {
         this.password = password;
     }
 
+    public String getOu() {
+        return ou;
+    }
+
+    public void setOu(String ou) {
+        this.ou = ou;
+    }
+
+
+    public static class Builder{
+        private String username;
+        private String password;
+        private String ou;
+
+        public Builder withUsername(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public Builder withPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public Builder withOu(String ou) {
+            this.ou = ou;
+            return this;
+        }
+
+        public User build(){
+            User user = new User();
+            user.username = this.username;
+            user.password = this.password;
+            if(this.ou != null){
+                user.ou = this.ou;
+            }
+            return user;
+        }
+    }
+
     public static User getLdapAdminUser() {
         return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.ADMIN_USER).getValue(),
-                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
     }
 
     public static User getLdapMdlAppUser() {
         return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.MDL_APP_USER).getValue(),
-                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.MDL_APP_PASSWORD).getValue());
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.MDL_APP_PASSWORD).getValue());
     }
 
     public static User getLdapSecAppUser() {
         return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.SEC_APP_USER).getValue(),
-                SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.SEC_APP_PASSWORD).getValue());
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.SEC_APP_PASSWORD).getValue());
     }
 
-    public static User getNoAuthValidJdbcUser(){
+    public static User getHerdAdminUser() {
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_ADMIN_USER).getValue(),
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.Herd_ADMIN_PASSWORD).getValue());
+    }
+
+    public static User getHerdRoUser() {
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_RO_USER).getValue(),
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.Herd_RO_PASSWORD).getValue());
+    }
+
+    public static User getNoAuthValidJdbcUser() {
         return new User("randomuser", "");
     }
 }

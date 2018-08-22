@@ -82,6 +82,7 @@ public class SsmUtil {
     }
 
     private static Parameter getParameter(String parameterKey, boolean isEncrypted) {
+        LOGGER.info("SSM KEY:" + parameterKey);
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
             AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
