@@ -25,7 +25,7 @@ cd ${BASE_DIR}/managedObjectLoader/scripts
 
 if [[ -n $CREDENTIAL_FILE_PATH ]]
 then
-	java -Dcom.sun.net.ssl.checkRevocation=false -jar ../managedObjectLoader.jar --cred.file.path=$CREDENTIAL_FILE_PATH
+	java -Dcom.sun.net.ssl.checkRevocation=false -jar ../managedObjectLoader-exec.jar --cred.file.path=$CREDENTIAL_FILE_PATH
 else
 	echo "No cred path provided, exiting with error!"
 	exit 1
