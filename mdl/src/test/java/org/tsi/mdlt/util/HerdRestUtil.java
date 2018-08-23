@@ -44,6 +44,12 @@ public class HerdRestUtil {
     private static final String POST_NAMESPACE_AUTHORIZATION_URL = "/userNamespaceAuthorizations";
     private static final String DELETE_NAMESPACE_AUTHORIZATION_URL = "/userNamespaceAuthorizations/userIds/{userId}/namespaces/{namespace}";
 
+    private static final String POST_EMR_CLUSTER_DEFINITION_URL = "/emrClusterDefinitions";
+    private static final String DELETE_EMR_CLUSTER_DEFINITION_URL = "/emrClusterDefinitions/namespaces/{namespace}/emrClusterDefinitionNames/{emrClusterDefinitionName}";
+
+    private static final String POST_EMR_CLUSTER_URL = "/emrClusters";
+    private static final String DELETE_EMR_CLUSTER_URL = "/emrClusters/namespaces/{namespace}/emrClusterDefinitionNames/{emrClusterDefinitionName}/emrClusterNames/{emrClusterName}?overrideTerminationProtection=true";
+
     /**
      * Get herd build info
      * @param user user
@@ -114,7 +120,7 @@ public class HerdRestUtil {
     /**
      * Get namespace
      * @param user user to perform rest call
-     * @param namespace namespace name to get info
+     * @param namespaceCode namespace name to get info
      * @return
      */
     public static Response getNamespace(User user, String namespaceCode) {
@@ -129,7 +135,7 @@ public class HerdRestUtil {
     /**
      * Delete new namespace
      * @param user user to perform rest call
-     * @param namespace namespace name to delete
+     * @param namespaceCode namespace name to delete
      * @return
      */
     public static Response deleteNamespace(User user, String namespaceCode) {
@@ -309,6 +315,86 @@ public class HerdRestUtil {
             .pathParam("userId", userId)
             .pathParam("namespace", namespace)
             .delete(DELETE_NAMESPACE_AUTHORIZATION_URL);
+        response.prettyPrint();
+        return response;
+    }
+
+    /**
+     * Create EMR Cluster definition
+     * @param user user to perform rest call
+     * @param body emr cluster definition body
+     * @return Response
+     */
+    public static Response createClusterDefinition(User user, String body){
+        Response response =  given().spec(getHerdBaseRequestSpecification(user))
+            .body(body)
+            .post(POST_EMR_CLUSTER_DEFINITION_URL);
+        response.prettyPrint();
+        return response;
+    }
+
+    /**
+     * Delete EMR Cluster definition
+     * @param user user to perform rest call
+     * @param namespace namespace of the emr cluster definition
+     *
+     * @return Response
+     */
+    public static Response deleteClusterDefinition(User user, String namespace, String emrClusterDefinitionName){
+        Response response =  given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("namespace", namespace)
+            .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
+            .delete(DELETE_EMR_CLUSTER_DEFINITION_URL);
+        response.prettyPrint();
+        return response;
+    }
+
+    /**
+     * Create EMR Cluster
+     * @param user user to perform rest call
+     * @param body Create EMR cluster request body
+     * @return Response
+     */
+    public static Response createCluster(User user, String body){
+        Response response =  given().spec(getHerdBaseRequestSpecification(user))
+            .body(body)
+            .post(POST_EMR_CLUSTER_URL);
+        response.prettyPrint();
+        return response;
+    }
+
+    /**
+     * Get EMR Cluster information
+     * @param user user to use for rest call
+     * @param namespace namesapce of the EMR Cluster
+     * @param emrClusterDefinitionName EMR Cluster definition name of the EMR Cluster
+     * @param emrClusterName EMR Cluster name
+     * @return
+     */
+    public static Response getCluster(User user, String namespace, String emrClusterDefinitionName, String emrClusterName){
+        Response response =  given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("namespace", namespace)
+            .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
+            .pathParam("emrClusterName", emrClusterName)
+            .get(DELETE_EMR_CLUSTER_URL);
+        response.prettyPrint();
+        return response;
+    }
+
+    /**
+     * Delete EMR Cluster
+     * @param user user to use for rest call
+     * @param namespace name of the EMR Cluster
+     * @param emrClusterDefinitionName EMR Cluster definition name of the EMR Cluster
+     * @param emrClusterName EMR Cluster name
+     * @return
+     */
+    public static Response deleteCluster(User user, String namespace, String emrClusterDefinitionName, String emrClusterName){
+        Response response =  given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("namespace", namespace)
+            .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
+            .pathParam("emrClusterName", emrClusterName)
+            .delete(DELETE_EMR_CLUSTER_URL);
         response.prettyPrint();
         return response;
     }

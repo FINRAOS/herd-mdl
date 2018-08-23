@@ -61,16 +61,13 @@ fi
 #setup the workspace
 execute_cmd "cd /home/ec2-user"
 
-##1. Create public bucket
-execute_cmd "aws s3api create-bucket --bucket ${MdltBucketName} --acl public-read-write --region ${RegionName}"
-
-##2. Copy yaml file to s3 bucket
+#Copy yaml file to s3 bucket
 wrapperStackYml="installWrapperStack.yml"
 execute_cmd "wget ${InstallMdlYmlUrl} -O ${wrapperStackYml}"
 #no need to save to mdlt, can create stack using ec2 local file
 execute_cmd "aws s3 cp ${wrapperStackYml} s3://${MdltBucketName}/cft/InstallMDL.yml"
 
-##3. Copy mdlt yaml files to s3 bucket to be used in mdlt
+#.Copy mdlt yaml files to s3 bucket to be used in mdlt
 execute_cmd "aws s3 cp --recursive mdlt/scripts/cft s3://${MdltBucketName}/cft"
 
 testPropsFile="/home/ec2-user/mdlt/conf/test.props"

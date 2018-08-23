@@ -99,10 +99,6 @@ public class CloudFormationClient {
      */
     public void createStack(Map<String, String> params, String cftTemplateName, boolean rollbackOnFailure) throws Exception {
         String s3BucketURLPrefix = "https://s3.amazonaws.com/";
-        String accountId = AWSSecurityTokenServiceClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build()
-            .getCallerIdentity(new GetCallerIdentityRequest())
-            .getAccount();
         masterCFTLocation = s3BucketURLPrefix
                 .concat(propertyValues.getProperty("MdltBucketName") + "/")
                 .concat("cft" + "/")
