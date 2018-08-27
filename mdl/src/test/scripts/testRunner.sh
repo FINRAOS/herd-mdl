@@ -82,6 +82,9 @@ execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-
 #signal mdlt deploy host success
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
 
+# Empty mdlt s3 bucket
+execute_cmd "aws s3 rm s3://${MdltBucketName} --recursive"
+
 #shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
     # echo "Sleep for 60 minutes before cleaning up the stack"

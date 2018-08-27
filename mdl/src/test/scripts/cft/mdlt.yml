@@ -201,7 +201,7 @@ Resources:
                       urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
 
                       s3_resource = boto3.resource('s3')
-                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip', ExtraArgs={'ACL': 'public-read'})
+                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip')
 
                       local_extract_directory = '/tmp/extracts/{}'.format(release_version)
                       with zipfile.ZipFile(local_deploy_file, 'r') as zip_ref:

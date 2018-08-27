@@ -255,10 +255,7 @@ public class CloudFormationClient {
         public CFTStackStatus waitForCompletionAndGetStackStatus(AmazonCloudFormation awsCloudFormation,
             String stackId) throws InterruptedException {
 
-        int stackStatusPollingInterval =
-                Integer.valueOf(propertyValues.getProperty("StackStatusPollingInterval"))
-                        * 1000;
-
+        int stackStatusPollingInterval = 60 * 1000;
         DescribeStacksRequest describeStacksRequest = new DescribeStacksRequest();
         describeStacksRequest.setStackName(stackId);
 
@@ -352,9 +349,7 @@ public class CloudFormationClient {
 
     public void waitForClusterTermination(AmazonElasticMapReduce amazonElasticMapReduce,
             List<String> stackClusterIds, CFTStackInfo cftStackInfo) throws InterruptedException {
-        int stackStatusPollingInterval =
-                Integer.valueOf(propertyValues.getProperty("StackStatusPollingInterval"))
-                        * 1000;
+        int stackStatusPollingInterval = 60 * 1000;
 
         System.out.print("Waiting");
         Boolean done = false;
