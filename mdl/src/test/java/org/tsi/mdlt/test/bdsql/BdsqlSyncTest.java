@@ -146,7 +146,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
     @Test
     /**
-     * verify existing ldap user access to new herd object with new publice namespace, existing ldap user authorization works correctly
+     * verify existing ldap user access to new herd object with new public namespace, existing ldap user authorization works correctly
      */
     public void newPublicNamespaceNewObjectTest() throws IOException, InterruptedException, ClassNotFoundException, NamingException, SQLException {
         String schema = "mdlt_demo_data";

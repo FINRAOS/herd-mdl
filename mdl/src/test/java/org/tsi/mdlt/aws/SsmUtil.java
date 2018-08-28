@@ -87,7 +87,7 @@ public class SsmUtil {
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
             AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
-                .withRegion(Regions.US_EAST_1).build();
+                .withRegion(Regions.getCurrentRegion().getName()).build();
         GetParameterRequest parameterRequest = new GetParameterRequest();
         parameterRequest.withName(parameterKey).setWithDecryption(isEncrypted);
         GetParameterResult parameterResult = simpleSystemsManagementClient.getParameter(parameterRequest);
