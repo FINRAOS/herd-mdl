@@ -27,6 +27,8 @@ import javax.xml.bind.UnmarshalException;
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
 import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -116,6 +118,24 @@ public class EMRClusterTest extends BaseTest {
                 return response.statusCode() == HttpStatus.SC_BAD_REQUEST;
             });
 
+        cleanup();
+    }
+
+    @Before
+    public void beforeTest() {
+        cleanup();
+    }
+
+    @After
+    public void afterTest() {
+        cleanup();
+    }
+
+    private void cleanup() {
+        User herdAdminUser = User.getHerdAdminUser();
+        String namespace = "MDLT";
+        String clusterDefinitionName = "MDLTTestCluster";
+
         LogStep("Delete Cluster Definition and namespace");
         HerdRestUtil.deleteClusterDefinition(herdAdminUser, namespace, clusterDefinitionName);
         HerdRestUtil.deleteNamespace(herdAdminUser, namespace);
@@ -148,7 +168,7 @@ public class EMRClusterTest extends BaseTest {
 
     private String substituteVariables(String content) {
         for (Map.Entry<String, String> entry : envVars.entrySet()) {
-            content = content.replaceAll("$" + entry.getKey(), entry.getValue());
+            content = content.replaceAll("\\$" + entry.getKey(), entry.getValue());
         }
         return content;
     }

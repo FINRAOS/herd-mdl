@@ -16,7 +16,7 @@ import org.tsi.mdlt.test.BaseTest;
 import org.tsi.mdlt.util.HerdRestUtil;
 
 import org.finra.herd.model.api.xml.BusinessObjectData;
-
+@Tag("authTest")
 public class HerdAuthorizationTest extends BaseTest {
 
     private static final User SEC_APP_USER = User.getLdapSecAppUser();
@@ -28,7 +28,6 @@ public class HerdAuthorizationTest extends BaseTest {
     private static final String NAMESPACE_SEC = "SEC_MARKET_DATA";
 
     @Test
-    @Tag("authTest")
     public void readWriteNamespaceWithPermission() {
         String dataProvider = "MDLT_DP1";
 
@@ -50,7 +49,6 @@ public class HerdAuthorizationTest extends BaseTest {
     }
 
     @Test
-    @Tag("authTest")
     public void readWriteToNamespaceWithoutPermission() {
         LogStep("Read business object data without namespace permission");
         assertEquals(HttpStatus.SC_FORBIDDEN, HerdRestUtil.getBusinessObjectData(MDL_APP_USER, getSecBusinessObjectData()).statusCode());
@@ -63,7 +61,6 @@ public class HerdAuthorizationTest extends BaseTest {
     }
 
     @Test
-    @Tag("authTest")
     public void testHerdReadOnlyUser() {
         LogStep("Call Read endpoints using ReadOnly User");
         assertEquals(HttpStatus.SC_OK, HerdRestUtil.getBuildInfo(HERD_RO_USER).statusCode());
@@ -80,7 +77,6 @@ public class HerdAuthorizationTest extends BaseTest {
     }
 
     @Test
-    @Tag("authTest")
     public void testHerdAdminUser() {
         LogStep("Call Read endpoints with Admin User");
         assertEquals(HttpStatus.SC_OK, HerdRestUtil.getBuildInfo(HERD_ADMIN_USER).statusCode());
