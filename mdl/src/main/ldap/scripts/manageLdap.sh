@@ -22,13 +22,16 @@ function usage {
   SCRIPT=$(basename $(echo "$0"))
   read -r -d '' USAGE <<EOF
 Usage:
-  $SCRIPT --action [create_user|create_group|add_user_to_group|show_directory] [--user name] [--group name] [--dn distinguishedname]
+  $SCRIPT --action [create_user|create_group|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]
 
 Examples:
-  $SCRIPT --action create_user --user userA
+  $SCRIPT --action create_user --user userA --password password
   $SCRIPT --action create_group --user userA --group groupA
   $SCRIPT --action add_user_to_group --user userB --group groupA
+  $SCRIPT --action remove_user_from_group --user userB --group groupA
   $SCRIPT --action delete_object --dn "cn=userA,ou=People,ou=Groups,dc=domain,dc=com"
+  $SCRIPT --action delete_user --user userA
+  $SCRIPT --action delete_group --group groupA
   $SCRIPT --action show_directory
   $SCRIPT --help
 EOF
@@ -54,7 +57,6 @@ function parse_args(){
 
   while [[ $# > 1 ]]; do
     KEY="$1"
-
     case "$KEY" in
       --action)
       export ACTION="$2"
@@ -62,6 +64,10 @@ function parse_args(){
       ;;
       --user)
       export USER_NAME="$2"
+      shift
+      ;;
+      --password)
+      export PASSWORD="$2"
       shift
       ;;
       --group)
@@ -142,37 +148,60 @@ function get_tags(){
 
 }
 
-function show_directory(){
+function get_next_uid(){
 
-  # Display LDAP directory
+  # Get next avaiable uid
 
-  ldapsearch \
+ maxUid=`ldapsearch \
     -x \
     -H "ldaps://$LDAP_HOSTNAME" \
     -D "cn=$ADMIN_USER,$BASE_DN" \
     -w "$ADMIN_PASS" \
-    -b "$BASE_DN"
-
+   -b "ou=People,$BASE_DN" | grep uidNumber | awk -F ':' '{print $2}' | awk '{$1=$1;print}' | sort --version-sort | tail -n 1`
+maxUid=$(( maxUid + 1 ))
+echo "$maxUid"
 }
+
+function show_directory(){
+
+  # Display LDAP directory
+ ldapsearch \
+    -x \
+    -H "ldaps://$LDAP_HOSTNAME" \
+    -D "cn=$ADMIN_USER,$BASE_DN" \
+    -w "$ADMIN_PASS" \
+   -b "$BASE_DN"
+}
+
 
 
 function create_user(){
 
   # Create LDAP user
 
-  local USER_NAME="$1"
 
-  if [[ -z "$USER_NAME" ]]; then
+  local USER_NAME="$1"
+  local PASSWORD="$2"
+  local next_uid=$(get_next_uid)
+  local password_crypt=$(slappasswd -s "$PASSWORD")
+if [[ -z "$USER_NAME" ]]; then
     usage
   fi
 
   read -r -d '' CONF <<EOF
-dn: uid=$USER_NAME,ou=People,$BASE_DN
+dn: cn=$USER_NAME,ou=People,$BASE_DN
 changetype: add
 uid: $USER_NAME
 cn: $USER_NAME
 sn: null
 objectClass: inetOrgPerson
+objectClass: posixAccount
+userPassword: $password_crypt
+uidNumber: $next_uid
+gidNumber: 1001
+homeDirectory: /home/$USER_NAME
+mail: $USER_NAME@cloudfjord.com
+loginShell: /bin/bash
 EOF
   echo "$CONF" > conf.ldif
   ldapmodify \
@@ -183,19 +212,6 @@ EOF
     -w "$ADMIN_PASS" \
     -f conf.ldif
   rm -fr conf.ldif
-
-  USER_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | \
-    sha256sum | base64 | head -c 12)
-
-  ldappasswd \
-    -v \
-    -x \
-    -H "ldaps://$LDAP_HOSTNAME" \
-    -D "cn=$ADMIN_USER,$BASE_DN" \
-    -w "$ADMIN_PASS" \
-    -S "uid=$USER_NAME,ou=People,$BASE_DN" \
-    -s "$USER_PASS"
-
 }
 
 function create_group(){
@@ -213,7 +229,8 @@ function create_group(){
 dn: cn=$GROUP,ou=Groups,$BASE_DN
 objectClass: top
 objectClass: groupOfNames
-member: uid=$USER_NAME,ou=People,$BASE_DN
+cn: $GROUP
+member: cn=$USER_NAME,ou=People,$BASE_DN
 EOF
   echo "$CONF" > conf.ldif
   ldapadd \
@@ -243,7 +260,37 @@ function add_user_to_group(){
 dn: cn=$GROUP,ou=Groups,$BASE_DN
 changetype: modify
 add: member
-member: uid=$USER_NAME,ou=People,$BASE_DN
+member: cn=$USER_NAME,ou=People,$BASE_DN
+EOF
+  echo "$CONF" > conf.ldif
+
+  ldapmodify \
+    -v \
+    -x \
+    -H "ldaps://$LDAP_HOSTNAME" \
+    -D "cn=$ADMIN_USER,$BASE_DN" \
+    -w "$ADMIN_PASS" \
+    -f conf.ldif
+  rm -fr conf.ldif
+
+}
+
+function remove_user_from_group(){
+
+  # Remove LDAP user from LDAP group
+
+  local GROUP="$1"
+  local USER_NAME="$2"
+
+  if [[ -z "$GROUP" || -z "$USER_NAME" ]]; then
+    usage
+  fi
+
+  read -r -d '' CONF <<EOF
+dn: cn=$GROUP,ou=Groups,$BASE_DN
+changetype: modify
+delete: member
+member: cn=$USER_NAME,ou=People,$BASE_DN
 EOF
   echo "$CONF" > conf.ldif
 
@@ -263,7 +310,6 @@ function delete_object(){
   # Delete LDAP object
 
   local DN="$1"
-
   if [[ -z "$DN" ]]; then
     usage
   fi
@@ -278,10 +324,22 @@ function delete_object(){
 
 }
 
-function sync_bdsql(){
-   BdsqlEMRPrestoCluster=$(aws ssm get-parameter --name "/app/MDL/$PURPOSE/$ENVIRONMENT/Bdsql/ClusterId" --output text --query Parameter.Value)
-   DeploymentBucketName=$(aws ssm get-parameter --name "/app/MDL/$PURPOSE/$ENVIRONMENT/S3/MDL" --output text --query Parameter.Value)
-   aws emr add-steps --cluster-id ${BdsqlEMRPrestoCluster} --steps Type=CUSTOM_JAR,Name=BdsqlSyncStep,ActionOnFailure=CONTINUE,Jar=s3://elasticmapreduce/libs/script-runner/script-runner.jar,Args=s3://${DeploymentBucketName}//BDSQL/sql_auth.sh
+function delete_user(){
+
+  # Delete LDAP user
+
+  local USER_NAME="$1"
+  local USER_DN="cn=$USER_NAME,ou=People,$BASE_DN"
+  delete_object "$USER_DN"
+}
+
+function delete_group(){
+
+  # Delete LDAP group
+
+  local GROUP_NAME="$1"
+  local GROUP_DN="cn=$GROUP_NAME,ou=Groups,$BASE_DN"
+  delete_object "$GROUP_DN"
 }
 
 parse_args "$@"
@@ -294,17 +352,19 @@ install_deps
 init_ldap_info
 
 if [[ "$ACTION" == "create_user" ]]; then
-  create_user "$USER_NAME"
-  sync_bdsql
+  create_user "$USER_NAME" "$PASSWORD"
 elif [[ "$ACTION" == "create_group" ]]; then
   create_group "$GROUP" "$USER_NAME"
-  sync_bdsql
 elif [[ "$ACTION" == "add_user_to_group" ]]; then
   add_user_to_group "$GROUP" "$USER_NAME"
-  sync_bdsql
+elif [[ "$ACTION" == "remove_user_from_group" ]]; then
+  remove_user_from_group "$GROUP" "$USER_NAME"
+elif [[ "$ACTION" == "delete_user" ]]; then
+  delete_user "$USER_NAME"
+elif [[ "$ACTION" == "delete_group" ]]; then
+ delete_group "$GROUP"
 elif [[ "$ACTION" == "delete_object" ]]; then
   delete_object "$DN"
-  sync_bdsql
 elif [[ "$ACTION" == "show_directory" ]]; then
   show_directory
 else
