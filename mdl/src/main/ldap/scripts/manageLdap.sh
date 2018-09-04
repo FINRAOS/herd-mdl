@@ -22,10 +22,12 @@ function usage {
   SCRIPT=$(basename $(echo "$0"))
   read -r -d '' USAGE <<EOF
 Usage:
-  $SCRIPT --action [create_user|create_group|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]
+  $SCRIPT --action [create_user|create_group|add_attribute|replace_attribute|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]
 
 Examples:
-  $SCRIPT --action create_user --user userA --password password
+  $SCRIPT --action create_user --user userA --password password --email test@gmail.com --phone 1-234-567-8901
+  $SCRIPT --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901
+  $SCRIPT --action replace_attribute --user userA --attribute mail --value new@gmail.com
   $SCRIPT --action create_group --user userA --group groupA
   $SCRIPT --action add_user_to_group --user userB --group groupA
   $SCRIPT --action remove_user_from_group --user userB --group groupA
@@ -68,6 +70,22 @@ function parse_args(){
       ;;
       --password)
       export PASSWORD="$2"
+      shift
+      ;;
+      --email)
+      export EMAIL="$2"
+      shift
+      ;;
+      --phone)
+      export PHONE="$2"
+      shift
+      ;;
+      --attribute)
+      export ATTRIBUTE="$2"
+      shift
+      ;;
+      --value)
+      export VALUE="$2"
       shift
       ;;
       --group)
@@ -182,11 +200,16 @@ function create_user(){
 
   local USER_NAME="$1"
   local PASSWORD="$2"
+  local EMAIL="$3"
+  local PHONE="$4"
+  if [[ "$EMAIL" = "" ]]; then
+      EMAIL="$USER_NAME@cloudfjord.com"
+  fi
   local next_uid=$(get_next_uid)
   local password_crypt=$(slappasswd -s "$PASSWORD")
 if [[ -z "$USER_NAME" ]]; then
     usage
-  fi
+fi
 
   read -r -d '' CONF <<EOF
 dn: cn=$USER_NAME,ou=People,$BASE_DN
@@ -200,8 +223,41 @@ userPassword: $password_crypt
 uidNumber: $next_uid
 gidNumber: 1001
 homeDirectory: /home/$USER_NAME
-mail: $USER_NAME@cloudfjord.com
+mail: $EMAIL
 loginShell: /bin/bash
+EOF
+  echo "$CONF" > conf.ldif
+
+  if [[ ! -z "$PHONE" ]]; then
+      echo "telephoneNumber:$PHONE" >> conf.ldif
+  fi
+
+  ldapmodify \
+    -v \
+    -x \
+    -H "ldaps://$LDAP_HOSTNAME" \
+    -D "cn=$ADMIN_USER,$BASE_DN" \
+    -w "$ADMIN_PASS" \
+    -f conf.ldif
+  rm -fr conf.ldif
+}
+
+function modify_user(){
+
+  # Modify LDAP user
+  local action="$1"
+  local USER_NAME="$2"
+  local ATTRIBUTE="$3"
+  local VALUE="$4"
+if [[ -z "$USER_NAME" ]]; then
+    usage
+fi
+
+  read -r -d '' CONF <<EOF
+dn: cn=$USER_NAME,ou=People,$BASE_DN
+changetype: modify
+$action: $ATTRIBUTE
+$ATTRIBUTE: $VALUE
 EOF
   echo "$CONF" > conf.ldif
   ldapmodify \
@@ -330,6 +386,9 @@ function delete_user(){
 
   local USER_NAME="$1"
   local USER_DN="cn=$USER_NAME,ou=People,$BASE_DN"
+  if [[ -z "$USER_NAME" ]]; then
+    usage
+  fi
   delete_object "$USER_DN"
 }
 
@@ -352,7 +411,11 @@ install_deps
 init_ldap_info
 
 if [[ "$ACTION" == "create_user" ]]; then
-  create_user "$USER_NAME" "$PASSWORD"
+  create_user "$USER_NAME" "$PASSWORD" "$EMAIL" "$PHONE"
+elif [[ "$ACTION" == "replace_attribute" ]]; then
+  modify_user "replace" "$USER_NAME" "$ATTRIBUTE" "$VALUE"
+elif [[ "$ACTION" == "add_attribute" ]]; then
+  modify_user "add" "$USER_NAME" "$ATTRIBUTE" "$VALUE"
 elif [[ "$ACTION" == "create_group" ]]; then
   create_group "$GROUP" "$USER_NAME"
 elif [[ "$ACTION" == "add_user_to_group" ]]; then
