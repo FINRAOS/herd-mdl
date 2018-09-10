@@ -319,7 +319,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
-              release_artifact_location = 'https://s3.amazonaws.com/mdl-artifacts-storage/maggie/herd-mdl-1.2.0-dist.zip'
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               deployment_bucket_name = deployment_bucket_location
               prefix = release_version
