@@ -346,7 +346,7 @@ Resources:
       HostedZoneName:
         Ref: HostedZoneName
       RecordSets:
-      - Name: !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]]
+      - Name: !Join ['', [!Ref MDLInstanceName, '-bdsql.', !Ref DomainNameSuffix]]
         Type: CNAME
         TTL: '900'
         ResourceRecords: [!GetAtt [BdsqlLoadBalancer, DNSName]]
@@ -362,7 +362,7 @@ Outputs:
     Value: !Join
       - ''
       - - 'jdbc:presto://'
-        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]], !GetAtt [BdsqlLoadBalancer, DNSName]]
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, '-bdsql.', !Ref DomainNameSuffix]], !GetAtt [BdsqlLoadBalancer, DNSName]]
         - !If [EnableSSLAndAuth, ':443/hive', ':80/hive']
     Description: Application load balancer URL for Bdsql cluster
   BdsqlLoadBalancerDNSURL:

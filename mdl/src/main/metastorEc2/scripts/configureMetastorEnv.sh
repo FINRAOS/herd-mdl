@@ -126,8 +126,7 @@ fi
 
 # Download herd-uploader jar
 execute_cmd "mkdir -p ${deployLocation}/herd-uploader"
-#TODO remove hardcoded uploader-jar version
-execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/0.72.0/herd-uploader-0.72.0.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
+execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 execute_cmd "sudo chmod +x ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 
 # Do not echo the password

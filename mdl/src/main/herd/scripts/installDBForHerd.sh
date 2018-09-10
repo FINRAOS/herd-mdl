@@ -178,16 +178,12 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
 
     mdl_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/MDL --with-decryption --region ${region} --output text --query Parameter.Value)
     sec_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
-    hub_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/HUB --with-decryption --region ${region} --output text --query Parameter.Value)
-    etlmgmt_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/ETLMGMT --with-decryption --region ${region} --output text --query Parameter.Value)
 
     # Add security role functions for auth groups
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsAdmin.sql -v scrty_role=\"${admin_group}\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadOnly.sql -v scrty_role=\"${read_only_group}\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${mdl_read_write_group}\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${sec_read_write_group}\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${hub_read_write_group}\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${etlmgmt_read_write_group}\""
 
     # Get admin user
     admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --with-decryption --region ${region} --output text --query Parameter.Value)
@@ -214,6 +210,7 @@ execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 
 
 log4j_config_value=$(<${deployLocation}/xml/install/log4j-override-config.xml)
 ##insert rows to ec2_price_table;
+execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5878, 'us-east-1', 'm4.large', 0.10000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5879, 'us-east-1', 'm4.xlarge', 0.20000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5282, 'us-east-1', 'm4.4xlarge', 0.80000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5895, 'us-east-1', 'm4.2xlarge', 0.40000, now(), 'SYSTEM', now(), 'SYSTEM');\""

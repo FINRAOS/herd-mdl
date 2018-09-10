@@ -310,6 +310,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: LDAP HostName name
   LdapBaseDNParameter:
+    DependsOn: HostNameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -326,6 +327,7 @@ Resources:
 
 # LDAP Admin parameters
   LdapAdministratorNameParameter:
+    DependsOn: LdapBaseDNParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -340,6 +342,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, ldap_admin_user, NoAuthentication]
       Description: LDAP administrator name
   LdapAdministratorPasswordParameter:
+    DependsOn: LdapAdministratorNameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -357,6 +360,7 @@ Resources:
 # Auth Groups
 
   LdapHerdAdminAuthGroupParameter:
+    DependsOn: LdapAdministratorPasswordParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -368,9 +372,10 @@ Resources:
           - !Ref Environment
           - /LDAP/AuthGroup/Admin
       Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HERD_ADMIN, NoAuthentication]
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_herd_admin, NoAuthentication]
       Description: MDL Herd ADMIN auth group-name parameter
   LdapHerdRoAuthGroupParameter:
+    DependsOn: LdapHerdAdminAuthGroupParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -382,9 +387,10 @@ Resources:
           - !Ref Environment
           - /LDAP/AuthGroup/RO
       Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HERD_RO, NoAuthentication]
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_herd_ro, NoAuthentication]
       Description: MDL Herd Read-Only auth group-name parameter
   LdapHerdMdlAuthGroupParameter:
+    DependsOn: LdapHerdRoAuthGroupParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -396,9 +402,10 @@ Resources:
           - !Ref Environment
           - /LDAP/AuthGroup/MDL
       Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_MDL_RW, NoAuthentication]
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_mdl_rw, NoAuthentication]
       Description: MDL Herd MDL auth group-name parameter
   LdapHerdSecAuthGroupParameter:
+    DependsOn: LdapHerdMdlAuthGroupParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -410,39 +417,11 @@ Resources:
           - !Ref Environment
           - /LDAP/AuthGroup/SEC
       Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_SEC_RW, NoAuthentication]
+      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_sec_market_data_rw, NoAuthentication]
       Description: MDL Herd SEC auth group-name parameter
-  LdapHerdHubAuthGroupParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/AuthGroup/HUB
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_HUB_RW, NoAuthentication]
-      Description: MDL Herd HUB auth group-name parameter
-  LdapHerdEtlmgmtAuthGroupParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/AuthGroup/ETLMGMT
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_ETL_RW, NoAuthentication]
-      Description: MDL Herd ETLMGMT auth group-name parameter
-
 # LDAP usernames and passwords
   LdapHerdAdminUsernameParameter:
+    DependsOn: LdapHerdSecAuthGroupParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -457,6 +436,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, admin_user, NoAuthentication]
       Description: Herd admin account username parameter
   LdapHerdAdminPasswordParameter:
+    DependsOn: LdapHerdAdminUsernameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -470,8 +450,8 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: Herd admin account password parameter
-
   LdapHerdRoUsernameParameter:
+    DependsOn: LdapHerdAdminPasswordParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -486,6 +466,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, ro_user, NoAuthentication]
       Description: Herd Read-Only account username parameter
   LdapHerdRoPasswordParameter:
+    DependsOn: LdapHerdRoUsernameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -501,6 +482,7 @@ Resources:
       Description: Herd Read-Only account password parameter
 
   LdapHerdMdlUsernameParameter:
+    DependsOn: LdapHerdRoPasswordParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -515,6 +497,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, mdl_user, NoAuthentication]
       Description: Herd MDL account username parameter
   LdapHerdMdlPasswordParameter:
+    DependsOn: LdapHerdMdlUsernameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -530,6 +513,7 @@ Resources:
       Description: Herd MDL account password parameter
 
   LdapHerdSecUsernameParameter:
+    DependsOn: LdapHerdMdlPasswordParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -544,6 +528,7 @@ Resources:
       Value: !If [CreateOpenLDAPCondition, sec_user, NoAuthentication]
       Description: Herd SEC account username parameter
   LdapHerdSecPasswordParameter:
+    DependsOn: LdapHerdSecUsernameParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:
@@ -557,94 +542,6 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: Herd SEC account password parameter
-
-  LdapHerdHubUsernameParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/User/HerdHubUsername
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, hub_user, NoAuthentication]
-      Description: Herd HUB account username parameter
-  LdapHerdHubPasswordParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/Password/HerdHubPassword
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: Herd HUB account password parameter
-
-  LdapHerdEtlmgmtUsernameParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/User/HerdEtlmgmtUsername
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, etl_user, NoAuthentication]
-      Description: Herd ETLMGMT account username parameter
-  LdapHerdEtlmgmtPasswordParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/Password/HerdEtlmgmtPassword
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: Herd ETLMGMT account password parameter
-
-  LdapHerdBasicUsernameParameter:
-      Condition: CreateSsmParametersCondition
-      Type: AWS::SSM::Parameter
-      Properties:
-        Name: !Join
-          - ''
-          - - /app/MDL/
-            - !Ref MDLInstanceName
-            - /
-            - !Ref Environment
-            - /LDAP/User/HerdBasicUsername
-        Type: String
-        Value: !If [CreateOpenLDAPCondition, basic_user, NoAuthentication]
-        Description: Herd ETLMGMT account username parameter
-  LdapHerdBasicUserPasswordParameter:
-    Condition: CreateSsmParametersCondition
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /LDAP/Password/HerdBasicUserPassword
-      Type: String
-      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: Herd ETLMGMT account password parameter
-
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition

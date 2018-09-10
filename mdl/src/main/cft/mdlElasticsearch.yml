@@ -244,6 +244,10 @@ Resources:
                   - !Ref CertificateInfo
                   - |-
 
+                    domainNameSuffix=
+                  - !Ref DomainNameSuffix
+                  - |-
+
                     deployLocation=/home/mdladmin/deploy/mdl
                   - |-
 

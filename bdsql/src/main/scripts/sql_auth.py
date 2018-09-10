@@ -123,7 +123,7 @@ def get_ldap_info():
     info_response = ssm_client.get_parameter(Name='{}/HostName'.format(base_ssm_key))
     info['hostname'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/User/HerdAdminUser'.format(base_ssm_key))
+    info_response = ssm_client.get_parameter(Name='{}/User/HerdAdminUsername'.format(base_ssm_key))
     info['user'] = info_response['Parameter']['Value']
 
     info_response = ssm_client.get_parameter(Name='{}/Password/HerdAdminPassword'.format(base_ssm_key),WithDecryption=True)
@@ -165,6 +165,7 @@ def execute_hive_query(database,q):
     else:
         cur.execute(q)
 
+    log('cursor operation: {}'.format(cur.operationHandle))
     # if result set, create list of dictionaries
     data = []
     has_result_set = bool(vars(cur.operationHandle)['hasResultSet'])
@@ -202,8 +203,11 @@ def execute_metastor_query(q):
 
     data = []
 
+    log('Attempting to get a connection to metastor')
     metastor_conn = get_metastor_conn()
+    log('success.')
 
+    log('executing query: {}'.format(q))
     cur = metastor_conn.cursor()
     cur.execute(q)
 
@@ -213,6 +217,7 @@ def execute_metastor_query(q):
     if q.split(' ')[0].lower() in ['update','insert','delete']:
         metastor_conn.commit()
 
+    log('closing connection.')
     metastor_conn.close()
 
     return data
@@ -300,9 +305,7 @@ def get_ldap_conn():
 
     ldap_info = get_ldap_info()
 
-    print ldap_info
-
-    full_bind_user='uid=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
+    full_bind_user='cn=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
 
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_REFERRALS,0)
@@ -388,7 +391,7 @@ def add_users_to_role(database, role_name, ldap_objects):
     for ldap_object in ldap_objects:
         if (ldap_object[1]['cn'][0].lower() == 'app_mdl_users' and role_name == 'app_mdl_acl_ro_public') or \
                 ldap_object[1]['cn'][0].lower() == role_name:
-            users = [i.split(',')[0].replace('uid=','').strip() for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('cn=','').strip() for i in ldap_object[1]['member']]
             for user in users:
                 q = """
                 SELECT
@@ -447,6 +450,7 @@ def sync_app_objects():
 
     metastor_objects = get_metastor_objects()
     ldap_objects = get_ldap_objects('cn=APP_MDL_*')
+    log('Found {} LDAP objects'.format(len(ldap_objects)))
 
     databases = set(sorted([i['NAME'] for i in metastor_objects],reverse=True))
     log("total_dbs={}".format(len(databases)))
@@ -475,8 +479,8 @@ def sync_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip()
-                for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('cn=','').strip()
+                     for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
@@ -485,7 +489,7 @@ def sync_user_objects():
         user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
             s3_home_bucket,user_schema_name)
         user_schemas = [i['database_name']
-            for i in execute_hive_query('default','show schemas')]
+                        for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -572,10 +576,10 @@ def sync_user_objects():
         else:
             ldap_group_role_match = ldap_group_cn
 
-        ldap_users = [user.split(',')[0].replace('uid=','')
-            for user in ldap_object[1]['member']]
+        ldap_users = [user.split(',')[0].replace('cn=','')
+                      for user in ldap_object[1]['member']]
         role_users = [role_user['user'] for role_user in roles_users
-            if role_user['role_name'] == ldap_group_role_match]
+                      if role_user['role_name'] == ldap_group_role_match]
 
         for role_user in role_users:
             if role_user not in ldap_users:
@@ -597,7 +601,7 @@ def remove_roles():
 
         log("started removing role. role={}".format(acl_role))
         principal_data = execute_hive_query('default',
-            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+                                            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
 
         for principal in principal_data:
 
@@ -655,8 +659,8 @@ def remove_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip()
-                for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('cn=','').strip()
+                     for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
@@ -665,7 +669,7 @@ def remove_user_objects():
         user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
             s3_home_bucket,user_schema_name)
         user_schemas = [i['database_name']
-            for i in execute_hive_query('default','show schemas')]
+                        for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -693,11 +697,13 @@ def show_acls():
 
     print "### Hive ###"
     roles = execute_hive_query('default',['set role admin','show roles'])
+    log('roles: {}'.format(roles))
     acl_roles = [i['role'] for i in roles if '_acl_' in i['role'].lower()]
     for acl_role in acl_roles:
         print "role:\n\t{}".format(acl_role)
         data = execute_hive_query('default',
-            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+                                  ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+        log('data: {}'.format(data))
         headers = data[0].keys()
         print 'members:\n\t' + ','.join(headers)
         for d in data:

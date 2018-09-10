@@ -29,7 +29,7 @@ Parameters:
   MDLInstanceName:
     Description: MDL Instance Name, lowercase letters and numbers with max length 15
     Type: String
-    AllowedPattern: '[a-z0-9_]*'
+    AllowedPattern: '[a-z0-9_-]*'
     MaxLength: 15
   CreateIAMRoles:
     Description: Create IAM Roles - true || false
@@ -344,8 +344,8 @@ Resources:
         ImageId: !Ref ImageId
         LdapHostName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/HostName]]
         LdapBaseDN: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/BaseDN]]
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/AdministratorName]]
-        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/AdministratorPassword]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/HerdAdminUsername]]
+        LdapMdlAppUserPasswordParameterKey: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/Password/HerdAdminPassword]]
         RefreshDatabase: !Ref RefreshDatabase
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
@@ -377,7 +377,7 @@ Resources:
         MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
         MDLInstanceName: !Ref MDLInstanceName
         CertificateArn: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/ACM/Arn'
-        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/AdministratorName]]
+        LdapMdlAppUsername: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /LDAP/User/HerdAdminUsername]]
         Environment: !Ref Environment
         PrestoMaxMemoryPerNode: !Ref PrestoMaxMemoryPerNode
         EnableSSLAndAuth: !Ref EnableSSLAndAuth

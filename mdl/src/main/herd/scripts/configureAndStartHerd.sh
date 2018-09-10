@@ -128,6 +128,9 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
 
+    # pause to avoid an optimistic lock
+    execute_cmd "sleep 5"
+
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"tag\"},\"searchIndexType\":\"TAG\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
     echo "Tag index -> ${indexName}"
@@ -141,16 +144,11 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     # Get app users from the parameter store
     mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
     sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    hub_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdHubUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    etlmgmt_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdEtlmgmtUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    basic_read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdBasicUsername --with-decryption --region ${region} --output text --query Parameter.Value)
     read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
 
     # Create namespaces
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"HUB\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"ETLMGMT\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
 
     # Add READ/WRITE permissions for the MDL user on the MDL namespace
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
@@ -158,18 +156,9 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     # Add READ/WRITE permissions for the SEC user on the SEC namespace
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
 
-    # Add READ/WRITE permissions for the HUB user on the HUB namespace
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${hub_read_write_user}\",\"namespace\":\"HUB\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ/WRITE permissions for the ETLMGMT user on the ETLMGMT namespace
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${etlmgmt_read_write_user}\",\"namespace\":\"ETLMGMT\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ permissions for the RO user on the SEC, MDL, HUB and ETLMGMT namespaces
+    # Add READ permissions for the RO user on the SEC, MDL namespaces
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"HUB\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"ETLMGMT\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
 fi
 
 # Execute the demo script if asked

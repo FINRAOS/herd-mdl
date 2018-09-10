@@ -151,7 +151,7 @@ Resources:
         rds.force_ssl: '1'
   PostgresDB:
     Type: 'AWS::RDS::DBInstance'
-    DeletionPolicy: Snapshot
+    DeletionPolicy: Delete
     Properties:
       DBName: !Sub '${MDLInstanceName}${Environment}Herd'
       DBSnapshotIdentifier: !Ref 'AWS::NoValue'
