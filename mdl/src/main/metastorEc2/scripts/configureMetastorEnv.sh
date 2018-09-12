@@ -52,7 +52,7 @@ function execute_curl_cmd {
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	returnCode=`cat /tmp/curlCmdOutput | grep "HTTP_CODE" | cut -d":" -f2`
-    if [ "${returnCode}" != "200"                                                                                                                                                                                         ]; then
+    if [ "${returnCode}" != "200" ]; then
         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${1} has failed with error ${returnCode}"
     	cat /tmp/curlCmdOutput
     	echo ""

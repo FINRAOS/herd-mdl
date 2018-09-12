@@ -32,7 +32,7 @@ Parameters:
     Type: String
   MDLInstanceName:
     Description: MDL Instance Name, lowercase letters and numbers with max length 15
-    AllowedPattern: '[a-z0-9_-]*'
+    AllowedPattern: '[a-z0-9]*'
     MaxLength: 15
     Type: String
     Default: mdl
