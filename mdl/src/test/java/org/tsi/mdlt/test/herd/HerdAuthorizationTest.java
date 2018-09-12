@@ -3,19 +3,17 @@ package org.tsi.mdlt.test.herd;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.util.UUID;
-
 import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.tsi.mdlt.enums.HerdNamespacePermissionEnum;
 import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.test.BaseTest;
 import org.tsi.mdlt.util.HerdRestUtil;
 
 import org.finra.herd.model.api.xml.BusinessObjectData;
+import org.finra.herd.model.api.xml.NamespacePermissionEnum;
+
 @Tag("authTest")
 public class HerdAuthorizationTest extends BaseTest {
 
@@ -102,7 +100,7 @@ public class HerdAuthorizationTest extends BaseTest {
         assertEquals(HttpStatus.SC_FORBIDDEN, HerdRestUtil.getBusinessObjectData(MDL_APP_USER, getSecBusinessObjectData()).statusCode());
 
         LogStep("grant permission to user");
-        HerdRestUtil.grantNamespacePermission(HERD_ADMIN_USER, MDL_APP_USER.getUsername(), NAMESPACE_SEC, HerdNamespacePermissionEnum.READ);
+        HerdRestUtil.grantNamespacePermission(HERD_ADMIN_USER, MDL_APP_USER.getUsername(), NAMESPACE_SEC, NamespacePermissionEnum.READ);
         assertTrue(HerdRestUtil.getBusinessObjectData(MDL_APP_USER, getSecBusinessObjectData()).statusCode() != HttpStatus.SC_FORBIDDEN);
 
         LogStep("revoke permission from user");

@@ -185,7 +185,7 @@ Resources:
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
               #TODO change to release location
-              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/herd-mdlt-1.2.0-dist.zip'.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -315,12 +315,12 @@ Resources:
         MdlPrivateSubnets: !Ref MdlPrivateSubnets
         MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggie/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure

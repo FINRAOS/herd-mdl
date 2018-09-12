@@ -2,19 +2,33 @@ package org.tsi.mdlt.util;
 
 import static io.restassured.RestAssured.given;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.authentication.PreemptiveBasicAuthScheme;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
-import org.tsi.mdlt.enums.HerdNamespacePermissionEnum;
+import org.apache.commons.lang3.BooleanUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.pojos.User;
 
 import org.finra.herd.model.api.xml.BusinessObjectData;
+import org.finra.herd.model.api.xml.BusinessObjectDefinitionCreateRequest;
+import org.finra.herd.model.api.xml.NamespaceCreateRequest;
+import org.finra.herd.model.api.xml.NamespacePermissionEnum;
+import org.finra.herd.model.api.xml.UserNamespaceAuthorizationCreateRequest;
+import org.finra.herd.model.api.xml.UserNamespaceAuthorizationKey;
 
 public class HerdRestUtil {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String HERD_BASE_URL = TestProperties.getPropertyMap().get("HerdHostname") + "/herd-app/rest";
 
@@ -68,7 +82,7 @@ public class HerdRestUtil {
         Response response = given().spec(given().spec(getHerdBaseRequestSpecification(user)))
             .body(createDataProviderBody)
             .post(POST_DATA_PROVIDER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -83,7 +97,7 @@ public class HerdRestUtil {
         Response response = given().spec(given().spec(getHerdBaseRequestSpecification(user)))
             .pathParam("dataProviderName", dataProviderName)
             .get(GET_DATA_PROVIDER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -98,7 +112,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("dataProviderName", dataProviderName)
             .delete(GET_DATA_PROVIDER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -110,11 +124,10 @@ public class HerdRestUtil {
      * @return
      */
     public static Response postNamespace(User user, String namespace) {
-        String createNamespaceBody = String.format("<namespaceCreateRequest><namespaceCode>%s</namespaceCode></namespaceCreateRequest>", namespace);
         Response response = given().spec(getHerdBaseRequestSpecification(user))
-            .body(createNamespaceBody)
+            .body(new NamespaceCreateRequest(namespace))
             .post(POST_NAMESPACE_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -129,7 +142,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespaceCode", namespaceCode)
             .get(GET_NAMESPACE_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -144,7 +157,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespaceCode", namespaceCode)
             .delete(GET_NAMESPACE_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -161,7 +174,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .body(getPostBusinessObjectDefinitionBody(namespace, businessObjectDefinitionName, dataProviderName))
             .post(POST_BUSINESS_OBJECT_DEFINITION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -178,7 +191,7 @@ public class HerdRestUtil {
             .pathParam("namespace", namespace)
             .pathParam("businessObjectDefinitionName", businessObjectDefinitionName)
             .get(GET_BUSINESS_OBJECT_DEFINITION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -198,7 +211,7 @@ public class HerdRestUtil {
             .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
             .pathParam("partitionValue", businessObjectData.getPartitionValue())
             .get(GET_BUSINESS_OBJECT_DATA_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -220,7 +233,7 @@ public class HerdRestUtil {
             .pathParam("partitionValue", businessObjectData.getPartitionValue())
             .pathParam("businessObjectDataVersion", businessObjectData.getVersion())
             .delete(DELETE_BUSINESS_OBJECT_DATA_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -240,7 +253,7 @@ public class HerdRestUtil {
             .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
             .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
             .get(GET_BUSINESS_OBJECT_FORMAT_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -254,10 +267,10 @@ public class HerdRestUtil {
      */
     public static Response deleteBusinessObjectNotification(User user, String namespace, String notificationName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
-            .pathParam("namespace", "MDL")
+            .pathParam("namespace", namespace)
             .pathParam("notificationName", notificationName)
             .delete(DELETE_BUSINESS_OBJECT_NOTIFICATION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -276,7 +289,7 @@ public class HerdRestUtil {
             .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
             .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
             .delete(DELETE_BUSINESS_OBJECT_FORMAT_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -293,7 +306,7 @@ public class HerdRestUtil {
             .pathParam("namespace", namespace)
             .pathParam("businessObjectDefinitionName", businessObjectDefinitionName)
             .delete(GET_BUSINESS_OBJECT_DEFINITION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -306,11 +319,11 @@ public class HerdRestUtil {
      * @param permissionEnum namespace permission type to grant
      * @return
      */
-    public static Response grantNamespacePermission(User grantor, String userId, String namespace, HerdNamespacePermissionEnum permissionEnum) {
+    public static Response grantNamespacePermission(User grantor, String userId, String namespace, NamespacePermissionEnum permissionEnum) {
         Response response = given().spec(getHerdBaseRequestSpecification(grantor))
             .body(getGrantBody(userId, namespace, permissionEnum))
             .post(POST_NAMESPACE_AUTHORIZATION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -327,7 +340,7 @@ public class HerdRestUtil {
             .pathParam("userId", userId)
             .pathParam("namespace", namespace)
             .delete(DELETE_NAMESPACE_AUTHORIZATION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -342,7 +355,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .body(body)
             .post(POST_EMR_CLUSTER_DEFINITION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -358,7 +371,7 @@ public class HerdRestUtil {
             .pathParam("namespace", namespace)
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
             .delete(DELETE_EMR_CLUSTER_DEFINITION_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -373,7 +386,7 @@ public class HerdRestUtil {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .body(body)
             .post(POST_EMR_CLUSTER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -392,7 +405,7 @@ public class HerdRestUtil {
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
             .pathParam("emrClusterName", emrClusterName)
             .get(DELETE_EMR_CLUSTER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -411,7 +424,7 @@ public class HerdRestUtil {
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
             .pathParam("emrClusterName", emrClusterName)
             .delete(DELETE_EMR_CLUSTER_URL);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -426,7 +439,7 @@ public class HerdRestUtil {
         Response response = given()
             .spec(getBaseRequestSpecification(user))
             .get(url);
-        response.prettyPrint();
+        LOGGER.debug(prettyJsonResponse(response));
         return response;
     }
 
@@ -438,7 +451,8 @@ public class HerdRestUtil {
             .setContentType("application/xml");
 
         //Only set authentication when auth is enabled
-        if (Boolean.getBoolean(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH))) {
+        if (BooleanUtils.toBoolean(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH))) {
+            LOGGER.info("Setting Basic Auth for user: " + user.getUsername());
             PreemptiveBasicAuthScheme authenticationScheme = new PreemptiveBasicAuthScheme();
             authenticationScheme.setUserName(user.getUsername());
             authenticationScheme.setPassword(user.getPassword());
@@ -446,37 +460,34 @@ public class HerdRestUtil {
                 .setAuth(authenticationScheme);
         }
         return requestSpecBuilder.build().redirects().follow(true);
-
     }
 
     private static RequestSpecification getHerdBaseRequestSpecification(User user) {
         return getBaseRequestSpecification(user).baseUri(HERD_BASE_URL);
     }
 
-    private static String getGrantBody(String userId, String namespace, HerdNamespacePermissionEnum namespacePermissionEnum) {
-        String grantBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            + "<userNamespaceAuthorizationCreateRequest>\n"
-            + "     <userNamespaceAuthorizationKey>\n"
-            + "          <userId>{userId}</userId>\n"
-            + "          <namespace>{namespace}</namespace>\n"
-            + "     </userNamespaceAuthorizationKey>\n"
-            + "     <namespacePermissions>\n"
-            + "          <namespacePermission>{permission}</namespacePermission>\n"
-            + "     </namespacePermissions>\n"
-            + "</userNamespaceAuthorizationCreateRequest>\n";
-        return grantBody.replace("{userId}", userId).replace("{namespace}", namespace).replace("{permission}", namespacePermissionEnum.name());
+    private static UserNamespaceAuthorizationCreateRequest getGrantBody(String userId, String namespace, NamespacePermissionEnum namespacePermissionEnum) {
+        UserNamespaceAuthorizationKey userNamespaceAuthorizationKey = new UserNamespaceAuthorizationKey(userId, namespace);
+        return new UserNamespaceAuthorizationCreateRequest(userNamespaceAuthorizationKey, Collections.singletonList(namespacePermissionEnum));
     }
 
-    private static String getPostBusinessObjectDefinitionBody(String namespace, String businessObjectDefinitionName, String dataProviderName) {
-        String businessObjectDefinitionBody = "<businessObjectDefinitionCreateRequest>\n"
-            + "    <namespace>{{namespace}}</namespace>\n"
-            + "    <businessObjectDefinitionName>{{businessObjectDefinitionName}}</businessObjectDefinitionName>\n"
-            + "    <dataProviderName>{{dataProviderName}}</dataProviderName>\n"
-            + "</businessObjectDefinitionCreateRequest>";
-        return businessObjectDefinitionBody
-            .replace("{{namespace}}", namespace)
-            .replace("{{businessObjectDefinitionName}}", businessObjectDefinitionName)
-            .replace("{{dataProviderName}}", dataProviderName);
+    private static BusinessObjectDefinitionCreateRequest getPostBusinessObjectDefinitionBody(String namespace, String businessObjectDefinitionName, String dataProviderName) {
+        BusinessObjectDefinitionCreateRequest businessObjectDefinitionCreateRequest = new BusinessObjectDefinitionCreateRequest();
+        businessObjectDefinitionCreateRequest.setNamespace(namespace);
+        businessObjectDefinitionCreateRequest.setBusinessObjectDefinitionName(businessObjectDefinitionName);
+        businessObjectDefinitionCreateRequest.setDataProviderName(dataProviderName);
+        return businessObjectDefinitionCreateRequest;
+    }
 
+    private static String prettyJsonResponse(Response response){
+        String s = response.asString();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(s);
+        }
+        catch (JsonProcessingException e) {
+            LOGGER.warn(e.getMessage());
+            return s;
+        }
     }
 }

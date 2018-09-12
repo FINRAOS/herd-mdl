@@ -104,7 +104,7 @@ public class TestWrapper {
     }
 
     private static void createVpcSsmIfNotExistingStack(String stackName, String instanceName) throws Exception {
-        boolean existingStack = false;
+        boolean existingStack = true;
         if (!new CloudFormationClient(stackName).stackExists(stackName)) {
             String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
 
@@ -128,7 +128,7 @@ public class TestWrapper {
             SsmUtil.putParameter(vpcKey, vpcValue);
             SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
             SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
-            existingStack = true;
+            existingStack = false;
         }
 
         LOGGER.info(String.format("Save existingStack=%s to file test.props", String.valueOf(existingStack)));

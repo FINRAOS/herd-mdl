@@ -16,6 +16,7 @@
 package org.tsi.mdlt.test.herd;
 
 import static org.awaitility.Awaitility.given;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -28,7 +29,6 @@ import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
 import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -94,7 +94,7 @@ public class EMRClusterTest extends BaseTest {
         LogStep("Create Cluster, Definition, and namespace");
         HerdRestUtil.postNamespace(herdAdminUser, namespace);
         HerdRestUtil.createClusterDefinition(herdAdminUser, getCreateClusterDefinitionBody(namespace, clusterDefinitionName));
-        HerdRestUtil.createCluster(herdAdminUser, getCreateClusterBody(namespace, clusterDefinitionName, clusterName));
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.createCluster(herdAdminUser, getCreateClusterBody(namespace, clusterDefinitionName, clusterName)).statusCode());
 
         LogStep("Wait for cluster to be up");
         int timeout = 10;
@@ -108,7 +108,7 @@ public class EMRClusterTest extends BaseTest {
             });
 
         LogStep("Delete Cluster");
-        HerdRestUtil.deleteCluster(herdAdminUser, namespace, clusterDefinitionName, clusterName);
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.deleteCluster(herdAdminUser, namespace, clusterDefinitionName, clusterName).statusCode());
 
         LogStep("Wait for cluster to be deleted");
         given().atMost(timeout, TimeUnit.MINUTES).pollInterval(30, TimeUnit.SECONDS)
@@ -117,14 +117,8 @@ public class EMRClusterTest extends BaseTest {
                 Response response = HerdRestUtil.getCluster(herdAdminUser, namespace, clusterDefinitionName, clusterName);
                 return response.statusCode() == HttpStatus.SC_BAD_REQUEST;
             });
-
-        cleanup();
     }
 
-    @Before
-    public void beforeTest() {
-        cleanup();
-    }
 
     @After
     public void afterTest() {
@@ -149,7 +143,7 @@ public class EMRClusterTest extends BaseTest {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
     }
 
