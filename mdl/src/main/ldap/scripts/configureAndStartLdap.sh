@@ -44,9 +44,6 @@ function init() {
 
     export MDL_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdMdlUsername --output text --query Parameter.Value)
     export SEC_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdSecUsername --output text --query Parameter.Value)
-    export HUB_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdHubUsername --output text --query Parameter.Value)
-    export ETLMGMT_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdEtlmgmtUsername --output text --query Parameter.Value)
-    export BASIC_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdBasicUsername --output text --query Parameter.Value)
 
     export PRINCIPLE_OU="ou=People"
 
@@ -76,18 +73,12 @@ function init_params() {
     HERD_RO_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
     MDL_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
     SEC_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
-    HUB_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
-    ETLMGMT_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
-    BASIC_APP_PASS=$(echo "$(date +%s.%N)-$(($RANDOM*$RANDOM))" | sha256sum | base64 | head -c 12)
 
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/AdministratorPassword --value ${LDAP_ADMIN_PASS} --type SecureString --description \"LDAP administrative password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdAdminPassword --value ${HERD_ADMIN_PASS} --type SecureString --description \"Herd admin user password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdRoPassword --value ${HERD_RO_PASS} --type SecureString --description \"Herd readonly user password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdMdlPassword --value ${MDL_APP_PASS} --type SecureString --description \"LDAP application/service password\" --overwrite"
     execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdSecPassword --value ${SEC_APP_PASS} --type SecureString --description \"LDAP sec account password\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdHubPassword --value ${HUB_APP_PASS} --type SecureString --description \"Herd readonly user password\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdEtlmgmtPassword --value ${ETLMGMT_APP_PASS} --type SecureString --description \"Herd readonly user password\" --overwrite"
-    execute_cmd "${AWS_BIN} ssm put-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdBasicUserPassword --value ${BASIC_APP_PASS} --type SecureString --description \"Herd readonly user password\" --overwrite"
 
     echo "Generating passwords."
     LDAP_ADMIN_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${LDAP_ADMIN_PASS}")
@@ -95,9 +86,6 @@ function init_params() {
     HERD_RO_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${HERD_RO_PASS}")
     MDL_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${MDL_APP_PASS}")
     SEC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${SEC_APP_PASS}")
-    HUB_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${HUB_APP_PASS}")
-    ETLMGMT_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${ETLMGMT_APP_PASS}")
-    BASIC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${BASIC_APP_PASS}")
 
     BASE_DN=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN --output text --query Parameter.Value)
 }
@@ -122,7 +110,6 @@ function configure_ssl() {
 }
 
 # Configures logging
-# todo: verify
 function configure_logging() {
     echo "Configuring logging."
     # Setup ldap logging
@@ -359,44 +346,24 @@ EOF
     # Add Herd Read-Only Service account
     create_user "${HERD_RO_USER}" "${HERD_RO_USER}" "${HERD_RO_PASS_CRYPT}" 10005 1001
 
-    # Add HUB Service account
-    create_user "${HUB_APP_USER}" "${HUB_APP_USER}" "${HUB_APP_PASS_CRYPT}" 10006 1001
-
-    # Add ETLMGMT Service account
-    create_user "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_PASS_CRYPT}" 10007 1001
-
-     # Add Basic user Service account
-    create_user "${BASIC_APP_USER}" "${BASIC_APP_USER}" "${BASIC_APP_PASS_CRYPT}" 10008 1001
-
     HERD_ADMIN_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --output text --query Parameter.Value)
     RO_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --output text --query Parameter.Value)
     MDL_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --output text --query Parameter.Value)
     SEC_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --output text --query Parameter.Value)
-    HUB_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/HUB --output text --query Parameter.Value)
-    ETLMGMT_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/ETLMGMT  --output text --query Parameter.Value)
 
     create_group "${HERD_ADMIN_AUTH_GROUP}" "${HERD_ADMIN_USER}"
     create_group "${RO_AUTH_GROUP}" "${HERD_RO_USER}"
     create_group "${MDL_AUTH_GROUP}" "${MDL_APP_USER}"
     create_group "${SEC_AUTH_GROUP}" "${SEC_APP_USER}"
-    create_group "${HUB_AUTH_GROUP}" "${HUB_APP_USER}"
-    create_group "${ETLMGMT_AUTH_GROUP}" "${ETLMGMT_APP_USER}"
 
+    add_user_to_group "APP_MDL_Users" "${HERD_ADMIN_USER}"
+    add_user_to_group "APP_MDL_Users" "${HERD_RO_USER}"
     create_group "APP_MDL_Users" "${MDL_APP_USER}"
     add_user_to_group "APP_MDL_Users" "${SEC_APP_USER}"
-    add_user_to_group "APP_MDL_Users" "${HUB_APP_USER}"
-    add_user_to_group "APP_MDL_Users" "${ETLMGMT_APP_USER}"
-
-    add_user_to_group "${ETLMGMT_AUTH_GROUP}" "${HERD_RO_USER}"
-    add_user_to_group "${HUB_AUTH_GROUP}" "${HERD_RO_USER}"
-    add_user_to_group "${MDL_AUTH_GROUP}" "${HERD_RO_USER}"
-    add_user_to_group "${SEC_AUTH_GROUP}" "${HERD_RO_USER}"
-
-    add_user_to_group "${RO_AUTH_GROUP}" "${BASIC_APP_USER}"
 
     # Verify memberOf in debug logs
     echo "Running an ldapsearch to verify memberOf overlay."
-    ldapsearch -x -LLL -H ldap:/// -b "cn=${HUB_APP_USER},${PRINCIPLE_OU},${BASE_DN}" dn memberof
+    ldapsearch -x -LLL -H ldap:/// -b "cn=${MDL_APP_USER},${PRINCIPLE_OU},${BASE_DN}" dn memberof
 
     execute_cmd "service slapd restart"
 }

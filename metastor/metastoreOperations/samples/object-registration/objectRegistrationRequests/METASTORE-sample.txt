@@ -23,7 +23,3 @@ namespace|businessObjectDefinitionName|businessObjectFormatUsage|businessObjectF
 MDL|OBJ_1|PRC|TXT|DM Managed|add|
 MDL|OBJ_2|PRC|TXT|DM Managed|drop|
 MDL|OBJ_2|PRC|TXT|Singleton|add|
-HUB|ATS_MR_TRADE_VOL_SM|PRC-2|BZ|Singleton|add
-ETLMGMT|OTC_SUMMARY_HS|PRC|BZ|Singleton|add
-HUB|SIP_CTS_TRADE|PRC|BZ|DM Managed|add
-HUB|SIP_UTP_TRADE|PRC|BZ|DM Managed|add

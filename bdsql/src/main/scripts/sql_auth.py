@@ -217,6 +217,7 @@ def execute_metastor_query(q):
     if q.split(' ')[0].lower() in ['update','insert','delete']:
         metastor_conn.commit()
 
+    log('closing connection.')
     metastor_conn.close()
 
     return data
@@ -479,7 +480,7 @@ def sync_user_objects():
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
             users = [i.split(',')[0].replace('cn=','').strip()
-                for i in ldap_object[1]['member']]
+                     for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
@@ -488,7 +489,7 @@ def sync_user_objects():
         user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
             s3_home_bucket,user_schema_name)
         user_schemas = [i['database_name']
-            for i in execute_hive_query('default','show schemas')]
+                        for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -576,9 +577,9 @@ def sync_user_objects():
             ldap_group_role_match = ldap_group_cn
 
         ldap_users = [user.split(',')[0].replace('cn=','')
-            for user in ldap_object[1]['member']]
+                      for user in ldap_object[1]['member']]
         role_users = [role_user['user'] for role_user in roles_users
-            if role_user['role_name'] == ldap_group_role_match]
+                      if role_user['role_name'] == ldap_group_role_match]
 
         for role_user in role_users:
             if role_user not in ldap_users:
@@ -600,7 +601,7 @@ def remove_roles():
 
         log("started removing role. role={}".format(acl_role))
         principal_data = execute_hive_query('default',
-            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+                                            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
 
         for principal in principal_data:
 
@@ -659,7 +660,7 @@ def remove_user_objects():
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
             users = [i.split(',')[0].replace('cn=','').strip()
-                for i in ldap_object[1]['member']]
+                     for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
 
@@ -668,7 +669,7 @@ def remove_user_objects():
         user_schema_location = 's3://{}/BDSQL/home/{}.db'.format(
             s3_home_bucket,user_schema_name)
         user_schemas = [i['database_name']
-            for i in execute_hive_query('default','show schemas')]
+                        for i in execute_hive_query('default','show schemas')]
 
         log("started on user: user={} user_schema={} s3_location={}".format(
             user, user_schema_name, user_schema_location))
@@ -696,11 +697,13 @@ def show_acls():
 
     print "### Hive ###"
     roles = execute_hive_query('default',['set role admin','show roles'])
+    log('roles: {}'.format(roles))
     acl_roles = [i['role'] for i in roles if '_acl_' in i['role'].lower()]
     for acl_role in acl_roles:
         print "role:\n\t{}".format(acl_role)
         data = execute_hive_query('default',
-            ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+                                  ['set role admin','SHOW PRINCIPALS {}'.format(acl_role)])
+        log('data: {}'.format(data))
         headers = data[0].keys()
         print 'members:\n\t' + ','.join(headers)
         for d in data:

@@ -48,6 +48,7 @@ herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${e
 herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
 
 execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/metastor-v${metastorVersion}/managedObjectLoader-${metastorVersion}-dist.zip -O ${deployLocation}/managedObjectLoader.zip"
+
 execute_cmd "cd ${deployLocation}"
 execute_cmd "unzip managedObjectLoader.zip"
 

@@ -19,23 +19,23 @@
     <scriptTask id="prepareEmailContent" name="Prepare Email Content" scriptFormat="javascript" activiti:autoStoreVariables="false">
       <script>
       var emailMessage="";
-      if (createCluster_taskStatus == 'ERROR') { 
+      if (createCluster_taskStatus == 'ERROR') {
           emailMessage=createCluster_taskErrorMessage;
-			  }    
+			  }
       else if (execution.hasVariable("getBusinessObjectFormat_taskStatus")) {
 	       if (getBusinessObjectFormat_taskStatus == 'ERROR') {
 	          emailMessage=getBusinessObjectFormat_taskErrorMessage;
-			  }    
-			} 			  
+			  }
+			}
       else if (execution.hasVariable("startProcessor_taskStatus")) {
 	       if (startProcessor_taskStatus == 'ERROR') {
 	          emailMessage=startProcessor_taskErrorMessage;
-			  }    
+			  }
 			}
 	  else {
 	      emailMessage="Error in workflow";
 	  }
-	  execution.setVariable("emailmsg",emailMessage);       		
+	  execution.setVariable("emailmsg",emailMessage);
       </script>
     </scriptTask>
     <scriptTask id="scripttask1" name="Initialize Variables" activiti:async="true" scriptFormat="javascript" activiti:autoStoreVariables="false">
@@ -95,16 +95,16 @@
               execution.setVariable('jdbcExecutionRequest', JSON.stringify(jdbcExecutionRequest));
 
       execution.setVariable("emrStepStatus", "");
-      execution.setVariable("emrStepID", "");            
-    
+      execution.setVariable("emrStepID", "");
+
         var next_date = new Date();
-        next_date.setDate(next_date.getDate() + 1)
+        next_date.setDate(next_date.getDate() + 1);
         var dd = next_date.getDate();
         var mm = next_date.getMonth() + 1;
         var yy = next_date.getFullYear();
         var next_date_formatted = yy + '-'+ mm + '-'+ dd;
         execution.setVariable("latestDay", next_date_formatted);
-    
+
       </script>
     </scriptTask>
     <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
@@ -195,7 +195,7 @@
     else
        {
        execution.setVariable("noOfRetries", 0);
-       }   
+       }
 
     if (!execution.hasVariable("maxRetries")) {
           execution.setVariable("maxRetries", 5);
@@ -208,8 +208,8 @@
          execution.setVariable("maxStatusRetries", 5);
     }
       execution.setVariable("emrStepStatus", "");
-      execution.setVariable("emrStepID", "");            
-        
+      execution.setVariable("emrStepID", "");
+
       </script>
     </scriptTask>
     <sequenceFlow id="flow63" sourceRef="exclusivegateway1" targetRef="updateVariables"></sequenceFlow>

@@ -52,7 +52,7 @@ function execute_curl_cmd {
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	returnCode=`cat /tmp/curlCmdOutput | grep "HTTP_CODE" | cut -d":" -f2`
-    if [ "${returnCode}" != "200"                                                                                                                                                                                         ]; then
+    if [ "${returnCode}" != "200" ]; then
         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${1} has failed with error ${returnCode}"
     	cat /tmp/curlCmdOutput
     	echo ""
@@ -70,6 +70,12 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
+    # singletonObjectsAddPartitionWorkflow
+    execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
 
     # Replace values for cluster definition
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
@@ -120,8 +126,7 @@ fi
 
 # Download herd-uploader jar
 execute_cmd "mkdir -p ${deployLocation}/herd-uploader"
-#TODO remove hardcoded uploader-jar version
-execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/0.72.0/herd-uploader-0.72.0.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
+execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 execute_cmd "sudo chmod +x ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 
 # Do not echo the password

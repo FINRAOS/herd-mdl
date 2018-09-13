@@ -29,7 +29,7 @@ Parameters:
   MDLInstanceName:
     Description: MDL Instance Name, lowercase letters and numbers with max length 15
     Type: String
-    AllowedPattern: '[a-z0-9_]*'
+    AllowedPattern: '[a-z0-9]*'
     MaxLength: 15
   CreateIAMRoles:
     Description: Create IAM Roles - true || false
