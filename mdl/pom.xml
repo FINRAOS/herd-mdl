@@ -240,6 +240,16 @@
             <artifactId>awaitility</artifactId>
             <version>${awaitility.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>${rest-assured.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.finra.herd</groupId>
+            <artifactId>herd-model-api</artifactId>
+            <version>${herd-model-api.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
