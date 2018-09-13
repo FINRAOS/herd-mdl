@@ -99,12 +99,8 @@ public class CloudFormationClient {
      */
     public void createStack(Map<String, String> params, String cftTemplateName, boolean rollbackOnFailure) throws Exception {
         String s3BucketURLPrefix = "https://s3.amazonaws.com/";
-        String accountId = AWSSecurityTokenServiceClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build()
-            .getCallerIdentity(new GetCallerIdentityRequest())
-            .getAccount();
         masterCFTLocation = s3BucketURLPrefix
-                .concat(accountId + "-" + propertyValues.getProperty("MDLInstanceName") + "-mdlt-" + propertyValues.getProperty("Environment")+ "/")
+                .concat(propertyValues.getProperty("MdltBucketName") + "/")
                 .concat("cft" + "/")
                 .concat(cftTemplateName);
         System.out.println("Using master CFT location : " + masterCFTLocation);
@@ -259,10 +255,7 @@ public class CloudFormationClient {
         public CFTStackStatus waitForCompletionAndGetStackStatus(AmazonCloudFormation awsCloudFormation,
             String stackId) throws InterruptedException {
 
-        int stackStatusPollingInterval =
-                Integer.valueOf(propertyValues.getProperty("StackStatusPollingInterval"))
-                        * 1000;
-
+        int stackStatusPollingInterval = 60 * 1000;
         DescribeStacksRequest describeStacksRequest = new DescribeStacksRequest();
         describeStacksRequest.setStackName(stackId);
 
@@ -356,9 +349,7 @@ public class CloudFormationClient {
 
     public void waitForClusterTermination(AmazonElasticMapReduce amazonElasticMapReduce,
             List<String> stackClusterIds, CFTStackInfo cftStackInfo) throws InterruptedException {
-        int stackStatusPollingInterval =
-                Integer.valueOf(propertyValues.getProperty("StackStatusPollingInterval"))
-                        * 1000;
+        int stackStatusPollingInterval = 60 * 1000;
 
         System.out.print("Waiting");
         Boolean done = false;

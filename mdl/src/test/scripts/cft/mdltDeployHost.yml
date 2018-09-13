@@ -107,6 +107,11 @@ Parameters:
     Description: wait on Vpc if createVPC=true
     Type: String
 Resources:
+  MdltBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-${Environment}'
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -199,13 +204,13 @@ Resources:
                 #copy mdlt artifacts to ec2
                 mkdir -p mdlt
                 cd mdlt
-                wget https://s3.amazonaws.com/${AWS::AccountId}-${MDLTWrapperInstanceName}-mdlt-staging-${Environment}/herd-mdlt-dist.zip -O mdlt.zip
+                #copy from mdlt staging bucket
+                aws s3 cp s3://${AWS::AccountId}-${MDLTWrapperInstanceName}-mdlt-staging-${Environment}/herd-mdlt-dist.zip mdlt.zip
                 unzip mdlt.zip
                 rm -f mdlt.zip
                 find ./ -name "*.sh" -exec chmod +x {} \;
                 cd ..
                 ./mdlt/scripts/testRunner.sh /home/ec2-user/deployHost.props
-
           files:
             /var/awslogs/etc/config/codedeploy_logs.conf:
               content: !Sub |
@@ -265,7 +270,7 @@ Resources:
                   - |+
 
                   - MdltBucketName=
-                  - !Join ['-', [!Ref 'AWS::AccountId', !Ref MDLInstanceName, 'mdlt', !Ref Environment]]
+                  - !Ref MdltBucket
                   - |+
 
                   - MDLStackName=

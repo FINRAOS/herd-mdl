@@ -13,6 +13,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<namespaceCreateRequest>
-   <namespaceCode>MDLT</namespaceCode>
-</namespaceCreateRequest>
+<emrClusterCreateRequest>
+   <namespace>$namespace</namespace>
+   <emrClusterDefinitionName>$clusterDefinitionName</emrClusterDefinitionName>
+   <emrClusterName>$clusterName</emrClusterName>
+</emrClusterCreateRequest>

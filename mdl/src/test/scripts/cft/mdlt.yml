@@ -136,6 +136,7 @@ Resources:
   DeployBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
+      AccessControl: Private
       BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -167,7 +168,6 @@ Resources:
                   - s3:List*
                   - s3:PutObject
                   - s3:DeleteObject
-                  - s3:PutObjectAcl
                 Resource: '*'
   ArtifactCopyLambdaFunction:
     Type: AWS::Lambda::Function
@@ -184,8 +184,8 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
-
-              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
+              #TODO change to release location
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -201,7 +201,7 @@ Resources:
                       urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
 
                       s3_resource = boto3.resource('s3')
-                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip', ExtraArgs={'ACL': 'public-read'})
+                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip')
 
                       local_extract_directory = '/tmp/extracts/{}'.format(release_version)
                       with zipfile.ZipFile(local_deploy_file, 'r') as zip_ref:
@@ -211,7 +211,7 @@ Resources:
                           for filename in files:
                               abs_filepath = os.path.join(root, filename)
                               print('Uploading file: {} to bucket: {} with key: {}'.format(abs_filepath, deployment_bucket_name, os.path.relpath(abs_filepath, local_extract_directory)))
-                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.relpath(abs_filepath, local_extract_directory), ExtraArgs={'ACL': 'public-read'})
+                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.relpath(abs_filepath, local_extract_directory))
 
                       response_data['Message'] = 'Successfully uploaded artifacts to staging location.'
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
@@ -257,8 +257,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt 'ArtifactCopyLambdaFunction.Arn'
       ReleaseVersion: !Ref ReleaseVersion
-      BucketArn: !GetAtt DeployBucket.Arn
-      DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
+      DeploymentBucketName: !Ref DeployBucket
       WaitMdltVpcIdSsm: !If [CreateVPCFalseCondition, !Ref MdltVPCParameter, 'CreateVPC']
       WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltSubnetsParameter, 'CreateVPC']
   CreateVPCStack:
@@ -266,7 +265,7 @@ Resources:
     DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/mdlVpc.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/mdlVpc.yml'
       Parameters:
         MDLInstanceName: !Ref MDLInstanceName
         Environment: !Ref Environment
@@ -292,7 +291,7 @@ Resources:
     Condition: CreateAuthCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure
@@ -321,7 +320,7 @@ Resources:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}/scripts/cft/mdltDeployHost.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure

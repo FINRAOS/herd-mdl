@@ -71,6 +71,7 @@ public class TestWrapper {
                 saveStackOutputProperties(stackName);
             }
             else if (SHUTDOWN_CMD.equals(command)) {
+                deleteVpcSsm(instanceName);
                 shutdownStack(stackName);
             }
             else {
@@ -103,6 +104,7 @@ public class TestWrapper {
     }
 
     private static void createVpcSsmIfNotExistingStack(String stackName, String instanceName) throws Exception {
+        boolean existingStack = true;
         if (!new CloudFormationClient(stackName).stackExists(stackName)) {
             String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
 
@@ -126,20 +128,28 @@ public class TestWrapper {
             SsmUtil.putParameter(vpcKey, vpcValue);
             SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
             SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
+            existingStack = false;
+        }
 
-            LOGGER.info("Save existingStack=false to file test.props");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
-            writer.write("existingStack" + "=" + "false");
-            writer.newLine();
-            writer.close();
-        }
-        else {
-            LOGGER.info("Save existingStack=true to file test.props");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
-            writer.write("existingStack" + "=" + "true");
-            writer.newLine();
-            writer.close();
-        }
+        LOGGER.info(String.format("Save existingStack=%s to file test.props", String.valueOf(existingStack)));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
+        writer.write("existingStack" + "=" + String.valueOf(existingStack));
+        writer.newLine();
+        writer.close();
+    }
+
+    private static void deleteVpcSsm(String instanceName) throws Exception {
+        String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
+        String vpcKeyFormat = "/global/%s/%s/VPC/ID";
+        String privateSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/private";
+        String publicSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/public";
+        String vpcKey = String.format(vpcKeyFormat, instanceName, environment);
+        String privateSubnetsKey = String.format(privateSubnetsKeyFormat, instanceName, environment);
+        String publicSubnetsKey = String.format(publicSubnetsKeyFormat, instanceName, environment);
+
+        SsmUtil.deleteParameter(vpcKey);
+        SsmUtil.deleteParameter(privateSubnetsKey);
+        SsmUtil.deleteParameter(publicSubnetsKey);
     }
 
     private static Map<String, String> createStackParameters() {

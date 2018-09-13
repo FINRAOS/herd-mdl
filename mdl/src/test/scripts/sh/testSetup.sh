@@ -66,22 +66,11 @@ if [ "${EnableSSLAndAuth}" = 'true' ] ; then
 
     #2. copy certs jks to mdlt deploy host
     MDL_STAGING_BUCKET=$(aws ssm get-parameter --name "/app/MDL/${MDLInstanceName}/${Environment}/S3/MDL" --output text --query Parameter.Value)
-    execute_cmd "aws s3 cp s3://${MDL_STAGING_BUCKET}/certs/mdl.jks certs.jks"
+    execute_cmd "aws s3 cp ${BdsqlJksURL} certs.jks"
 fi
 
 # download herd uploader jar
 execute_cmd "rm -rf mdl"
 execute_cmd "mkdir -p mdl/herd"
-#TODO need to remove this once herd issue fixed
-herdVersion="0.72.0"
-execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ./mdl/herd/herd-uploader-app.jar"
-
-# download bdsql sql_auth.sh and upload to mdlt s3 in order to be used for testing
-execute_cmd "mkdir -p mdl/bdsql"
-BdsqlReleaseVersion='1.1.0'
-execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${BdsqlReleaseVersion}/bdsql-${BdsqlReleaseVersion}-dist.zip -O bdsql.zip"
-execute_cmd "unzip -q bdsql.zip -d ./mdl/bdsql"
-execute_cmd "rm -rf bdsql.zip"
-execute_cmd "aws s3 cp ./mdl/bdsql/scripts/sql_auth.sh s3://${MdltBucketName}/scripts/sh/presto/sql_auth.sh"
-
+execute_cmd "wget --quiet --random-wait ${HerdUploaderJarURL} -O ./mdl/herd/herd-uploader-app.jar"
 exit 0

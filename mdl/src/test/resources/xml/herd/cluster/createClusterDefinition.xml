@@ -15,8 +15,8 @@
 -->
 <emrClusterDefinitionCreateRequest>
    <emrClusterDefinitionKey>
-      <namespace>MDLT</namespace>
-      <emrClusterDefinitionName>MDLTTestCluster</emrClusterDefinitionName>
+      <namespace>$namespace</namespace>
+      <emrClusterDefinitionName>$clusterDefinitionName</emrClusterDefinitionName>
    </emrClusterDefinitionKey>
    <emrClusterDefinition>
       <sshKeyPairName>$emrKeyPairName</sshKeyPairName>

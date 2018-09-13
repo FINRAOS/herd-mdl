@@ -134,7 +134,7 @@ public class BdsqlAuthTest extends BdsqlBaseTest {
         else {
             LogVerification("Verify jdbc query response failure without write permission when enableAuth is true");
             SQLException authorizationException = assertThrows(SQLException.class, () -> {
-                executePrestoSelect(selectQuery, jdbcUrl, User.getLdapSecAppUser());
+                executePrestoSelect(selectQuery, jdbcUrl, User.getLdapMdlAppUser());
             });
             assertTrue(authorizationException.getMessage().contains("Access Denied"), "expect message not correct:" + authorizationException.getMessage());
         }

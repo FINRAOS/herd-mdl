@@ -22,6 +22,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement;
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementClientBuilder;
+import com.amazonaws.services.simplesystemsmanagement.model.DeleteParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult;
 import com.amazonaws.services.simplesystemsmanagement.model.Parameter;
@@ -72,11 +73,17 @@ public class SsmUtil {
         return getParameter(parameterKey, false);
     }
 
+    public static Parameter getSecureParameter(String parameterKey) {
+        return getParameter(parameterKey, true);
+    }
+
+
     private static Parameter getSsmParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
         return getParameter(parameterKey.getParameterKey(), isEncrypted);
     }
 
     private static Parameter getParameter(String parameterKey, boolean isEncrypted) {
+        LOGGER.info("get ssm parameter key:" + parameterKey);
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
             AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
@@ -101,5 +108,20 @@ public class SsmUtil {
         PutParameterRequest parameterRequest = new PutParameterRequest().withName(parameterKey).withValue(parameterValue).withOverwrite(true).withType("String");
 
         simpleSystemsManagementClient.putParameter(parameterRequest);
+    }
+
+    /**
+     * Delete parameter from aws ssm
+     * @param parameterKey ssm parameter key
+     */
+    public static void deleteParameter(String parameterKey) {
+        LOGGER.info(String.format("delete ssm parameter key %s", parameterKey));
+        AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
+        AWSSimpleSystemsManagement simpleSystemsManagementClient =
+            AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
+                .withRegion(Regions.getCurrentRegion().getName()).build();
+        DeleteParameterRequest parameterRequest = new DeleteParameterRequest().withName(parameterKey);
+
+        simpleSystemsManagementClient.deleteParameter(parameterRequest);
     }
 }
