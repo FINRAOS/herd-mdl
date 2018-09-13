@@ -16,6 +16,24 @@
 #!/bin/bash
 echo "$@"
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+# Set the port and SSL information for uploader based on https or http
+if [ "${httpProtocol}" = "https" ] ; then
+    export port="-P 443 -s true"
+else
+    export port="-P 80"
+fi
+
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 # Check the error and fail if the last command is NOT successful
 function check_error {
     return_code=${1}
@@ -36,7 +54,7 @@ function execute_cmd {
 }
 
 function execute_curl_cmd {
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -52,28 +70,10 @@ function execute_curl_cmd {
 function execute_uploader_cmd {
         cmd="java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ${deployLocation}/data/${2}/ -m ${deployLocation}/data/${1} -V -H ${herdLoadBalancerDNSName} ${port} -R 3 -D 60 --disableHostnameVerification true"
         echo $cmd
-        cmdWithCredentials="${cmd} -u ${ldapMdlAppUsername} -w ${mdlUserLdapPassword}"
+        cmdWithCredentials="${cmd} -u ${herdAdminUsername} -w ${herdAdminPassword}"
         eval $cmdWithCredentials
         check_error ${PIPESTATUS[0]} "$cmd"
 }
-
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
-# Set the port and SSL information for uploader based on https or http
-if [ "${httpProtocol}" = "https" ] ; then
-    export port="-P 443 -s true"
-else
-    export port="-P 80"
-fi
-
-execute_cmd "echo \"From $0\""
-mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
 
 # Registering metastor workflow
 execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectNotificationRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations --insecure"

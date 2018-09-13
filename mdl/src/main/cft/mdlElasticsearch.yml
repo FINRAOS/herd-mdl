@@ -35,18 +35,6 @@ Parameters:
   MDLStagingBucketName:
     Description: 'Metastor S3 Bucket '
     Type: AWS::SSM::Parameter::Value<String>
-  LdapHostName:
-    Description: LDAP Hostname for authentication
-    Type: AWS::SSM::Parameter::Value<String>
-  LdapBaseDN:
-    Description: LDAP base dn for authentication
-    Type: AWS::SSM::Parameter::Value<String>
-  LdapMdlAppUsername:
-    Description: open ldap app user for MDL
-    Type: AWS::SSM::Parameter::Value<String>
-  LdapMdlAppUserPasswordParameterKey:
-    Description: LDAP app user password key (Secure String in SSM Parameter store)
-    Type: String
   DeploymentBucketName:
     Description: Deployment bucket where the code resides
     Type: String
@@ -256,24 +244,8 @@ Resources:
                   - !Ref CertificateInfo
                   - |-
 
-                    ldapHostName=
-                  - !Ref LdapHostName
-                  - |-
-
                     domainNameSuffix=
                   - !Ref DomainNameSuffix
-                  - |-
-
-                    ldapMdlAppUsername=
-                  - !Ref LdapMdlAppUsername
-                  - |-
-
-                    ldapBaseDN=
-                  - !Ref LdapBaseDN
-                  - |-
-
-                    ldapMdlAppUserPasswordParameterKey=
-                  - !Ref LdapMdlAppUserPasswordParameterKey
                   - |-
 
                     deployLocation=/home/mdladmin/deploy/mdl

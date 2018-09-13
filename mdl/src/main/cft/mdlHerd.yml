@@ -558,7 +558,7 @@ Resources:
       HostedZoneName:
         Ref: HostedZoneName
       RecordSets:
-      - Name: !Join ['', [!Ref MDLInstanceName, 'herd.', !Ref DomainNameSuffix]]
+      - Name: !Join ['', [!Ref MDLInstanceName, '-herd.', !Ref DomainNameSuffix]]
         Type: CNAME
         TTL: '900'
         ResourceRecords: [!GetAtt [HerdLoadBalancer, DNSName]]
@@ -567,7 +567,7 @@ Outputs:
     Value: !Join
       - ''
       - - !If [EnableSSLAndAuth, 'https://', 'http://']
-        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'herd.', !Ref DomainNameSuffix]], !GetAtt [HerdLoadBalancer, DNSName]]
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, '-herd.', !Ref DomainNameSuffix]], !GetAtt [HerdLoadBalancer, DNSName]]
         - /herd-app/rest/buildInfo
     Description: Application load balancer URL for Herd web servers
   HerdLoadBalancerDNSURL:
