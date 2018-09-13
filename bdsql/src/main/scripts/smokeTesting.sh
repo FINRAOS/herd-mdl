@@ -58,7 +58,7 @@ function cleanup_tmp_objects(){
 
     log "removing tmp objects"
     run_preto_query "$APP_USER" "SHOW TABLES" | sed -e 's/"//g' | egrep '^t[0-9]+(_|$)' | while read t; do
-        run_preto_query "$APP_USER" "DROP TABLE user_$APP_USER.$t"
+    run_preto_query "$APP_USER" "DROP TABLE user_$APP_USER.$t"
     done
 
 }
@@ -112,8 +112,8 @@ function main(){
 
 . /home/hadoop/conf/deploy.props
 
-export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --with-decryption --output text --query Parameter.Value)
-export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --output text --query Parameter.Value)
+export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --output text --query Parameter.Value)
+export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdMdlPassword --with-decryption --output text --query Parameter.Value)
 export PRESTO_PASSWORD="$APP_PASS"
 
 main 2>&1

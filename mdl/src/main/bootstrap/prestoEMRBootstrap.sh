@@ -49,6 +49,24 @@ function log(){
   echo "$(date '+%F %T') bdsql-$LOG_SOURCE[$$]: $MSG"
 }
 
+# Execute the given command and support resume option
+function execute_cmd {
+        cmd="${1}"
+        retry="${2}"
+        echo $cmd
+        eval $cmd
+        returnCode=${PIPESTATUS[0]}
+        if [ ${returnCode} -ne 0 ] ; then
+            if [ "${retry}" = "RETRY" ] ; then
+                sleep 2m
+                eval $cmd
+                check_error ${PIPESTATUS[0]} "$cmd"
+            else
+                check_error ${returnCode} "$cmd"
+            fi
+        fi
+}
+
 function prestoBootstrapHelper() {
 
   IS_MASTER=$(grep isMaster /mnt/var/lib/info/instance.json | awk -F ':' '{print $2}' | sed -e 's/ //g')

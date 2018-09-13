@@ -122,6 +122,7 @@ function configure_ssl() {
 }
 
 # Configures logging
+# todo: verify
 function configure_logging() {
     echo "Configuring logging."
     # Setup ldap logging
@@ -175,18 +176,27 @@ function create_user() {
     local user_cn=$1
     local user_uid=$2
     local user_pwd_crypt=$3
+    local uid=$4
+    local gid=$5
+    IFS=',' read -r -a array <<< "${BASE_DN}"
+    local domain=$(echo "${array[0]}" | egrep -o 'dc=[0-9a-zA-Z]+' | head -1 | sed -e 's/dc=//g')
+    local domainExt=$(echo "${array[1]}" | egrep -o 'dc=[0-9a-zA-Z]+' | head -1 | sed -e 's/dc=//g')
 
     read -r -d '' CONF <<EOF
 
 dn: cn=${user_cn},${PRINCIPLE_OU},${BASE_DN}
-objectClass: top
+changetype: add
 objectClass: inetOrgPerson
-objectClass: organizationalPerson
-objectClass: person
+objectClass: posixAccount
+uid: ${user_cn}
 cn: ${user_cn}
 sn: null
-uid: ${user_uid}
 userPassword: ${user_pwd_crypt}
+uidNumber: ${uid}
+gidNumber: ${gid}
+homeDirectory: /home/${user_cn}
+mail: ${user_cn}@${domain}.${domainExt}
+loginShell: /bin/bash
 
 EOF
 
@@ -207,7 +217,7 @@ function add_user_to_group(){
 dn: cn=${GROUP},ou=Groups,${BASE_DN}
 changetype: modify
 add: member
-member: uid=$USER_NAME,ou=People,$BASE_DN
+member: cn=${USER_NAME},ou=People,${BASE_DN}
 EOF
   echo "$CONF" > ${deployLocation}/conf/conf.ldif
 
@@ -338,25 +348,25 @@ EOF
     configure_ssl
 
     # Add MDL Service account
-    create_user "${MDL_APP_USER}" "${MDL_APP_USER}" "${MDL_APP_PASS_CRYPT}"
+    create_user "${MDL_APP_USER}" "${MDL_APP_USER}" "${MDL_APP_PASS_CRYPT}" 10002 1001
 
     # Add SEC Service account
-    create_user "${SEC_APP_USER}" "${SEC_APP_USER}" "${SEC_APP_PASS_CRYPT}"
+    create_user "${SEC_APP_USER}" "${SEC_APP_USER}" "${SEC_APP_PASS_CRYPT}" 10003 1001
 
     # Add Herd Admin Service account
-    create_user "${HERD_ADMIN_USER}" "${HERD_ADMIN_USER}" "${HERD_ADMIN_PASS_CRYPT}"
+    create_user "${HERD_ADMIN_USER}" "${HERD_ADMIN_USER}" "${HERD_ADMIN_PASS_CRYPT}" 10004 1001
 
     # Add Herd Read-Only Service account
-    create_user "${HERD_RO_USER}" "${HERD_RO_USER}" "${HERD_RO_PASS_CRYPT}"
+    create_user "${HERD_RO_USER}" "${HERD_RO_USER}" "${HERD_RO_PASS_CRYPT}" 10005 1001
 
     # Add HUB Service account
-    create_user "${HUB_APP_USER}" "${HUB_APP_USER}" "${HUB_APP_PASS_CRYPT}"
+    create_user "${HUB_APP_USER}" "${HUB_APP_USER}" "${HUB_APP_PASS_CRYPT}" 10006 1001
 
     # Add ETLMGMT Service account
-    create_user "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_PASS_CRYPT}"
+    create_user "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_USER}" "${ETLMGMT_APP_PASS_CRYPT}" 10007 1001
 
      # Add Basic user Service account
-    create_user "${BASIC_APP_USER}" "${BASIC_APP_USER}" "${BASIC_APP_PASS_CRYPT}"
+    create_user "${BASIC_APP_USER}" "${BASIC_APP_USER}" "${BASIC_APP_PASS_CRYPT}" 10008 1001
 
     HERD_ADMIN_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --output text --query Parameter.Value)
     RO_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --output text --query Parameter.Value)
@@ -371,6 +381,17 @@ EOF
     create_group "${SEC_AUTH_GROUP}" "${SEC_APP_USER}"
     create_group "${HUB_AUTH_GROUP}" "${HUB_APP_USER}"
     create_group "${ETLMGMT_AUTH_GROUP}" "${ETLMGMT_APP_USER}"
+
+    create_group "APP_MDL_Users" "${MDL_APP_USER}"
+    add_user_to_group "APP_MDL_Users" "${SEC_APP_USER}"
+    add_user_to_group "APP_MDL_Users" "${HUB_APP_USER}"
+    add_user_to_group "APP_MDL_Users" "${ETLMGMT_APP_USER}"
+
+    add_user_to_group "${ETLMGMT_AUTH_GROUP}" "${HERD_RO_USER}"
+    add_user_to_group "${HUB_AUTH_GROUP}" "${HERD_RO_USER}"
+    add_user_to_group "${MDL_AUTH_GROUP}" "${HERD_RO_USER}"
+    add_user_to_group "${SEC_AUTH_GROUP}" "${HERD_RO_USER}"
+
     add_user_to_group "${RO_AUTH_GROUP}" "${BASIC_APP_USER}"
 
     # Verify memberOf in debug logs

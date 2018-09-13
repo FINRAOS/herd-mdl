@@ -228,6 +228,10 @@ Resources:
                   - !Ref 'AWS::StackName'
                   - |-
 
+                    domainNameSuffix=
+                  - !Ref DomainNameSuffix
+                  - |-
+
                     region=
                   - !Ref 'AWS::Region'
                   - |-

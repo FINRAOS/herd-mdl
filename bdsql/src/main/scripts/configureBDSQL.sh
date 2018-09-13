@@ -64,9 +64,10 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     ldapAuthGroup=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup --output text --query Parameter.Value)
 
     # Configure Presto
+    echo "Configuring Presto LDAP authentication"
     echo "http-server.authentication.type=LDAP" >> /tmp/config.properties
     echo "authentication.ldap.url=ldaps://${ldapServer}:636" >> /tmp/config.properties
-    echo "authentication.ldap.user-bind-pattern=uid=\${USER},${ldapAuthGroup},${ldapBaseDN}" >> /tmp/config.properties
+    echo "authentication.ldap.user-bind-pattern=cn=\${USER},${ldapAuthGroup},${ldapBaseDN}" >> /tmp/config.properties
 fi
 
 # Restart presto
@@ -90,7 +91,7 @@ done
 if [ "${enableSSLAndAuth}" = "true" ] ; then
     # Change the role_map
     export metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e " INSERT INTO ROLE_MAP VALUES (101,UNIX_TIMESTAMP(),1,'hive','USER','mdl_app','USER',1); ;"
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e " INSERT INTO ROLE_MAP VALUES (101,UNIX_TIMESTAMP(),1,'hive','USER','ldap_admin_user','USER',1); ;"
 
     # Execute authorization codebase
     execute_cmd "sudo scripts/sql_auth.sh"

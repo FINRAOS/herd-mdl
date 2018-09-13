@@ -123,7 +123,7 @@ def get_ldap_info():
     info_response = ssm_client.get_parameter(Name='{}/HostName'.format(base_ssm_key))
     info['hostname'] = info_response['Parameter']['Value']
 
-    info_response = ssm_client.get_parameter(Name='{}/User/HerdAdminUser'.format(base_ssm_key))
+    info_response = ssm_client.get_parameter(Name='{}/User/HerdAdminUsername'.format(base_ssm_key))
     info['user'] = info_response['Parameter']['Value']
 
     info_response = ssm_client.get_parameter(Name='{}/Password/HerdAdminPassword'.format(base_ssm_key),WithDecryption=True)
@@ -165,6 +165,7 @@ def execute_hive_query(database,q):
     else:
         cur.execute(q)
 
+    log('cursor operation: {}'.format(cur.operationHandle))
     # if result set, create list of dictionaries
     data = []
     has_result_set = bool(vars(cur.operationHandle)['hasResultSet'])
@@ -202,8 +203,11 @@ def execute_metastor_query(q):
 
     data = []
 
+    log('Attempting to get a connection to metastor')
     metastor_conn = get_metastor_conn()
+    log('success.')
 
+    log('executing query: {}'.format(q))
     cur = metastor_conn.cursor()
     cur.execute(q)
 
@@ -300,9 +304,7 @@ def get_ldap_conn():
 
     ldap_info = get_ldap_info()
 
-    print ldap_info
-
-    full_bind_user='uid=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
+    full_bind_user='cn=%s,ou=People,%s' % (ldap_info['user'],ldap_info['base_dn'])
 
     ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_NEVER)
     ldap.set_option(ldap.OPT_REFERRALS,0)
@@ -388,7 +390,7 @@ def add_users_to_role(database, role_name, ldap_objects):
     for ldap_object in ldap_objects:
         if (ldap_object[1]['cn'][0].lower() == 'app_mdl_users' and role_name == 'app_mdl_acl_ro_public') or \
                 ldap_object[1]['cn'][0].lower() == role_name:
-            users = [i.split(',')[0].replace('uid=','').strip() for i in ldap_object[1]['member']]
+            users = [i.split(',')[0].replace('cn=','').strip() for i in ldap_object[1]['member']]
             for user in users:
                 q = """
                 SELECT
@@ -447,6 +449,7 @@ def sync_app_objects():
 
     metastor_objects = get_metastor_objects()
     ldap_objects = get_ldap_objects('cn=APP_MDL_*')
+    log('Found {} LDAP objects'.format(len(ldap_objects)))
 
     databases = set(sorted([i['NAME'] for i in metastor_objects],reverse=True))
     log("total_dbs={}".format(len(databases)))
@@ -475,7 +478,7 @@ def sync_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip()
+            users = [i.split(',')[0].replace('cn=','').strip()
                 for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))
@@ -572,7 +575,7 @@ def sync_user_objects():
         else:
             ldap_group_role_match = ldap_group_cn
 
-        ldap_users = [user.split(',')[0].replace('uid=','')
+        ldap_users = [user.split(',')[0].replace('cn=','')
             for user in ldap_object[1]['member']]
         role_users = [role_user['user'] for role_user in roles_users
             if role_user['role_name'] == ldap_group_role_match]
@@ -655,7 +658,7 @@ def remove_user_objects():
     for ldap_object in ldap_objects:
         cn = ldap_object[1]['cn'][0]
         if cn == 'APP_MDL_Users':
-            users = [i.split(',')[0].replace('uid=','').strip()
+            users = [i.split(',')[0].replace('cn=','').strip()
                 for i in ldap_object[1]['member']]
 
     log("total_users={}".format(len(users)))

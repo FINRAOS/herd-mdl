@@ -191,7 +191,7 @@ Parameters:
   NumberOfBdsqlCoreInstances:
     Description: Number of Core Instances for the EMR cluster
     Type: String
-    Default: '12'
+    Default: '1'
   CloudWatchRetentionDays:
     Description: 'Retention days for CloudWatch logs'
     Type: Number
