@@ -25,7 +25,7 @@ Parameters:
     Description: Whether rollback on app stack failure
   MDLInstanceName:
     Default: mdlt
-    Description: existing mdl stack associated instancename or instance name to be used for new mdl stack creation
+    Description: instance name to be used for new mdl stack creation, using different mdlinstance name if mdlt is runing against existing mdl
     Type: String
   MDLStackName:
     Default: mdlt
@@ -64,8 +64,8 @@ Parameters:
   MdltVpcIdParameterKey:
     Description: aws existing VPC Id
     Type: 'AWS::SSM::Parameter::Value<String>'
-  MdltSubnetsParameter:
-    Description: Existing aws subnet id
+  MdltPrivateSubnetsParameter:
+    Description: Existing private aws subnet id
     Type: 'AWS::SSM::Parameter::Value<String>'
   Environment:
     Description: Application environment
@@ -83,20 +83,6 @@ Parameters:
   DomainNameSuffix:
     Description: Domain name suffix for MDL Domains
     Type: String
-  CreateVPC:
-    Default: 'false'
-    Description: Create VPC - true || false
-    AllowedValues: [true, false]
-    Type: String
-  MdlVpcId:
-    Description: use existing VPC id for mdl stack
-    Type: String
-  MdlPrivateSubnets:
-    Description: use existing private subnet ids for mdl stack
-    Type: String
-  MdlPublicSubnets:
-    Description: use existing public subnet ids for mdlt stack
-    Type: String
   MDLTWrapperInstanceName:
     Description: instance name for wrapper stack
     Type: String
@@ -112,6 +98,87 @@ Resources:
     Properties:
       AccessControl: Private
       BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-${Environment}'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: '*'
+  EmptyS3LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          def handler(event, context):
+              bucket_name = event['ResourceProperties']['MdltBucket']
+              s3 = boto3.client('s3')
+              physical_id = "EmptyS3BucketLambdaPhysicalID"
+              response_data = {}
+              if event['RequestType'] == 'Delete':
+                  response_data['Message'] = 'Empty S3 bucket: {}'.format(bucket_name)
+
+                  objects_to_delete = []
+
+                  try:
+                      for key in s3.list_objects_v2(Bucket=bucket_name, MaxKeys=1000)['Contents']:
+                          objects_to_delete.append({
+                              'Key': key['Key']
+                          })
+
+                      print('Deleting {} objects from staging bucket: {}'.format(len(objects_to_delete), bucket_name))
+                      s3.delete_objects(
+                          Bucket=bucket_name,
+                          Delete={
+                              'Objects': objects_to_delete
+                          }
+                      )
+                      print('Deleted {} objects'.format(len(objects_to_delete)))
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+              else:
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  EmptyS3CustomResource:
+    Type: Custom::EmptyS3CustomResource
+    Properties:
+      ServiceToken: !GetAtt 'EmptyS3LambdaFunction.Arn'
+      MdltBucket: !Ref MdltBucket
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -329,22 +396,6 @@ Resources:
                   - !Ref MdltResultS3BucketName
                   - |+
 
-                  - CreateVPC=
-                  - !Ref CreateVPC
-                  - |+
-
-                  - MdlVpcId=
-                  - !Ref MdlVpcId
-                  - |+
-
-                  - MdlPrivateSubnets=
-                  - !Ref MdlPrivateSubnets
-                  - |+
-
-                  - MdlPublicSubnets=
-                  - !Ref MdlPublicSubnets
-                  - |+
-
                   - KeyName=
                   - !Ref KeyName
                   - |+
@@ -389,7 +440,7 @@ Resources:
       InstanceType: !Ref InstanceType
       SecurityGroupIds:
         - !Ref DeployHostSecurityGroup
-      SubnetId: !Select [0, !Split [',', !Ref MdltSubnetsParameter]]
+      SubnetId: !Select [0, !Split [',', !Ref MdltPrivateSubnetsParameter]]
       IamInstanceProfile: !Ref DeployHostInstanceProfile
       Tags:
         - Key: Name

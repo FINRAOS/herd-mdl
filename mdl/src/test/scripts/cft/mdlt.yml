@@ -25,7 +25,7 @@ Parameters:
     Description: Whether shutdown herd-mdl stack after test execution
   MDLInstanceName:
     Default: mdlt
-    Description: Application Name:Unique name to be associated with the stack, max length 5 as LB name has 32 chars length limitation
+    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created
     Type: String
     AllowedPattern: '[a-z0-9]*'
   ReleaseVersion:
@@ -52,30 +52,35 @@ Parameters:
      Description: Provide your s3 bucket name if you want to save mdlt results to your s3 bucket, otherwise, mdlt result will be saved to mdlt default bucket
      Type: String
   CertificateArn:
-    Description: Certificate Arn for MDL
+    Description: Certificate Arn for MDL, only needed when creating new mdl auth stack
     Type: String
   HostedZoneName:
-    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Description: Hosted Zone Name to create Route53 record set group for the given domain, only needed when creating new mdl auth stack
     Type: String
   DomainNameSuffix:
-    Description: Domain name suffix for MDL Domains
+    Description: Domain name suffix for MDL Domains, only needed when creating new mdl auth stack
     Type: String
   CreateVPC:
     Default: 'true'
     Description: Create VPC - true || false
     AllowedValues: [true, false]
     Type: String
+  ExistingStack:
+    Default: 'false'
+    Description: Existing mdl stack - true || false
+    AllowedValues: [true, false]
+    Type: String
   MdlVpcId:
-    Description: use existing VPC id for mdl stack
+    Description: use existing VPC id, only needed when creating new mdl stack
     Type: String
   MdlPrivateSubnets:
-    Description: use existing private subnet ids for mdl stack
+    Description: use existing private subnet ids, only needed when creating new mdl stack
     Type: String
   MdlPublicSubnets:
-    Description: use existing public subnet ids for mdlt stack
+    Description: use existing public subnet ids, only needed when creating new mdl stack
     Type: String
   Environment:
-    Description: Application environment
+    Description: Application environment(or environment of existing stack)
     Default: prod
     Type: String
   MdlAuthStackName:
@@ -97,6 +102,7 @@ Metadata:
           default: Resources - Conditional Parameters
         Parameters:
           - CreateVPC
+          - ExistingStack
           - RollbackOnFailure
       - Label:
           default: Generic Parameters
@@ -129,7 +135,7 @@ Metadata:
           - MdlPrivateSubnets
 Conditions:
     CreateVPCTrueCondition: !Equals [!Ref CreateVPC, 'true']
-    CreateVPCFalseCondition: !Equals [!Ref CreateVPC, 'false']
+    CreateVPCSsmCondition: !And [ !Equals [!Ref CreateVPC, 'false'] , !Equals [!Ref ExistingStack, 'false'] ]
     CreateAuthCondition: !Not [!Equals [!Ref MdlAuthStackName, '']]
     CreateNoAuthCondition: !Not [!Equals [!Ref MdlNoAuthStackName, '']]
 Resources:
@@ -258,8 +264,9 @@ Resources:
       ServiceToken: !GetAtt 'ArtifactCopyLambdaFunction.Arn'
       ReleaseVersion: !Ref ReleaseVersion
       DeploymentBucketName: !Ref DeployBucket
-      WaitMdltVpcIdSsm: !If [CreateVPCFalseCondition, !Ref MdltVPCParameter, 'CreateVPC']
-      WaitMdltSubnetsSsm: !If [CreateVPCFalseCondition, !Ref MdltSubnetsParameter, 'CreateVPC']
+      WaitMdltVpcIdSsm: !If [CreateVPCSsmCondition, !Ref MdltVPCParameter, 'CreateVPC']
+      WaitMdltPrivateSubnetsSsm: !If [CreateVPCSsmCondition, !Ref MdltPrivateSubnetsParameter, 'CreateVPC']
+      WaitMdltPublicSubnetsSsm: !If [CreateVPCSsmCondition, !Ref MdltPublicSubnetsParameter, 'CreateVPC']
   CreateVPCStack:
     Condition: CreateVPCTrueCondition
     DependsOn: ArtifactCopyCustomResource
@@ -271,19 +278,28 @@ Resources:
         Environment: !Ref Environment
         CustomTagName: 'application'
         CustomTagValue: 'herd-mdl'
+  #save provided vpc values to ssm parameter if createVPC = false, otherwise, these ssm parameters will be created by CreateVPCStack
   MdltVPCParameter:
-    Condition: CreateVPCFalseCondition
+    Condition: CreateVPCSsmCondition
     Type: 'AWS::SSM::Parameter'
     Properties:
       Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
       Type: String
       Value: !Ref MdlVpcId
       Description: VPC id for MDLT
-  MdltSubnetsParameter:
-    Condition: CreateVPCFalseCondition
+  MdltPrivateSubnetsParameter:
+    Condition: CreateVPCSsmCondition
     Type: 'AWS::SSM::Parameter'
     Properties:
       Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
+      Type: String
+      Value: !Ref MdlPrivateSubnets
+      Description: private subnet ids for MDLT
+  MdltPublicSubnetsParameter:
+    Condition: CreateVPCSsmCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
       Type: String
       Value: !Ref MdlPublicSubnets
       Description: public subnet ids for MDLT
@@ -302,18 +318,14 @@ Resources:
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
         MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
-        MdltSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
+        MdltPrivateSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: !Ref CertificateArn
         HostedZoneName: !Ref HostedZoneName
         DomainNameSuffix: !Ref DomainNameSuffix
         Environment: !Ref Environment
-        CreateVPC: !Ref CreateVPC
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
-        MdlVpcId: !Ref MdlVpcId
-        MdlPrivateSubnets: !Ref MdlPrivateSubnets
-        MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
         InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
   DeployHostHttpWithoutAuth:
@@ -330,18 +342,14 @@ Resources:
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
-        MdltSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
+        MdltVpcId: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPrivateSubnets: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: ''
         HostedZoneName: ''
         DomainNameSuffix: ''
         Environment: !Ref Environment
-        CreateVPC: !Ref CreateVPC
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
-        MdlVpcId: !Ref MdlVpcId
-        MdlPrivateSubnets: !Ref MdlPrivateSubnets
-        MdlPublicSubnets: !Ref MdlPublicSubnets
         MDLTWrapperInstanceName: !Ref MDLInstanceName
         InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'

@@ -63,6 +63,7 @@ public class TestWrapper {
 
             if (SETUP_CMD.equals(command)) {
                 LOGGER.info("Create VPC SSM if creating new mdl stack");
+                saveExistingStackParameter(stackName);
                 createVpcSsmIfNotExistingStack(stackName, instanceName);
 
                 LOGGER.info("Create application wrapper stack, wait for completion and save outputs for testing");
@@ -103,8 +104,18 @@ public class TestWrapper {
         }
     }
 
+    private static void saveExistingStackParameter(String stackName) throws Exception {
+        boolean existingStack = new CloudFormationClient(stackName).stackExists(stackName);
+
+        LOGGER.info(String.format("Save existingStack=%s to file test.props", String.valueOf(existingStack)));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
+        writer.write("existingStack" + "=" + String.valueOf(existingStack));
+        writer.newLine();
+        writer.close();
+    }
+
     private static void createVpcSsmIfNotExistingStack(String stackName, String instanceName) throws Exception {
-        boolean existingStack = true;
+        //if new mdl need to be created, create mdl required ssm parameters ahead of time using provided vpc values
         if (!new CloudFormationClient(stackName).stackExists(stackName)) {
             String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
 
@@ -115,27 +126,12 @@ public class TestWrapper {
             String privateSubnetsKey = String.format(privateSubnetsKeyFormat, instanceName, environment);
             String publicSubnetsKey = String.format(publicSubnetsKeyFormat, instanceName, environment);
 
+            //mdltWrapperInstanceName ssm has all valid vpc values, which can be found in mdlt.yml
             String mdltWrapperInstanceName = TEST_PROPERTIES.getProperty("MDLTWrapperInstanceName");
-            String vpcValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_VPC_ID.getKey());
-            String privateSubnetsValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_PRIVATE_SUBNETS.getKey());
-            String publicSubnetsValue = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_PUBLIC_SUBNETS.getKey());
-
-            if (BooleanUtils.toBoolean(TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.CREATE_VPC.getKey()))) {
-                vpcValue = SsmUtil.getPlainParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue();
-                privateSubnetsValue = SsmUtil.getPlainParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue();
-                publicSubnetsValue = SsmUtil.getPlainParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue();
-            }
-            SsmUtil.putParameter(vpcKey, vpcValue);
-            SsmUtil.putParameter(privateSubnetsKey, privateSubnetsValue);
-            SsmUtil.putParameter(publicSubnetsKey, publicSubnetsValue);
-            existingStack = false;
+            SsmUtil.putParameter(vpcKey, SsmUtil.getPlainParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(privateSubnetsKey, SsmUtil.getPlainParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(publicSubnetsKey, SsmUtil.getPlainParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
         }
-
-        LOGGER.info(String.format("Save existingStack=%s to file test.props", String.valueOf(existingStack)));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
-        writer.write("existingStack" + "=" + String.valueOf(existingStack));
-        writer.newLine();
-        writer.close();
     }
 
     private static void deleteVpcSsm(String instanceName) throws Exception {

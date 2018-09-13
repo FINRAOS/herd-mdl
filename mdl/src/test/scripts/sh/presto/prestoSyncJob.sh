@@ -49,7 +49,7 @@ fi
 
 echo "add presto sql_auth sync job"
 PrestoClusterId=${BdsqlEMRPrestoCluster}
-MDLStagingBucketName=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/S3/MDL --region ${RegionName} --output text --query Parameter.Value)
+MDLStagingBucketName=$(aws ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/S3/MDL --region ${RegionName} --output text --query Parameter.Value)
 sqlAuthS3Location="s3://${MDLStagingBucketName}/BDSQL/sql_auth.sh"
 stepId=$(aws emr add-steps --cluster-id ${PrestoClusterId} --steps Type=CUSTOM_JAR,Name=PrestoSyncJAR,ActionOnFailure=CONTINUE,Jar=s3://elasticmapreduce/libs/script-runner/script-runner.jar,Args=${sqlAuthS3Location} --query 'StepIds[0]' --output text)
 

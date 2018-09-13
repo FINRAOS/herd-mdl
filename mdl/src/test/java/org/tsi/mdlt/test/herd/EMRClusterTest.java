@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.UnmarshalException;
@@ -30,6 +31,7 @@ import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -75,6 +77,7 @@ public class EMRClusterTest extends BaseTest {
             cftClient.createStack(parameters, EMR_CLUSTER_PREREQ_CFT, true);
         }
         catch (AlreadyExistsException e) {
+            LOGGER.info(e.getErrorMessage());
             LOGGER.info("Stack already exist, reuse existing running stack");
         }
 
@@ -97,7 +100,7 @@ public class EMRClusterTest extends BaseTest {
         assertEquals(HttpStatus.SC_OK, HerdRestUtil.createCluster(herdAdminUser, getCreateClusterBody(namespace, clusterDefinitionName, clusterName)).statusCode());
 
         LogStep("Wait for cluster to be up");
-        int timeout = 10;
+        int timeout = 15;
         given().atMost(timeout, TimeUnit.MINUTES).pollInterval(30, TimeUnit.SECONDS)
             .ignoreException(UnmarshalException.class)
             .until(() -> {
@@ -120,8 +123,8 @@ public class EMRClusterTest extends BaseTest {
     }
 
 
-    @After
-    public void afterTest() {
+    @AfterEach
+    public void after() {
         cleanup();
     }
 
@@ -129,8 +132,12 @@ public class EMRClusterTest extends BaseTest {
         User herdAdminUser = User.getHerdAdminUser();
         String namespace = "MDLT";
         String clusterDefinitionName = "MDLTTestCluster";
+        String clusterName = StackOutputPropertyReader.get(StackOutputKeyEnum.MDL_INSTANCE_NAME) + "_Cluster";
 
-        LogStep("Delete Cluster Definition and namespace");
+        LogCleanup("Delete Cluster");
+        HerdRestUtil.deleteCluster(herdAdminUser, namespace, clusterDefinitionName, clusterName).statusCode();
+
+        LogCleanup("Delete Cluster Definition and namespace");
         HerdRestUtil.deleteClusterDefinition(herdAdminUser, namespace, clusterDefinitionName);
         HerdRestUtil.deleteNamespace(herdAdminUser, namespace);
     }

@@ -116,9 +116,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         String schema = "sec_market_data";
         String objectName = "testdata";
 
-        LogStep("Clean up test data in case testcase failed");
-        cleanupBusinessData(HERD_ADMIN_USER, getBusinessObjectData(schema, objectName), false);
-
         LogStep("Create new herd object formats, object definition and upload herd data");
         executeShellScript(PRESTO_NEW_OBJECT_SH, schema, objectName, "false");
 
