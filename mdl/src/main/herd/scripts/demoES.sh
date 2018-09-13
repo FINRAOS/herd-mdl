@@ -34,9 +34,19 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 function execute_curl_cmd {
-  mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -48,14 +58,6 @@ function execute_curl_cmd {
         exit 1
     fi
 }
-
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
 
 execute_cmd "echo \"From $0\""
 

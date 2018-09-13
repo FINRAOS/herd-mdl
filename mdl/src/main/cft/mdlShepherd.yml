@@ -81,7 +81,7 @@ Resources:
     Properties:
       DistributionConfig:
         Aliases:
-          - !Join ['', [!Ref MDLInstanceName, 'shepherd.', !Ref DomainNameSuffix]]
+          - !Join ['', [!Ref MDLInstanceName, '-shepherd.', !Ref DomainNameSuffix]]
         CustomErrorResponses:
           - ErrorCachingMinTTL: 300
             ErrorCode: 404
@@ -109,7 +109,7 @@ Resources:
       HostedZoneName:
         Ref: HostedZoneName
       RecordSets:
-      - Name: !Join ['', [!Ref MDLInstanceName, 'shepherd.', !Ref DomainNameSuffix]]
+      - Name: !Join ['', [!Ref MDLInstanceName, '-shepherd.', !Ref DomainNameSuffix]]
         Type: CNAME
         TTL: '900'
         ResourceRecords: [!GetAtt [ShepherdCloudFrontDistributionSSL, DomainName]]
@@ -118,7 +118,7 @@ Outputs:
     Value: !Join
       - ''
       - - !If [EnableSSLAndAuth, 'https://', 'http://']
-        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'shepherd.', !Ref DomainNameSuffix]], !GetAtt [ShepherdCloudFrontDistributionHTTP, DomainName]]
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, '-shepherd.', !Ref DomainNameSuffix]], !GetAtt [ShepherdCloudFrontDistributionHTTP, DomainName]]
         - '/index.html'
     Description: URL for Shepherd
   ShepherdDNSURL:

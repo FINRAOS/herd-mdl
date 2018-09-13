@@ -35,9 +35,20 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 # Curl commands need to be retried multiple times to avoid network errors
 function execute_curl_cmd {
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	returnCode=`cat /tmp/curlCmdOutput | grep "HTTP_CODE" | cut -d":" -f2`
@@ -49,17 +60,6 @@ function execute_curl_cmd {
     fi
 }
 
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
-execute_cmd "echo \"From $0\""
-mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-
 metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
 
 if [ "${refreshDatabase}" = "true" ] ; then
@@ -69,8 +69,13 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
     execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/namespaceRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/addPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
+    # singletonObjectsAddPartitionWorkflow
+    execute_cmd "sed -i \"s/{{STAGING_BUCKET_ID}}/s3\:\/\/${mdlStagingBucketName}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{RDS_HOST}}/${metastorDBHost}/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_cmd "sed -i \"s/{{CLUTER_NAME}}/${mdlInstanceName}_Cluster/g\" ${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml"
+    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/managedObjectLoader/workflow-def/singletonObjectsAddPartitionWorkflow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/jobDefinitions --insecure"
 
     # Replace values for cluster definition
     execute_cmd "sed -i \"s/{{NAMESPACE}}/MDL/g\" ${deployLocation}/metastoreOperations/samples/emr-cluster/metastoreHiveClusterDefinition.xml"
@@ -121,13 +126,12 @@ fi
 
 # Download herd-uploader jar
 execute_cmd "mkdir -p ${deployLocation}/herd-uploader"
-#TODO remove hardcoded uploader-jar version
-execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/0.72.0/herd-uploader-0.72.0.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
+execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-uploader/${herdVersion}/herd-uploader-${herdVersion}.jar -O ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 execute_cmd "sudo chmod +x ${deployLocation}/herd-uploader/herd-uploader-app.jar"
 
 # Do not echo the password
 echo "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} --disableHostnameVerification true"
-eval "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} -u ${ldapMdlAppUsername} -w ${mdlUserLdapPassword} --disableHostnameVerification true"
+eval "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} ${port} -u ${herdAdminUsername} -w ${herdAdminPassword} --disableHostnameVerification true"
 check_error ${PIPESTATUS[0]} "java -jar ${deployLocation}/herd-uploader/herd-uploader-app.jar --force -l ${deployLocation}/data -m ${deployLocation}/conf/metaFile -V -H ${herdLoadBalancerDNSName} --disableHostnameVerification true"
 
 # Execute the demo script if needed

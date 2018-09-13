@@ -36,6 +36,7 @@
         <maven.assembly.plugin.version>3.1.0</maven.assembly.plugin.version>
         <maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
         <nexus.staging.maven.plugin.version>1.6.8</nexus.staging.maven.plugin.version>
+        <maven.shade.plugin.version>3.1.1</maven.shade.plugin.version>
 
         <!-- Third Party JAR Dependencies -->
         <aws-sdk.version>1.11.339</aws-sdk.version>
@@ -49,7 +50,6 @@
         <awaitility.version>3.1.0</awaitility.version>
         <presto-jdbc.version>0.203</presto-jdbc.version>
         <rest-assured.version>3.1.0</rest-assured.version>
-        <shade.version>3.1.1</shade.version>
         <herd-model-api.version>0.75.0</herd-model-api.version>
 
         <!-- Compiler Information -->
@@ -240,16 +240,6 @@
             <artifactId>awaitility</artifactId>
             <version>${awaitility.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.finra.herd</groupId>
-            <artifactId>herd-model-api</artifactId>
-            <version>${herd-model-api.version}</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -346,7 +336,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>${shade.version}</version>
+                <version>${maven.shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -356,7 +346,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <finalName>mdlt-dependencies-${version}</finalName>
+                    <finalName>mdlt-dependencies-${project.version}</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>

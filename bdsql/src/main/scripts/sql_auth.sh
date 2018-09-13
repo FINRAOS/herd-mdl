@@ -49,12 +49,12 @@ execute_cmd	"sudo start presto-server"
 
 mdlInstanceRowCount=0
 # Wait presto sever to be up
-while [ ${mdlInstanceRowCount} -ne 3 ] ; do
-    echo "Waiting for the smokeTesting data to show-up in Presto"
-    echo "presto-cli --catalog hive --schema mdl --execute \"select * from mdl.mdl_object_mdl_txt\""
+while [ ${mdlInstanceRowCount} -ne 1 ] ; do
+    echo "Waiting Presto server to be up"
+    echo "presto-cli --catalog hive --schema mdl --execute \"show tables\""
     echo "------------------------------------------------------"
-    presto-cli --catalog hive --schema mdl --execute "select * from mdl.mdl_object_mdl_txt"
+    presto-cli --catalog hive --schema mdl --execute "show tables"
     echo "------------------------------------------------------"
-    mdlInstanceRowCount=`presto-cli --catalog hive --schema mdl --execute "select * from mdl.mdl_object_mdl_txt" | grep ${mdlInstanceName} | wc -l`
+    mdlInstanceRowCount=`presto-cli --catalog hive --schema mdl --execute "show tables" | wc -l`
     sleep 1m
 done

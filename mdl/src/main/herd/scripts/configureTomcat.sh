@@ -59,7 +59,7 @@ execute_cmd "chown tomcat:tomcat /usr/share/tomcat8/conf/context.xml"
 
 # web.xml
 execute_cmd "cp ${deployLocation}/xml/install/web.xml /usr/share/tomcat8/conf/web.xml"
-execute_cmd "sed -i \"s/REPLACE_Shepherd_DOMAIN_NAME/${mdlInstanceName}shepherd.${domainNameSuffix}/g\" /usr/share/tomcat8/conf/web.xml"
+execute_cmd "sed -i \"s/REPLACE_Shepherd_DOMAIN_NAME/${mdlInstanceName}-shepherd.${domainNameSuffix}/g\" /usr/share/tomcat8/conf/web.xml"
 shepherdWebSiteBucketNameOnly=`echo ${shepherdWebSiteBucketUrl} | cut -d"/" -f3-`
 execute_cmd "sed -i \"s/REPLACE_Shepherd_BUCKET_URL/${shepherdWebSiteBucketNameOnly}/g\" /usr/share/tomcat8/conf/web.xml"
 

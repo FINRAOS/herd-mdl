@@ -193,3 +193,6 @@ Outputs:
     Value: !GetAtt
       - MetastorMysqlDB
       - Endpoint.Address
+  MetastorDBName:
+    Description: Mestastor DB name
+    Value: !Sub '${MDLInstanceName}${Environment}Metastor'

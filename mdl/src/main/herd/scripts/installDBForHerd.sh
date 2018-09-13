@@ -169,20 +169,36 @@ execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 
 
 # Enable LDAP if specified
 if [ "${enableSSLAndAuth}" = "true" ] ; then
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'security.http.header.enabled';\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('security.http.header.enabled','true', NULL);\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('security.http.header.names','useridHeader=userprincipalname|firstNameHeader=ctfirstname|lastNameHeader=ctlastname|emailHeader=ctemail|rolesHeader=memberof|sessionInitTimeHeader=ct-session-init-time', NULL);\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('security.http.header.role.regex.group','role', NULL);\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('security.http.header.role.regex','ou=(?<role>.+?)(,|$)', NULL);\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('header.snooper.enabled','true', NULL);\""
     # Ignore error for first time
     psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c "DELETE FROM cnfgn WHERE cnfgn_key_nm = 'security.enabled.spel.expression';"
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoles.sql"
+
+    # Get Auth group-names from parameter store
+    admin_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/Admin --with-decryption --region ${region} --output text --query Parameter.Value)
+    read_only_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/RO --with-decryption --region ${region} --output text --query Parameter.Value)
+
+    mdl_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/MDL --with-decryption --region ${region} --output text --query Parameter.Value)
+    sec_read_write_group=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/AuthGroup/SEC --with-decryption --region ${region} --output text --query Parameter.Value)
+
+    # Add security role functions for auth groups
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsAdmin.sql -v scrty_role=\"${admin_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadOnly.sql -v scrty_role=\"${read_only_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${mdl_read_write_group}\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdSecurityRoleFunctionsReadWrite.sql -v scrty_role=\"${sec_read_write_group}\""
+
+    # Get admin user
+    admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    admin_user_url="${admin_user}"
+
+    # Add namespace authorization admin permissions for the app-admin user
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user_url}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
 fi
 
 # Configuration for Elasticsearch
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/elasticsearch.configuration.values.sql"
 execute_cmd "${deployLocation}/scripts/configureHerdDBForES.sh $PGDATABASE $PGUSER ${herdDatabaseNonRootUserPassword}"
+
+# Herd configurations
+execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdConfiguration.sql"
 
 # Following configurations are only for DB updates
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 's3.managed.bucket.name';\""
@@ -192,7 +208,9 @@ execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'search.index.update.sqs.queue.name';\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('search.index.update.sqs.queue.name','${searchIndexUpdateSqsQueueName}', NULL);\""
 
+log4j_config_value=$(<${deployLocation}/xml/install/log4j-override-config.xml)
 ##insert rows to ec2_price_table;
+execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5878, 'us-east-1', 'm4.large', 0.10000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5879, 'us-east-1', 'm4.xlarge', 0.20000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5282, 'us-east-1', 'm4.4xlarge', 0.80000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5895, 'us-east-1', 'm4.2xlarge', 0.40000, now(), 'SYSTEM', now(), 'SYSTEM');\""
