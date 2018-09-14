@@ -363,15 +363,15 @@ EOF
 
     #Create group APP_MDL_Users and add users
     create_group "APP_MDL_Users" "${MDL_APP_USER}"
-    add_user_to_group "${SEC_APP_USER}" "APP_MDL_Users"
+    add_user_to_group "APP_MDL_Users" "${SEC_APP_USER}"
 
     #Add admin user to corresponding groups
-    add_user_to_group "${HERD_ADMIN_USER}" "APP_MDL_Users"
-    add_user_to_group "${HERD_ADMIN_USER}" "${MDL_AUTH_GROUP}"
-    add_user_to_group "${HERD_ADMIN_USER}" "${SEC_AUTH_GROUP}"
+    add_user_to_group "APP_MDL_Users" "${HERD_ADMIN_USER}"
+    add_user_to_group "${MDL_AUTH_GROUP}" "${HERD_ADMIN_USER}"
+    add_user_to_group "${SEC_AUTH_GROUP}" "${HERD_ADMIN_USER}"
 
     #Add basic user to readOnly group
-    add_user_to_group "${BASIC_APP_USER}" "${RO_AUTH_GROUP}"
+    add_user_to_group "${RO_AUTH_GROUP}" "${BASIC_APP_USER}"
 
     # Verify memberOf in debug logs
     echo "Running an ldapsearch to verify memberOf overlay."

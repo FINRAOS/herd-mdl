@@ -124,7 +124,7 @@ public class EMRClusterTest extends BaseTest {
 
 
     @AfterEach
-    public void after() {
+    public void afterTest() {
         cleanup();
     }
 
