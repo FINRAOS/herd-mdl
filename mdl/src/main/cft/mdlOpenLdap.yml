@@ -542,6 +542,36 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
       Description: Herd SEC account password parameter
+  LdapHerdBasicUsernameParameter:
+    DependsOn: LdapHerdSecPasswordParameter
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/User/HerdBasicUsername
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, basic_user, NoAuthentication]
+      Description: Herd ETLMGMT account username parameter
+  LdapHerdBasicUserPasswordParameter:
+    DependsOn: LdapHerdBasicUsernameParameter
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/Password/HerdBasicUserPassword
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
+      Description: Herd ETLMGMT account password parameter
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition

@@ -44,6 +44,7 @@ function init() {
 
     export MDL_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdMdlUsername --output text --query Parameter.Value)
     export SEC_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdSecUsername --output text --query Parameter.Value)
+    export BASIC_APP_USER=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdBasicUsername --output text --query Parameter.Value)
 
     export PRINCIPLE_OU="ou=People"
 
@@ -86,6 +87,7 @@ function init_params() {
     HERD_RO_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${HERD_RO_PASS}")
     MDL_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${MDL_APP_PASS}")
     SEC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${SEC_APP_PASS}")
+    BASIC_APP_PASS_CRYPT=$(${SLAPPASSWD_BIN} -s "${BASIC_APP_PASS}")
 
     BASE_DN=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/BaseDN --output text --query Parameter.Value)
 }
@@ -346,6 +348,9 @@ EOF
     # Add Herd Read-Only Service account
     create_user "${HERD_RO_USER}" "${HERD_RO_USER}" "${HERD_RO_PASS_CRYPT}" 10005 1001
 
+    # Add Basic user Service account
+    create_user "${BASIC_APP_USER}" "${BASIC_APP_USER}" "${BASIC_APP_PASS_CRYPT}" 10006 1001
+
     HERD_ADMIN_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/Admin --output text --query Parameter.Value)
     RO_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --output text --query Parameter.Value)
     MDL_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --output text --query Parameter.Value)
@@ -358,17 +363,15 @@ EOF
 
     #Create group APP_MDL_Users and add users
     create_group "APP_MDL_Users" "${MDL_APP_USER}"
-    add_user_to_group "APP_MDL_Users" "${SEC_APP_USER}"
+    add_user_to_group "${SEC_APP_USER}" "APP_MDL_Users"
 
     #Add admin user to corresponding groups
-    add_user_to_group "APP_MDL_Users" "${HERD_ADMIN_USER}"
-    add_user_to_group "${MDL_AUTH_GROUP}" "${HERD_ADMIN_USER}"
-    add_user_to_group "${SEC_AUTH_GROUP}" "${HERD_ADMIN_USER}"
+    add_user_to_group "${HERD_ADMIN_USER}" "APP_MDL_Users"
+    add_user_to_group "${HERD_ADMIN_USER}" "${MDL_AUTH_GROUP}"
+    add_user_to_group "${HERD_ADMIN_USER}" "${SEC_AUTH_GROUP}"
 
-    #Add readOnly user to corresponding groups
-    add_user_to_group "APP_MDL_Users" "${HERD_RO_USER}"
-    add_user_to_group "${MDL_AUTH_GROUP}" "${HERD_RO_USER}"
-    add_user_to_group "${SEC_AUTH_GROUP}" "${HERD_RO_USER}"
+    #Add basic user to readOnly group
+    add_user_to_group "${BASIC_APP_USER}" "${RO_AUTH_GROUP}"
 
     # Verify memberOf in debug logs
     echo "Running an ldapsearch to verify memberOf overlay."

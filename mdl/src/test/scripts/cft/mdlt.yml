@@ -342,8 +342,8 @@ Resources:
         ReleaseVersion: !Ref ReleaseVersion
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        MdltVpcId: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
-        MdltPrivateSubnets: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
+        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPrivateSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
         MdltResultS3BucketName: !Ref MdltResultS3BucketName
         CertificateArn: ''
