@@ -188,6 +188,9 @@ public class CloudFormationClient {
                 .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
         for (String s3BucketPhysicalId : s3BucketIds) {
             String s3BucketName = s3BucketPhysicalId;
+            if(!amazonS3.doesBucketExistV2(s3BucketName)){
+                break;
+            }
             LOGGER.info("Empyting S3 bucket, " + s3BucketName);
             ObjectListing objectListing = amazonS3.listObjects(s3BucketName);
             while (true) {
