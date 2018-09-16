@@ -556,7 +556,7 @@ Resources:
           - /LDAP/User/HerdBasicUsername
       Type: String
       Value: !If [CreateOpenLDAPCondition, basic_user, NoAuthentication]
-      Description: Herd ETLMGMT account username parameter
+      Description: Herd Basic User account username parameter
   LdapHerdBasicUserPasswordParameter:
     DependsOn: LdapHerdBasicUsernameParameter
     Condition: CreateSsmParametersCondition
@@ -571,7 +571,7 @@ Resources:
           - /LDAP/Password/HerdBasicUserPassword
       Type: String
       Value: !If [CreateOpenLDAPCondition, FilledLater, NoAuthentication]
-      Description: Herd ETLMGMT account password parameter
+      Description: Herd Basic User account password parameter
 Outputs:
   OpenLdapHostnameDns:
     Condition: CreateOpenLDAPCondition
