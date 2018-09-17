@@ -120,6 +120,10 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
 
+    # Create namespaces
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+
     # Create bdef and tag indices in elasticsearch and activate them
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"bdef\"},\"searchIndexType\":\"BUS_OBJCT_DFNTN\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
@@ -145,10 +149,6 @@ if [ "${enableSSLAndAuth}" = "true" ] ; then
     mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
     sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
     read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-
-    # Create namespaces
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
 
     # Add READ/WRITE permissions for the MDL user on the MDL namespace
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
