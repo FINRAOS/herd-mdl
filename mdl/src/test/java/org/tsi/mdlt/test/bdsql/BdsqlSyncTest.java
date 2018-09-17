@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,7 @@ import javax.naming.NamingException;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.util.HerdRestUtil;
 import org.tsi.mdlt.util.LdapUtil;
+import org.tsi.mdlt.util.shell.ShellHelper;
 
 import org.finra.herd.model.api.xml.BusinessObjectData;
 
@@ -115,9 +118,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     public void existingNamespaceNewObjectTest() throws IOException, InterruptedException, SQLException, ClassNotFoundException {
         String schema = "sec_market_data";
         String objectName = "testdata";
-
-        LogStep("Clean up test data in case testcase failed");
-        cleanupBusinessData(HERD_ADMIN_USER, getBusinessObjectData(schema, objectName), false);
 
         LogStep("Create new herd object formats, object definition and upload herd data");
         executeShellScript(PRESTO_NEW_OBJECT_SH, schema, objectName, "false");
@@ -359,31 +359,36 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         assertTrue(exception.getMessage().contains("Access Denied"), "expect message not correct:" + exception.getMessage());
     }
 
-    private void cleanupBusinessData(User user, BusinessObjectData businessObjectData, boolean deleteNamespace) throws IOException, InterruptedException {
+    private void cleanupBusinessData(User user, BusinessObjectData businessObjectData, boolean deleteNamespace) {
         String namespace = businessObjectData.getNamespace();
         String objectName = businessObjectData.getBusinessObjectDefinitionName();
 
-        LogStep("Delete Business object data");
-        Response response = HerdRestUtil.deleteBusinessObjectData(user, businessObjectData);
-        BusinessObjectData responseBusinessObject = response.as(BusinessObjectData.class);
+        try {
+            LogStep("Delete Business object data");
+            Response response = HerdRestUtil.deleteBusinessObjectData(user, businessObjectData);
+            BusinessObjectData responseBusinessObject = response.as(BusinessObjectData.class);
 
-        LogStep("Delete business data from s3 bucket");
-        String bucketName = responseBusinessObject.getStorageUnits().get(0).getStorage().getAttributes().stream().filter(attribute -> attribute.getName().equals("bucket.name")).findFirst().get().getValue();
-        String directoryPath = responseBusinessObject.getStorageUnits().get(0).getStorageDirectory().getDirectoryPath();
-        executeShellScript(String.format("aws s3 rm s3://%s/%s/ --recursive", bucketName, directoryPath));
+            LogStep("Delete business data from s3 bucket");
+            String bucketName = responseBusinessObject.getStorageUnits().get(0).getStorage().getAttributes().stream().filter(attribute -> attribute.getName().equals("bucket.name")).findFirst().get().getValue();
+            String directoryPath = responseBusinessObject.getStorageUnits().get(0).getStorageDirectory().getDirectoryPath();
+            ShellHelper.executeShellCommand(String.format("aws s3 rm s3://%s/%s/ --recursive", bucketName, directoryPath), new HashMap<>());
 
-        LogStep("Delete business object notification registration");
-        HerdRestUtil.deleteBusinessObjectNotification(user, namespace, namespace + "_" + objectName + "_OBJECT_MDL_USAGE_TXT");
+            LogStep("Delete business object notification registration");
+            HerdRestUtil.deleteBusinessObjectNotification(user, namespace, namespace + "_" + objectName + "_OBJECT_MDL_USAGE_TXT");
 
-        LogStep("Delete business object format registration");
-        HerdRestUtil.deleteBusinessObjectFormat(user, businessObjectData);
+            LogStep("Delete business object format registration");
+            HerdRestUtil.deleteBusinessObjectFormat(user, businessObjectData);
 
-        LogStep("Delete business object definition");
-        HerdRestUtil.deleteBusinessObjectDefinition(user, namespace, objectName);
+            LogStep("Delete business object definition");
+            HerdRestUtil.deleteBusinessObjectDefinition(user, namespace, objectName);
 
-        if (deleteNamespace) {
-            LogStep("Delete namespace");
-            HerdRestUtil.deleteNamespace(user, namespace);
+            if (deleteNamespace) {
+                LogStep("Delete namespace");
+                HerdRestUtil.deleteNamespace(user, namespace);
+            }
+        } catch (Exception e){
+            LOGGER.info("Failed on data cleanup, doesn't fail the testcase");
+            LOGGER.warn(e.getMessage());
         }
     }
 

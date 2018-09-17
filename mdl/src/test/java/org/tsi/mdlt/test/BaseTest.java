@@ -44,6 +44,10 @@ public class BaseTest {
         LOGGER.info("Step: " + message);
     }
 
+    protected void LogCleanup(String message) {
+        LOGGER.info("Cleanup: " + message);
+    }
+
     protected void LogVerification(String message) {
         LOGGER.info("Verification: " + message);
     }
