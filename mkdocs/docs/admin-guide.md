@@ -298,6 +298,7 @@ Note: Logs are created in cloudwatch only when the log content is not empty, the
 | **CodeDeploy Log** | herd/codedeploy/*
 | **Apache Logs** | herd/apache/*
 | **Tomcat Logs** | herd/tomcat/*
+| **Application Logs** | herd/application/herd.log
 
 **Metastor Log Streams:**
 
