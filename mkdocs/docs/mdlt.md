@@ -46,6 +46,7 @@ These are prerequisites that are necessary for installing MDL components for Bas
 *   Same steps as above Simple Installation, but in stack parameters edit page, filling different values for following parameters
     *   If existing stack is noAuth stack, enter existing stack name in parameter [MdlNoAuthStackName](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html) ; if existing stack is auth stack, empty parameter value for MdlNoAuthStackName, and enter existing stack name in parameter [MdlAuthStackName]((https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  )
     *   set parameter CreateVPC value to false
+    *   set parameter ExistingStack value to true
     *   Enter correct value for [MdlPrivateSubnets](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack PrivateSubnets value(can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
     *   Enter correct value for [MdlPublicSubnets](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack PublicSubnets value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
     *   Enter correct value for [MdlVpcId](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html), which is the existing stack vpc id value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)
@@ -156,12 +157,21 @@ These are conditional parameters to decide whether MDL creates certain resources
 
 |   |   |
 | ----- | ----- |
-| **Name** | CreateVPC |
+| **Name** | RollbackOnFailure |
 | **Description** | Specifies whether to shutdown herd-mdl stack after mdlt execution, this only has effects on herd-mdl stack created by mdlt; when RollBackOnFailure==true, herd-mdl stack will be deleted automatically after test execution; when set to false, herd-mdl stack created by mdlt will not be deleted; mdlt execution will not delete any existing herd-mdl stack whatever the RollBackOnFailure value is|
 | **Required** | Yes |
 | **Default Value** | true |
 | **Allowed Values** | true, false |
 
+**ExistingStack** 
+
+|   |   |
+| ----- | ----- |
+| **Name** | ExistingStack |
+| **Description** | Specifies whether mdl is an existing stack, set to true when runing mdlt against existing mdl stack|
+| **Required** | Yes |
+| **Default Value** | false |
+| **Allowed Values** | true, false |
 
 ### EC2 Instance Parameters
 
@@ -236,7 +246,7 @@ These parameters are related to Certificates and Domains. These are required onl
 | ----- | ----- |
 | **Name** | CertificateArn |
 | **Description** | Specifies the Arn information from ACM for the Certificate to be used in MDL. Refer [AWS documentation](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html) to create Certificates in ACM. |
-| **Required** | Only If (MdltAuthStack is not empty) |
+| **Required** | Only If (MdltAuthStack is not empty and ExistingStack is false) |
 | **Default Value** |  |
 | **Allowed Values** | Refer [AWS documentation](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html) for getting the ARN of the Certificate. Note that the certificate is used for three end points: Herd, Shepherd, and Bdsql. So, Certificate should have [Wildcard Domain Name](https://aws.amazon.com/certificate-manager/faqs/#acm-certificates). The Certificate should match any first level subdomain. Format - ***.domainName** (Example: ***.example.com**). MD prefixes corresponding first level subdomain (Example: **mdlHerd.example.com**, **mdlShepherd.example.com**, and **mdlBdsql.example.com**). |
 
@@ -246,7 +256,7 @@ These parameters are related to Certificates and Domains. These are required onl
 | ----- | ----- |
 | **Name** | DomainNameSuffix |
 | **Description** | Specifies the Domain Name Suffix as per the Certificate specified in "CertificateArn" |
-| **Required** | Only If (MdltAuthStack is not empty) |
+| **Required** | Only If (MdltAuthStack is not empty and ExistingStack is false) |
 | **Default Value** |  |
 | **Allowed Values** | Refer [AWS documentation](https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html) for setting up a new Domain. When "EnableSSLAndAuth" option is enabled, MDL uses this DomainNameSuffix for the Route53 configurations. So, user needs to own this specified domain. And, this Domain name must match the certificate specified in "CertificateArn" parameter. |
 
@@ -256,7 +266,7 @@ These parameters are related to Certificates and Domains. These are required onl
 | ----- | ----- |
 | **Name** | HostedZoneName |
 | **Description** | Specifies the HostedZoneName for Route53 configuration |
-| **Required** | Only If (MdltAuthStack is not empty) |
+| **Required** | Only If (MdltAuthStack is not empty and ExistingStack is false) |
 | **Default Value** |  |
 | **Allowed Values** | Refer [AWS Documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html) for more details about creating Hosted Zone. When "EnableSSLAndAuth" option is enabled, MDL uses this HostedZoneName for the Route53 configurations. So, user needs to own this specified domain related to the HostedZone. And, this Domain name must match the certificate specified in "CertificateArn" parameter. |  
     
