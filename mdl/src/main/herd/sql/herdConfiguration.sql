@@ -105,11 +105,4 @@ E'<?xml version="1.0" encoding="UTF-8" ?>
 </Configuration>'
 where  cnfgn_key_nm = 'log4j.override.configuration';
 
-DELETE FROM cnfgn WHERE cnfgn_key_nm = 'security.http.header.enabled';
-INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('security.http.header.enabled', 'true', NULL);
-INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('security.http.header.names', 'useridHeader=userprincipalname|firstNameHeader=firstname|lastNameHeader=lastname|emailHeader=email|rolesHeader=memberOf|sessionInitTimeHeader=session-init-time', NULL);
-INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('security.http.header.role.regex.group', 'role', NULL);
-INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('security.http.header.role.regex', 'cn=(?<role>.+?)(,|$)', NULL);
 INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('header.snooper.enabled', 'true', NULL);
-INSERT INTO cnfgn (cnfgn_key_nm, cnfgn_value_ds, cnfgn_value_cl) VALUES ('user.namespace.authorization.enabled', 'true', NULL);
-

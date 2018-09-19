@@ -355,11 +355,13 @@ EOF
     RO_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/RO --output text --query Parameter.Value)
     MDL_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MDL --output text --query Parameter.Value)
     SEC_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/SEC --output text --query Parameter.Value)
+    MLIY_AUTH_GROUP=$(${AWS_BIN} ssm get-parameter --name /app/MDL/${MDLInstanceName}/${Environment}/LDAP/AuthGroup/MLIY --output text --query Parameter.Value)
 
     create_group "${HERD_ADMIN_AUTH_GROUP}" "${HERD_ADMIN_USER}"
     create_group "${RO_AUTH_GROUP}" "${HERD_RO_USER}"
     create_group "${MDL_AUTH_GROUP}" "${MDL_APP_USER}"
     create_group "${SEC_AUTH_GROUP}" "${SEC_APP_USER}"
+    create_group "${MLIY_AUTH_GROUP}" "${HERD_ADMIN_USER}"
 
     #Create group APP_MDL_Users and add users
     create_group "APP_MDL_Users" "${MDL_APP_USER}"

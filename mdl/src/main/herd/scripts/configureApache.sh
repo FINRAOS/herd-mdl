@@ -60,6 +60,8 @@ execute_cmd "chown -R mdladmin:mdladmin /home/mdladmin/certs"
 if [ "${enableSSLAndAuth}" = "true" ] ; then
     execute_cmd "sed -i \"s~{LDAP_URL}~ldaps://${ldapHostName}/${ldapBaseDN}~g\" ${deployLocation}/conf/httpdForLdap.conf"
     execute_cmd "cat ${deployLocation}/conf/httpdForLdap.conf >> /etc/httpd/conf/httpd.conf"
+else
+    execute_cmd "cat ${deployLocation}/conf/httpdNoAuth.conf >> /etc/httpd/conf/httpd.conf"
 fi
 
 exit 0

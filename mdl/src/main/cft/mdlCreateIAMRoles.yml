@@ -127,6 +127,7 @@ Resources:
                   - 'kms:GenerateRandom'
                   - 'kms:TagResource'
                   - 'rds:ModifyDBInstance'
+                  - 'rds:DescribeDBInstances'
                   - 'route53:CreateHostedZone'
                   - 'route53:UpdateHostedZoneComment'
                   - 'route53:GetHostedZone'

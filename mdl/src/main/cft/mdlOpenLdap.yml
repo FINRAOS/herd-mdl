@@ -419,9 +419,24 @@ Resources:
       Type: String
       Value: !If [CreateOpenLDAPCondition, APP_MDL_ACL_RO_sec_market_data_rw, NoAuthentication]
       Description: MDL Herd SEC auth group-name parameter
+  LdapMliyAuthGroupParameter:
+    DependsOn: LdapHerdSecAuthGroupParameter
+    Condition: CreateSsmParametersCondition
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /LDAP/AuthGroup/MLIY
+      Type: String
+      Value: !If [CreateOpenLDAPCondition, mliyusers, NoAuthentication]
+      Description: MDL Herd Mliy auth group-name parameter
 # LDAP usernames and passwords
   LdapHerdAdminUsernameParameter:
-    DependsOn: LdapHerdSecAuthGroupParameter
+    DependsOn: LdapMliyAuthGroupParameter
     Condition: CreateSsmParametersCondition
     Type: AWS::SSM::Parameter
     Properties:

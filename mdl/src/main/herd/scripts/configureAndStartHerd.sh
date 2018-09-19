@@ -88,6 +88,23 @@ function addStackTagsToSqs(){
     fi
 }
 
+function waitIndexToBeReady(){
+    indexName=$1
+    index_status=$(curl --silent --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+    echo index_status="${index_status}"
+    while [ "${index_status}" == "BUILDING" ]
+    do
+      sleep 30s
+      index_status=$(curl --silent --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+      echo index_status="${index_status}"
+    done
+    if [ "${index_status}" != "READY" ]
+    then
+        error "Invalid search index status. Status: ${index_status}"
+        exit 1
+    fi
+}
+
 execute_cmd "echo \"From $0\""
 
 if [ "${CreateSQS}" == 'true' ] ; then
@@ -117,7 +134,8 @@ if [ "${refreshDatabase}" = "true" ] ; then
 
     # Run System job
     execute_curl_cmd "curl ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/buildInfo --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
+    #OutOfMemory issue in Herd
+    #execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
 
     # Create namespaces
@@ -125,19 +143,20 @@ if [ "${refreshDatabase}" = "true" ] ; then
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
 
     # Create bdef and tag indices in elasticsearch and activate them
+    #create and activate bdef index
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"bdef\"},\"searchIndexType\":\"BUS_OBJCT_DFNTN\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
     echo "Business object definition index -> ${indexName}"
+    waitIndexToBeReady "${indexName}"
     execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
     execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
 
-    # pause to avoid an optimistic lock
-    execute_cmd "sleep 5"
-
+    #create and activate tag index
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"tag\"},\"searchIndexType\":\"TAG\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
     echo "Tag index -> ${indexName}"
+    waitIndexToBeReady "${indexName}"
     execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
     execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"

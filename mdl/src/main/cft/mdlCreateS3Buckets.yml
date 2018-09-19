@@ -62,6 +62,7 @@ Resources:
               - '*'
       WebsiteConfiguration:
         IndexDocument: index.html
+        ErrorDocument: index.html
   CloudfrontS3Bucket:
     Type: 'AWS::S3::Bucket'
     Condition: EnableSSLAndAuth
