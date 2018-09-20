@@ -146,126 +146,232 @@ MDL provides a helper script to manage users and groups. The script is deployed 
 \# ./manageLdap.sh --help
 
 Usage:
-```manageLdap.sh --action \[create\_user|create\_group|add\_user\_to\_group|show\_directory\] \[--user name\] \[--group name\] \[--dn distinguishedname\]```
+```manageLdap.sh --action [create_user|create_group|add_attribute|replace_attribute|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]```
 
 Examples:
 ```
-manageLdap.sh --action create_user --user userA
-manageLdap.sh --action create_group --user userA --group groupA
-manageLdap.sh --action add\_user\_to_group --user userB --group groupA
-manageLdap.sh --action delete_object --dn "cn=userA,ou=People,ou=Groups,cn=domain,cn=com"
-manageLdap.sh --action show_directory
-manageLdap.sh --help
+  manageLdap.sh --action create_user --user userA --password password --email test@gmail.com --phone 1-234-567-8901
+  manageLdap.sh --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901
+  manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com
+  manageLdap.sh --action create_group --user userA --group groupA
+  manageLdap.sh --action add_user_to_group --user userB --group groupA
+  manageLdap.sh --action remove_user_from_group --user userB --group groupA
+  manageLdap.sh --action delete_object --dn "cn=userA,ou=People,ou=Groups,dc=domain,dc=com"
+  manageLdap.sh --action delete_user --user userA
+  manageLdap.sh --action delete_group --group groupA
+  manageLdap.sh --action show_directory
+  manageLdap.sh --help
 ```
 
-**Create new user**
+**Create new user:**
+```
+\# ./manageLdap.sh --action create_user --user userA --password password
+\# ./manageLdap.sh --action create_user --user userB --password password --email test@gmail.com 
+\# ./manageLdap.sh --action create_user --user userC --password password --email test@gmail.com --phone 1-234-567-8901
+```
 
-```\# ./manageLdap.sh --action create_user --user userA```
+adding new entry "cn=$username,ou=People,dc=finra,dc=org"
 
-adding new entry "uid=userA,ou=People,dc=finra,dc=org"
-
-**Create new group**
+**Create new group:**
 
 ```\# ./manageLdap.sh --action create_group --user userA --group groupA```
 
 adding new entry "cn=groupA,ou=Groups,dc=finra,dc=org"
 
-**Add user to group**
+**Add user to group:**
 
-```\# ./manageLdap.sh --action add\_user\_to_group --user userB --group groupA```
+```\# ./manageLdap.sh --action add_user_to_group --user userA --group groupA```
 
+add member:
+        cn=userA,ou=People,dc=finra,dc=org
 modifying entry "cn=groupA,ou=Groups,dc=finra,dc=org"
 
-**Delete object**
+**Remove user from group:**
+
+```\# ./manageLdap.sh --action remove_user_from_group --user userA --group groupA```
+
+delete member:
+        cn=userA,ou=People,dc=finra,dc=org
+modifying entry "cn=groupA,ou=Groups,dc=finra,dc=org"
+
+**Delete user:**
+
+```\# ./manageLdap.sh --action delete_user --user userA```
+
+deleting entry "cn=userA,ou=People,dc=finra,dc=org"
+
+**Delete group:**
+
+```\# ./manageLdap.sh --action delete_group --group groupA```
+
+deleting entry "cn=groupA,ou=Groups,dc=finra,dc=org"
+
+**Delete object:**
 
 ```\# ./manageLdap.sh --action delete_object --dn "uid=userA,ou=People,dc=finra,dc=org"```
 
-**Show directory information**
+**Add new user attribute:**
+
+```\# ./manageLdap.sh --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901```
+
+**Modify existing user attribute value:**
+
+```\# ./manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com``
+
+
+**Show directory information:**
 
 ```
 \# ./manageLdap.sh --action show_directory
-\# extended LDIF
+# extended LDIF
 #
-\# LDAPv3
-\# base <dc=finra,dc=org> with scope subtree
-\# filter: (objectclass=*)
-\# requesting: ALL
+# LDAPv3
+# base <dc=cloudfjord,dc=com> with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
 #
-```
 
-```
-\# finra.org
-dn: dc=finra,dc=org
+# cloudfjord.com
+dn: dc=cloudfjord,dc=com
 objectClass: dcObject
 objectClass: organization
-o: finra.org
-dc: finra
+dc: cloudfjord
+o: cloudfjord
 
-\# People, finra.org
-dn: ou=People,dc=finra,dc=org
-objectClass: top
+# People, cloudfjord.com
+dn: ou=People,dc=cloudfjord,dc=com
 objectClass: organizationalUnit
 ou: People
 
-\# Groups, finra.org
-dn: ou=Groups,dc=finra,dc=org
-objectClass: top
+# Groups, cloudfjord.com
+dn: ou=Groups,dc=cloudfjord,dc=com
 objectClass: organizationalUnit
 ou: Groups
 
-\# ldap\_mdl\_app_user, People, finra.org
-dn: uid=ldap\_mdl\_app_user,ou=People,dc=finra,dc=org
-uid: ldap\_mdl\_app_user
-cn: ldap\_mdl\_app_user
-sn: null
+# mdl_user, People, cloudfjord.com
+dn: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
 objectClass: inetOrgPerson
-userPassword:: e1NTSEF9SXUwdXJHdXl1cnVkSFFISE4wbmRQZU05ZEkrRiszYng=
-
-\# ldap\_sec\_app_user, People, finra.org
-dn: uid=ldap\_sec\_app_user,ou=People,dc=finra,dc=org
-uid: ldap\_sec\_app_user
-cn: ldap\_sec\_app_user
+objectClass: posixAccount
+uid: mdl_user
+cn: mdl_user
 sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9UlVGVGoxVnJ2c3dVemxZdDlvRHltTXNXMnByaDFlWGo=
+userPassword:: e1NTSEF9SVhKL2NJb3Fmb2VkaVd5Tkp0U1BGN3EzOVpsdGk5RWE=
+uidNumber: 10002
+gidNumber: 1001
+homeDirectory: /home/mdl_user
+mail: mdl_user@cloudfjord.com
+loginShell: /bin/bash
 
-\# APP\_MDL\_Users, Groups, finra.org
-dn: cn=APP\_MDL\_Users,ou=Groups,dc=finra,dc=org
+# sec_user, People, cloudfjord.com
+dn: cn=sec_user,ou=People,dc=cloudfjord,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: sec_user
+cn: sec_user
+sn: null
+userPassword:: e1NTSEF9WVlaaGJxYmhGbTRwQ1JWaERRdUdVV3gyc3l4OHlPWUU=
+uidNumber: 10003
+gidNumber: 1001
+homeDirectory: /home/sec_user
+mail: sec_user@cloudfjord.com
+loginShell: /bin/bash
+
+# admin_user, People, cloudfjord.com
+dn: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: admin_user
+cn: admin_user
+sn: null
+userPassword:: e1NTSEF9VktJdkR2R1RLRENIOTRFK05FNXEwRUVEYWExdU5lQ0Q=
+uidNumber: 10004
+gidNumber: 1001
+homeDirectory: /home/admin_user
+mail: admin_user@cloudfjord.com
+loginShell: /bin/bash
+
+# ro_user, People, cloudfjord.com
+dn: cn=ro_user,ou=People,dc=cloudfjord,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: ro_user
+cn: ro_user
+sn: null
+userPassword:: e1NTSEF9L2ZodFFBSUwwU1hFUUIwc2dzSVJiSFY3VW0wUlkySWg=
+uidNumber: 10005
+gidNumber: 1001
+homeDirectory: /home/ro_user
+mail: ro_user@cloudfjord.com
+loginShell: /bin/bash
+
+# basic_user, People, cloudfjord.com
+dn: cn=basic_user,ou=People,dc=cloudfjord,dc=com
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: basic_user
+cn: basic_user
+sn: null
+userPassword:
+uidNumber: 10006
+gidNumber: 1001
+homeDirectory: /home/basic_user
+mail: basic_user@cloudfjord.com
+loginShell: /bin/bash
+
+# APP_MDL_ACL_RO_herd_admin, Groups, cloudfjord.com
+dn: cn=APP_MDL_ACL_RO_herd_admin,ou=Groups,dc=cloudfjord,dc=com
+cn: APP_MDL_ACL_RO_herd_admin
 objectClass: top
 objectClass: groupOfNames
-member: uid=ldap\_mdl\_app_user,ou=People,dc=finra,dc=org
-cn: APP\_MDL\_Users
+member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
 
-\# userB, People, finra.org
-dn: uid=userB,ou=People,dc=finra,dc=org
-uid: userB
-cn: userB
-sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9bVZJTGJLcTk4THNmSFVSeXhyQ3d5U0Qybm0xQnNMY0E=
-
-\# userA, People, finra.org
-dn: uid=userA,ou=People,dc=finra,dc=org
-uid: userA
-cn: userA
-sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9WlpFeHhaL3pFZmZ0dUJJbWdoSkJkUy9aV0hEejVYY2g=
-
-\# groupA, Groups, finra.org
-dn: cn=groupA,ou=Groups,dc=finra,dc=org
+# APP_MDL_ACL_RO_herd_ro, Groups, cloudfjord.com
+dn: cn=APP_MDL_ACL_RO_herd_ro,ou=Groups,dc=cloudfjord,dc=com
+cn: APP_MDL_ACL_RO_herd_ro
 objectClass: top
 objectClass: groupOfNames
-member: uid=userA,ou=People,dc=finra,dc=org
-member: uid=userB,ou=People,dc=finra,dc=org
-cn: groupA
+member: cn=ro_user,ou=People,dc=cloudfjord,dc=com
+member: cn=basic_user,ou=People,dc=cloudfjord,dc=com
 
-\# search result
+# APP_MDL_ACL_RO_mdl_rw, Groups, cloudfjord.com
+dn: cn=APP_MDL_ACL_RO_mdl_rw,ou=Groups,dc=cloudfjord,dc=com
+cn: APP_MDL_ACL_RO_mdl_rw
+objectClass: top
+objectClass: groupOfNames
+member: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
+member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+
+# APP_MDL_ACL_RO_sec_market_data_rw, Groups, cloudfjord.com
+dn: cn=APP_MDL_ACL_RO_sec_market_data_rw,ou=Groups,dc=cloudfjord,dc=com
+cn: APP_MDL_ACL_RO_sec_market_data_rw
+objectClass: top
+objectClass: groupOfNames
+member: cn=sec_user,ou=People,dc=cloudfjord,dc=com
+member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+
+# APP_MDL_Users, Groups, cloudfjord.com
+dn: cn=APP_MDL_Users,ou=Groups,dc=cloudfjord,dc=com
+cn: APP_MDL_Users
+objectClass: top
+objectClass: groupOfNames
+member: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
+member: cn=sec_user,ou=People,dc=cloudfjord,dc=com
+member: cn=ro_user,ou=People,dc=cloudfjord,dc=com
+member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+
+# mliyusers, Groups, cloudfjord.com
+dn: cn=mliyusers,ou=Groups,dc=cloudfjord,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: mliyusers
+member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+
+# search result
 search: 2
 result: 0 Success
 
-\# numResponses: 10
-\# numEntries: 9
+# numResponses: 15
+# numEntries: 14
 ```
   
 ## How to find Herd-MDL logs in CloudWatch
