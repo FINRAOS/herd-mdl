@@ -271,7 +271,7 @@ result: 0 Success
 ```
   
 ## How to find Herd-MDL logs in CloudWatch
-Note: Logs are created in cloudwatch only when the log content is NOT empty, therefore; some of the log streams mentioned below may not be found if there is no content in the logs.
+Note: Logs are created in cloudwatch only when the log content is NOT empty; therefore, some of the log streams mentioned below may not be found if there is no content in the logs.
 
 ### Logs inside customized stack log group
 
