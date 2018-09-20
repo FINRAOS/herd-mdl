@@ -43,7 +43,7 @@ MDL consists of four major components.
 
 ## Herd-MDL Product Install 
 
-Herd-MDL makes extensive use of CloudFormation to create AWS resources and to install and configure the Herd-MDL product. Instructions are available to perform [Basic]() and [Advanced]() installations. The sections below include information to help understand the details of the product install. And feel free to browse the source code as well - start with the [top-level Herd-MDL CloudFormation install template](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/installMDL.yml) and dig!
+Herd-MDL makes extensive use of CloudFormation to create AWS resources and to install and configure the Herd-MDL product. Instructions are available to perform [Basic](basic-install.md) and [Advanced](advanced-install.md) installations. The sections below include information to help understand the details of the product install. And feel free to browse the source code as well - start with the [top-level Herd-MDL CloudFormation install template](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/installMDL.yml) and dig!
 
 ### Flow Diagram
 

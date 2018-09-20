@@ -1,32 +1,34 @@
 Herd-MDL Administration Guide
 ========================
 
-## How To Login to EC2 Instance of MDL
+## How to SSH to an EC2 Instance in MDL
 
-**Prerequisite**
+**Prerequisites**
 
-*   AWS Console Access of the AWS Account, where MDL is created
-    
-*   SSH Client (Example Putty)
-*   MDL Instance Name of the MDL stack
-    *   This is the parameter to the MDL Cloudformation Stack
-*   Bastion Host in the VPC in case of connectivity issues to the private subnet
+*   AWS Console Access of the AWS Account, where MDL is created.
+*   SSH Client (Example Putty).
+*   MDL Instance Name of the MDL stack.
+    *   This is the parameter to the MDL Cloudformation Stack.
+*   Bastion Host in the VPC in case of connectivity issues to the private subnet.
   
 **Steps**
 
 *   Login to AWS Console and navigate to SSM Parameter section (Refer [AWS Documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html))
-*   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/KEYS/KeypairName
-    *   Example : /app/MDL/mdl/dev/KEYS/KeypairName
-*   Get the Value for the above parameter. That value specifies the keyName which holds the pem file
-    *   Example: app\_mdl\_dev
-*   Open Parameter "app\_mdl\_dev" - Value from the previous step
-    *   The value of this parameter is a SecureString and that is the PEM file for the node
-*   Login to the node using SSH client with user name "ec2-user" and the PEM file from previous step
+*   Search for the parameter: /app/MDL/${MDLInstanceName}/${Environment}/KEYS/KeypairName
+    *   Example : _/app/MDL/mdl/dev/KEYS/KeypairName_
+*   Get the Value for the above parameter. That value specifies the keypair-name which holds the pem file
+    *   Example: _app_mdl_dev_
+*   Get Parameter "app_mdl_dev" - Value from the previous step
+    *   The value of this parameter is a SecureString which is the private-key material for the keypair created for your stack. Copy the contents into a new file: `key.pem` and make it read-only: 
+>`$ chmod 400 key.pem`
+*   Login to the node using SSH client with user name "ec2-user" and the PEM file from previous step: 
+>`$ ssh -i /path/to/key.pem ec2-user@<ip-address-ec2>`
     *   Default AMI has ec2-user configuration
 
-## How To Find MDL User Credentials to Login to Herd/Shepherd/Bdsql
+## How to find MDL User Credentials to login to Herd/Shepherd/Bdsql
 
-This section describes how to locate credentials required for endpoints when you have installed with EnableSSLAndAuth=true. 
+This section describes how to locate credentials required for endpoints when you have installed with EnableSSLAndAuth=true.
+> Note: A detailed description and a list of all default users and auth groups created for your stack can be found in the [manage OpenLdap section](#managing-openldap-users-and-groups)
 
 **Prerequisites**
 
@@ -39,19 +41,19 @@ This section describes how to locate credentials required for endpoints when you
 
 *   Login to AWS Console and navigate to SSM Parameter section (Refer [AWS Documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html))
 *   User Name
-    *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername
-        *   Example :  /app/MDL/mdl/dev/LDAP/MdlAppUsername
+    *   Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername on the console
+        *   Example :  `/app/MDL/mdlstack/dev/LDAP/User/HerdAdminUsername`
     *   Get the Value for the above parameter. That value specifies the user name for Herd/Bdsql/Shepherd
-        *   Example: ldap\_mdl\_app_user
+        *   Example: `herd_admin_user`
 *   Password  
-    *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword
-        *   Example :  /app/MDL/mdl/dev/LDAP/MDLAppPassword
-    *   Get the Value for the above parameter. That value specifies the password for Herd/Bdsql/Shepherd, and this parameter is a Secure String
-        *   Example: ODMyOTdmZmE5
+    *   Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/Password/HerdAdminPassword on the console
+        *   Example :  `/app/MDL/mdlstack/dev/LDAP/Password/HerdAdminPassword`
+    *   Get the Value for the above parameter, it is a 12-letter AlphaNumeric String which specifies the password for Herd/Bdsql/Shepherd, and it is a Secure String
+        *   Example: `ODMyOTdmZmE5`
 *   Use the above User name, and Password to login to Herd/Shepherd/Bdsql  
 
 
-## How Tos for initial creation of Herd metadata 
+## How-tos for initial creation of Herd metadata 
 
 
 Refer to [Herd Documentation](https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data#create-a-new-storage-instance) for details on the following:
@@ -61,7 +63,7 @@ Refer to [Herd Documentation](https://github.com/FINRAOS/herd/wiki/quick-start-t
 *  Create New Format in Herd
 *  Register Data in Herd
 
-## How To Add the Object in Herd to Metastor
+## How to propogate an 'Object' from Herd to Metastor
 
 Once Business Object is created in Herd, there is an additional step to include the Objet in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.
 
@@ -137,7 +139,7 @@ cat objectNotification.xml | curl -H "Content-Type: application/xml" -d @- -X PO
         *   Example: ODMyOTdmZmE5
     *   Use the above URL, User name, and Password to login to Bdsql using the SQL Client that supports Presto JDBC Driver
 
-## How To Manage OpenLDAP Users & Groups
+## Managing OpenLDAP Users and Groups
 
 MDL provides a helper script to manage users and groups. The script is deployed onto the OpenLDAP server in /home/mdladmin/deploy/mdl/scripts/.
 
@@ -269,17 +271,17 @@ result: 0 Success
 ```
   
 ## How to find Herd-MDL logs in CloudWatch
-Note: Logs are created in cloudwatch only when the log content is not empty, therefore, some of the log streams mentioned below may not be found if the logs are empty.
+Note: Logs are created in cloudwatch only when the log content is NOT empty, therefore; some of the log streams mentioned below may not be found if there is no content in the logs.
 
 ### Logs inside customized stack log group
 
 **Steps:**
 
-*   Login to AWS Console and navigate to CloudWatch
-*   Click on 'Logs' in the left panel
-*   Filter Log Groups with stack cloudwatch log group name
-    *   **where to find stack log group name?**: please find the value for the key "CloudWatchLogGroupName" from the outputs section of the MDL stack.(Example: logtest-MdlStack-10IBXFGDHF94M)
-*   Click on above filtered stack log group to open it, inside this stack log group folder, you can find most of herd-mdl logs saved as log stream
+*   Login to the AWS Console and navigate to CloudWatch.
+*   Click on 'Logs' in the left panel.
+*   Filter Log Groups with your stack's cloudwatch log-group name.
+    *   **where to find the stack's log group name?**: it's the value for the parameter: _CloudWatchLogGroupName_ in the outputs section of the MDL stack.(Example value: `logtest-MdlStack-10IBXFGDHF94M`)
+*   Click on above filtered stack log group to access it: inside this stack log group folder, you will find the logs saved as individual log streams.
 
 **Elastic Search Log Streams:**
 
@@ -366,7 +368,7 @@ Cloud formation fails with error "Already exists in stack". This happens while c
 
 *Cause*
 
-There is already another stack with the same MDLInstanceName in the AWS account. 
+There is already another stack with the same MDLInstanceName in the same AWS account in the same region . 
 
 *Solution*
 

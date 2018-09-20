@@ -126,17 +126,19 @@ Load data using the Uploader Tool, an ingestion utility created by the Herd team
 
 ```
 {
-"namespace": "SEC\_MARKET\_DATA",
-"businessObjectDefinitionName": "SecurityData",
-"businessObjectFormatUsage": "MDL",
-"businessObjectFormatFileType": "TXT",
-"businessObjectFormatVersion": "0",
-"partitionKey": "TDATE",
-"partitionValue": "2017-08-10",
-"manifestFiles" : \[ {
-"fileName" : "2017-08-10.security-data.txt",
-"rowCount" : 504
-}\]
+  "namespace": "SEC_MARKET_DATA",
+  "businessObjectDefinitionName": "SecurityData",
+  "businessObjectFormatUsage": "MDL",
+  "businessObjectFormatFileType": "TXT",
+  "businessObjectFormatVersion": "0",
+  "partitionKey": "TDATE",
+  "partitionValue": "2017-08-10",
+  "manifestFiles" : [ 
+    {
+      "fileName" : "2017-08-10.security-data.txt",
+      "rowCount" : 504
+    }
+  ]
 }
 ```
 
@@ -144,7 +146,7 @@ Load data using the Uploader Tool, an ingestion utility created by the Herd team
 *   In that same directory, execute the following command (your uploader version will differ)
 
 ```
-java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD\_LOAD\_BALANCER\_DNS\_NAME}
+java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD_LOAD_BALANCER_DNS_NAME}
 ```
 
 *   The uploader tool performs the following steps:

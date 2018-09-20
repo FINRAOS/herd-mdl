@@ -8,6 +8,7 @@ pages:
   - Developer guide: dev-guide.md
   - Administration: admin-guide.md
   - Technical Overview: tech-overview.md
+  - Authorizations and Security: authorizations-overview.md
   - Advanced Install: advanced-install.md
   - MDLT: mdlt.md
 
