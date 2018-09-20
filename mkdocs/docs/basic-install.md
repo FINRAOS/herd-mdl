@@ -28,7 +28,7 @@ Installation is automated through Cloudformation templates in AWS. The stack cre
         *   A stack name can contain only alphanumeric characters (case-sensitive) and hyphens. It must start with an alphabetic character and can't be longer than 128 characters.
     *   Enter the following parameter  
         *   ReleaseVersion
-            *   1.0.0
+            *   1.2.0
     *   Leave all other parameters to their default values          
 *   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
 *   Review the parameters, and create the stack as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html)

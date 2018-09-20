@@ -3,7 +3,7 @@ Herd-MDL Functionality Test : MDLT
 ==============================
 
 ## Overview
-MDLT refers to the test for Herd-MDL, it includes bringing up herd-mdl stack, running test against herd-mdl stack, shutting down herd-mdl stack. 
+MDLT refers to an automated test-framework for Herd-MDL, it includes bringing up herd-mdl stack, running tests against herd-mdl stack, shutting down herd-mdl stack. 
 
 ## Prerequisites
 
@@ -287,11 +287,11 @@ These parameters are related to Certificates and Domains. These are required onl
 ## MDLT Known Issues
 
 ### The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted
-*   Solution Steps to delete vpc manually:
+*   Steps to delete the vpc manually:
     *   find vpc id from createVpc stack output parameter VPC. 
     *   go to aws vpc console and click Your VPCs 
     *   enter the vpc id found in step one. 
-    *   choose the found vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete'
+    *   select your vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete'
     
 ### After MDLT execution, mdlt wrapper stack is not deleted automatically.
 *   Solution steps to delete mdlt wrapper stack maunally:

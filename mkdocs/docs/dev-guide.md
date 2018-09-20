@@ -61,9 +61,8 @@ show_output=True
 
 #### Parameters
 
-|       |       |       |       |
-| ----- | ----- | ----- | ----- |
 | **Parameter name** | **Required** | **Possible value(s)** | **Description** |
+| ----- | ----- | ----- | ----- |
 | action | Y |build <br> deploy | Builds the artifact and upload to S3. <br> Builds, uploads to S3 and launches a new stack.
 | build_from | Y |remote <br><br><br> local | Clones remote repository to the container, switches to the specified branch and uses it to build artifacts. <br> Uses your local repository (needs to be mounted to the docker container)
 | branch | N | <git branch\> | The Git branch you want to build artifacts from.
