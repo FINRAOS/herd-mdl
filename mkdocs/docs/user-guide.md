@@ -30,7 +30,7 @@ Browse the catalog
 *   Locate the Herd-UI URL in output of Herd-MDL wrapper stack and enter that URL into a web browser
 *   Browse by clicking 'SEC' on the Herd-UI home page.
 *   Only a single category (SEC) is created in the demo install.
-*   Herd administrators and/rr data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.
+*   Herd administrators and/or data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.
 *   The Category page has a description of the category and a list of Data Entities that have been tagged with this category
 *   The list shows a short description of each Data Entity along with its display name and physical name.
 *   Users can filter the list of Data Entities by clicking on checkboxes to the left. This list includes all categories of all Data Entities in the list.
