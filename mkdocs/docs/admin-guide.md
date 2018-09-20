@@ -359,13 +359,6 @@ member: cn=sec_user,ou=People,dc=mdl,dc=org
 member: cn=ro_user,ou=People,dc=mdl,dc=org
 member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-# mliyusers, Groups, mdl.org
-dn: cn=mliyusers,ou=Groups,dc=mdl,dc=org
-objectClass: top
-objectClass: groupOfNames
-cn: mliyusers
-member: cn=admin_user,ou=People,dc=mdl,dc=org
-
 # search result
 search: 2
 result: 0 Success
