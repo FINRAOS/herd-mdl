@@ -6,7 +6,7 @@ MDL uses an OpenLDAP installation to manage User authentication and authorizatio
 There are 2 main Organizational Units ([OU](https://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format)s) which are used:
 
 1. <b>ou=People</b>: Each individual user is a member of this organizational unit. These are what employees, users or service accounts are represented with.
-2. <b>ou=Groups</b>: Users may be part of 'auth-groups' (also known as AD groups) which are members of this organizational unit. This helps grouping together users
+2. <b>ou=Groups</b>: Users may be part of 'auth-groups' (also known as AD groups) which are members of this organizational unit. This helps grouping users together
     and applying cross-cutting policies or privileges across users which are members of a given group.
     
 ## Attributes on MDL LDAP objects
