@@ -226,30 +226,30 @@ deleting entry "cn=groupA,ou=Groups,dc=finra,dc=org"
 # extended LDIF
 #
 # LDAPv3
-# base <dc=cloudfjord,dc=com> with scope subtree
+# base <dc=mdl,dc=org> with scope subtree
 # filter: (objectclass=*)
 # requesting: ALL
 #
 
-# cloudfjord.com
-dn: dc=cloudfjord,dc=com
+# mdl.org
+dn: dc=mdl,dc=org
 objectClass: dcObject
 objectClass: organization
-dc: cloudfjord
-o: cloudfjord
+dc: mdl.org
+o: mdl
 
-# People, cloudfjord.com
-dn: ou=People,dc=cloudfjord,dc=com
+# People, mdl.org
+dn: ou=People,dc=mdl,dc=org
 objectClass: organizationalUnit
 ou: People
 
-# Groups, cloudfjord.com
-dn: ou=Groups,dc=cloudfjord,dc=com
+# Groups, mdl.org
+dn: ou=Groups,dc=mdl,dc=org
 objectClass: organizationalUnit
 ou: Groups
 
-# mdl_user, People, cloudfjord.com
-dn: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
+# mdl_user, People, mdl.org
+dn: cn=mdl_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
 objectClass: posixAccount
 uid: mdl_user
@@ -259,11 +259,11 @@ userPassword:: e1NTSEF9SVhKL2NJb3Fmb2VkaVd5Tkp0U1BGN3EzOVpsdGk5RWE=
 uidNumber: 10002
 gidNumber: 1001
 homeDirectory: /home/mdl_user
-mail: mdl_user@cloudfjord.com
+mail: mdl_user@mdl.org
 loginShell: /bin/bash
 
-# sec_user, People, cloudfjord.com
-dn: cn=sec_user,ou=People,dc=cloudfjord,dc=com
+# sec_user, People, mdl.org
+dn: cn=sec_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
 objectClass: posixAccount
 uid: sec_user
@@ -273,11 +273,11 @@ userPassword:: e1NTSEF9WVlaaGJxYmhGbTRwQ1JWaERRdUdVV3gyc3l4OHlPWUU=
 uidNumber: 10003
 gidNumber: 1001
 homeDirectory: /home/sec_user
-mail: sec_user@cloudfjord.com
+mail: sec_user@mdl.org
 loginShell: /bin/bash
 
-# admin_user, People, cloudfjord.com
-dn: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+# admin_user, People, mdl.org
+dn: cn=admin_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
 objectClass: posixAccount
 uid: admin_user
@@ -287,11 +287,11 @@ userPassword:: e1NTSEF9VktJdkR2R1RLRENIOTRFK05FNXEwRUVEYWExdU5lQ0Q=
 uidNumber: 10004
 gidNumber: 1001
 homeDirectory: /home/admin_user
-mail: admin_user@cloudfjord.com
+mail: admin_user@mdl.org
 loginShell: /bin/bash
 
-# ro_user, People, cloudfjord.com
-dn: cn=ro_user,ou=People,dc=cloudfjord,dc=com
+# ro_user, People, mdl.org
+dn: cn=ro_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
 objectClass: posixAccount
 uid: ro_user
@@ -301,11 +301,11 @@ userPassword:: e1NTSEF9L2ZodFFBSUwwU1hFUUIwc2dzSVJiSFY3VW0wUlkySWg=
 uidNumber: 10005
 gidNumber: 1001
 homeDirectory: /home/ro_user
-mail: ro_user@cloudfjord.com
+mail: ro_user@mdl.org
 loginShell: /bin/bash
 
-# basic_user, People, cloudfjord.com
-dn: cn=basic_user,ou=People,dc=cloudfjord,dc=com
+# basic_user, People, mdl.org
+dn: cn=basic_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
 objectClass: posixAccount
 uid: basic_user
@@ -315,56 +315,56 @@ userPassword:
 uidNumber: 10006
 gidNumber: 1001
 homeDirectory: /home/basic_user
-mail: basic_user@cloudfjord.com
+mail: basic_user@mdl.org
 loginShell: /bin/bash
 
-# APP_MDL_ACL_RO_herd_admin, Groups, cloudfjord.com
-dn: cn=APP_MDL_ACL_RO_herd_admin,ou=Groups,dc=cloudfjord,dc=com
+# APP_MDL_ACL_RO_herd_admin, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_herd_admin,ou=Groups,dc=mdl,dc=org
 cn: APP_MDL_ACL_RO_herd_admin
 objectClass: top
 objectClass: groupOfNames
-member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-# APP_MDL_ACL_RO_herd_ro, Groups, cloudfjord.com
-dn: cn=APP_MDL_ACL_RO_herd_ro,ou=Groups,dc=cloudfjord,dc=com
+# APP_MDL_ACL_RO_herd_ro, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_herd_ro,ou=Groups,dc=mdl,dc=org
 cn: APP_MDL_ACL_RO_herd_ro
 objectClass: top
 objectClass: groupOfNames
-member: cn=ro_user,ou=People,dc=cloudfjord,dc=com
-member: cn=basic_user,ou=People,dc=cloudfjord,dc=com
+member: cn=ro_user,ou=People,dc=mdl,dc=org
+member: cn=basic_user,ou=People,dc=mdl,dc=org
 
-# APP_MDL_ACL_RO_mdl_rw, Groups, cloudfjord.com
-dn: cn=APP_MDL_ACL_RO_mdl_rw,ou=Groups,dc=cloudfjord,dc=com
+# APP_MDL_ACL_RO_mdl_rw, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_mdl_rw,ou=Groups,dc=mdl,dc=org
 cn: APP_MDL_ACL_RO_mdl_rw
 objectClass: top
 objectClass: groupOfNames
-member: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
-member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+member: cn=mdl_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-# APP_MDL_ACL_RO_sec_market_data_rw, Groups, cloudfjord.com
-dn: cn=APP_MDL_ACL_RO_sec_market_data_rw,ou=Groups,dc=cloudfjord,dc=com
+# APP_MDL_ACL_RO_sec_market_data_rw, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_sec_market_data_rw,ou=Groups,dc=mdl,dc=org
 cn: APP_MDL_ACL_RO_sec_market_data_rw
 objectClass: top
 objectClass: groupOfNames
-member: cn=sec_user,ou=People,dc=cloudfjord,dc=com
-member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+member: cn=sec_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-# APP_MDL_Users, Groups, cloudfjord.com
-dn: cn=APP_MDL_Users,ou=Groups,dc=cloudfjord,dc=com
+# APP_MDL_Users, Groups, mdl.org
+dn: cn=APP_MDL_Users,ou=Groups,dc=mdl,dc=org
 cn: APP_MDL_Users
 objectClass: top
 objectClass: groupOfNames
-member: cn=mdl_user,ou=People,dc=cloudfjord,dc=com
-member: cn=sec_user,ou=People,dc=cloudfjord,dc=com
-member: cn=ro_user,ou=People,dc=cloudfjord,dc=com
-member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+member: cn=mdl_user,ou=People,dc=mdl,dc=org
+member: cn=sec_user,ou=People,dc=mdl,dc=org
+member: cn=ro_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-# mliyusers, Groups, cloudfjord.com
-dn: cn=mliyusers,ou=Groups,dc=cloudfjord,dc=com
+# mliyusers, Groups, mdl.org
+dn: cn=mliyusers,ou=Groups,dc=mdl,dc=org
 objectClass: top
 objectClass: groupOfNames
 cn: mliyusers
-member: cn=admin_user,ou=People,dc=cloudfjord,dc=com
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
 # search result
 search: 2
