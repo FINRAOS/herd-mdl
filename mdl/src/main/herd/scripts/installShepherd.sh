@@ -46,6 +46,7 @@ fi
 execute_cmd "echo \"From $0\""
 # Download and serve herd-ui (shepherd)
 execute_cmd "mkdir -p ${deployLocation}/herd-ui"
+#TODO faild sometimes, need retry on wget
 execute_cmd "wget --quiet --random-wait https://registry.npmjs.org/@herd/herd-ui-dist/-/herd-ui-dist-${herdUiVersion}.tgz -O ${deployLocation}/herd-ui/herd-ui.tgz"
 execute_cmd "cd ${deployLocation}/herd-ui"
 execute_cmd "tar -xzf herd-ui.tgz"
