@@ -107,7 +107,7 @@ Parameters:
   AutoInstMinorVersionUpgrade:
     Description: 'Automatic Minor Version Upgrade. Non-prod: Yes & Prod: No'
     Type: String
-    Default: 'true'
+    Default: 'false'
     AllowedValues:
       - 'true'
       - 'false'

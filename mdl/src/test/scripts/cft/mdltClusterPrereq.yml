@@ -36,7 +36,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       AccessControl: Private
-      BucketName: !Sub '${MDLInstanceName}-logs-s3-bucket'
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-logs-s3-bucket'
   ServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:

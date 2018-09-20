@@ -68,8 +68,10 @@ fi
 # Change RDS password to the value in parameter store
 aws rds modify-db-instance --db-instance-identifier ${herdDBInstance} --master-user-password ${herdDatabasePassword} --apply-immediately --region ${region}
 check_error $? "aws rds modify-db-instance --db-instance-identifier ${herdDBInstance} modify password"
-# Waiting for the new password to take effect
-sleep 300
+#sleep 2 minutes to wait for the rds status changed to resetting-master-password
+sleep 180
+# Waiting for the new password to take effect, which is waiting until rds is available again
+execute_cmd "aws rds wait db-instance-available --db-instance-identifier ${herdDBInstance} --region ${region}"
 
 # Schema password
 herdDatabaseNonRootUserPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --with-decryption --region ${region} --output text --query Parameter.Value)
@@ -169,6 +171,9 @@ execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 
 
 # Enable LDAP if specified
 if [ "${enableSSLAndAuth}" = "true" ] ; then
+    # Enable Herd namespace authorization
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herdAuthConfiguration.sql"
+
     # Ignore error for first time
     psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c "DELETE FROM cnfgn WHERE cnfgn_key_nm = 'security.enabled.spel.expression';"
 

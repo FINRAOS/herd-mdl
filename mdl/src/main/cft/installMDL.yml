@@ -166,7 +166,7 @@ Parameters:
   HerdInstanceType:
     Description: Herd Application EC2 instance type
     Type: String
-    Default: m4.large
+    Default: m4.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   MetastorInstanceType:
     Description: Metastor Application EC2 instance type
