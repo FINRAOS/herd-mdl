@@ -104,6 +104,9 @@ Parameters:
   MDLServerDeploymentRole:
     Description: Elasticsearch Deployment Service Role Name
     Type: String
+  LogGroupName:
+    Description: CloudWatch Log group name
+    Type: String
 Conditions:
   CreateRDSInstancesCondition: !Equals
     - !Ref CreateRDSInstances
@@ -136,6 +139,7 @@ Resources:
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         VpcIdParameterKey: !Ref VpcIdParameterKey
         PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        LogGroupName: !Ref LogGroupName
   CloudFrontDistributionCreation:
     Type: 'AWS::CloudFormation::Stack'
     Condition: CreateCloudFrontDistributionCondition

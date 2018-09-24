@@ -22,20 +22,21 @@ Parameters:
       Unique name to be associated with the stack instance to differentiate from
       other stacks
     Type: String
-  VpcIdParameterKey:
-    Default: /VPC/Test/ID
-    Description: VPC Parameter key name in system store
-    Type: 'AWS::SSM::Parameter::Value<String>'
-  PublicSubnetsParameterKey:
-    Default: /VPC/Test/SubnetIDs/Public
-    Description: VPC Parameter key name in system store
-    Type: 'AWS::SSM::Parameter::Value<String>'
+  VpcId:
+    Description: any existing VPC id
+    Type: String
+  SubnetId:
+    Description: any existing subnet id
+    Type: String
+  KeyPairName:
+    Description: any existing key pair
+    Type: String
 Resources:
   LogsS3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
       AccessControl: Private
-      BucketName: !Sub '${MDLInstanceName}-logs-s3-bucket'
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-logs-s3-bucket'
   ServiceRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -88,7 +89,7 @@ Resources:
     Properties:
       GroupName: !Sub '${MDLInstanceName}-MasterSecurityGroup'
       GroupDescription: Master security group for EMR
-      VpcId: !Ref VpcIdParameterKey
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: '-1'
           CidrIp: 0.0.0.0/0
@@ -100,7 +101,7 @@ Resources:
     Properties:
       GroupName: !Sub '${MDLInstanceName}-SlaveSecurityGroup'
       GroupDescription: Slave security group for EMR
-      VpcId: !Ref VpcIdParameterKey
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: '-1'
           CidrIp: 0.0.0.0/0
@@ -124,5 +125,8 @@ Outputs:
     Value: !Ref SlaveSecurityGroup
     Description: Security group for cluster slaves
   emrClusterSubnets:
-    Value: !Ref PublicSubnetsParameterKey
+    Value: !Ref SubnetId
     Description: Subnets to use for the cluster
+  emrKeyPairName:
+    Value: !Ref KeyPairName
+    Description: key pair to use for the cluster

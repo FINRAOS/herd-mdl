@@ -25,22 +25,15 @@ Parameters:
     Description: Whether rollback on app stack failure
   MDLInstanceName:
     Default: mdlt
-    Description: >-
-      Application Name:Unique name to be associated with the stack instance to
-      differentiate from other stacks
+    Description: instance name to be used for new mdl stack creation, using different mdlinstance name if mdlt is runing against existing mdl
     Type: String
-   ##TODO This parameter should change to release version, and download to github directly after wrapper stack synced
-  InstallMdlYmlLUrl:
-    Default: https://s3.amazonaws.com/mdl-build-bucket/mdlt/build/mdlt/scripts/cft/installMDL.yml
-    Description: Url of the install mdl yml location
+  MDLStackName:
+    Default: mdlt
+    Description: existing mdl stack name or stack name to be used for new mdl stack creation(this name cannot be the same as current stack name)
     Type: String
   ReleaseVersion:
-    Default: herd-mdl-release-1
+    Default: 1.1.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
-    Type: String
-  MDLTBranch:
-    Default: mdlt
-    Description: Enter the MDLT branch to use
     Type: String
   EnableSSLAndAuth:
     Default: 'false'
@@ -60,10 +53,6 @@ Parameters:
     Default: All
     AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
     Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
-  MdltBucketName:
-    Description: Bucket where the latest build is available
-    Default: mdl-build-bucket
-    Type: String
   ImageId:
     Default: ami-1853ac65
     Description: AMI id parameter key for EC2 instances
@@ -72,26 +61,130 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-    ##TODO VPC should be created using mdl createVpc.yml in order to side in same vpc
-  VpcIdParameterKey:
-    Default: /VPC/Primary/ID
-    Description: VPC Parameter key name in system store
+  MdltVpcIdParameterKey:
+    Description: aws existing VPC Id
     Type: 'AWS::SSM::Parameter::Value<String>'
-  PrivateSubnetsParameterKey:
-    Default: /VPC/Primary/SubnetIDs/private
-    Description: VPC Parameter key name in system store
+  MdltPrivateSubnetsParameter:
+    Description: Existing private aws subnet id
     Type: 'AWS::SSM::Parameter::Value<String>'
   Environment:
     Description: Application environment
-    Default: dev
+    Default: prod
+    Type: String
+  MdltResultS3BucketName:
+     Description: S3 bucket name to save mdlt result
+     Type: String
+  CertificateArn:
+    Description: Certificate Arn for MDL
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains
+    Type: String
+  MDLTWrapperInstanceName:
+    Description: instance name for wrapper stack
+    Type: String
+  InstallMdlYmlUrl:
+    Description: installMDL yaml file URL
+    Type: String
+  WaitOnVpcIfCreate:
+    Description: wait on Vpc if createVPC=true
     Type: String
 Resources:
+  MdltBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-${Environment}'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: '*'
+  EmptyS3LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          def handler(event, context):
+              bucket_name = event['ResourceProperties']['MdltBucket']
+              s3 = boto3.client('s3')
+              physical_id = "EmptyS3BucketLambdaPhysicalID"
+              response_data = {}
+              if event['RequestType'] == 'Delete':
+                  response_data['Message'] = 'Empty S3 bucket: {}'.format(bucket_name)
+
+                  objects_to_delete = []
+
+                  try:
+                      for key in s3.list_objects_v2(Bucket=bucket_name, MaxKeys=1000)['Contents']:
+                          objects_to_delete.append({
+                              'Key': key['Key']
+                          })
+
+                      print('Deleting {} objects from staging bucket: {}'.format(len(objects_to_delete), bucket_name))
+                      s3.delete_objects(
+                          Bucket=bucket_name,
+                          Delete={
+                              'Objects': objects_to_delete
+                          }
+                      )
+                      print('Deleted {} objects'.format(len(objects_to_delete)))
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+              else:
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  EmptyS3CustomResource:
+    Type: Custom::EmptyS3CustomResource
+    Properties:
+      ServiceToken: !GetAtt 'EmptyS3LambdaFunction.Arn'
+      MdltBucket: !Ref MdltBucket
   DeployHostSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupName: !Sub '${MDLInstanceName}-DelpyHostSecurityGroup'
+      GroupName: !Sub '${MDLInstanceName}-DeployHostSecurityGroup'
       GroupDescription: Allow ssh & all outgoing traffic
-      VpcId: !Ref VpcIdParameterKey
+      VpcId: !Ref MdltVpcIdParameterKey
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
@@ -158,29 +251,76 @@ Resources:
               command: !Join
                 - ''
                 - - |
-                    yum remove -y java-1.7.0-openjdk
-                    curl -sL https://rpm.nodesource.com/setup_0.10 | sudo -E bash -
-                    yum install -y nodejs
-                    echo 'Now trying to install phantomjs and casperjs'
-                    npm install -g phantomjs
-                    npm install -g casperjs
-                    pip install awscli --upgrade
+                    function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
+                    function execute_cmd {         cmd="${1}";         retry="${2}";         echo $cmd;         eval $cmd;         returnCode=${PIPESTATUS[0]};         if [ ${returnCode} -ne 0 ] ; then             if [ ${retry} = "RETRY" ] ; then                 sleep 2m;                 eval $cmd;                 check_error ${PIPESTATUS[0]} "$cmd";             fi;         else             check_error ${returnCode} "$cmd";         fi;          }
+                    configFile="/tmp/logs.props"
+                    . ${configFile}
+                    execute_cmd "wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py" "RETRY" 2&>1
+                    execute_cmd "chmod +x ./awslogs-agent-setup.py"
+                    execute_cmd "sudo python awslogs-agent-setup.py -n -r ${region} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf"
+                    execute_cmd "sudo service awslogs restart"
+                    execute_cmd "yum remove -y java-1.7.0-openjdk"
+                    execute_cmd "curl -sL https://rpm.nodesource.com/setup_0.10 | sudo -E bash -"
+                    execute_cmd "yum install -y nodejs"
+                    execute_cmd "pip install awscli --upgrade"
+                    execute_cmd "aws configure set default.region ${region}"
+                    execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days 90"
             2-run-mdlt:
               cwd: /home/ec2-user
-              command: !Join
-                - ''
-                - - 'aws s3 cp s3://'
-                  - !Ref MdltBucketName
-                  - /mdlt/build/
-                  - !Ref MDLTBranch
-                  - |
-                    /scripts/testRunner.sh ./testRunner.sh
-                  - |
-                    chmod 755 ./testRunner.sh
-                  - ./testRunner.sh /home/ec2-user/deployHost.props
-                  - |+
-
+              command: !Sub |
+                #copy mdlt artifacts to ec2
+                mkdir -p mdlt
+                cd mdlt
+                #copy from mdlt staging bucket
+                aws s3 cp s3://${AWS::AccountId}-${MDLTWrapperInstanceName}-mdlt-staging-${Environment}/herd-mdlt-dist.zip mdlt.zip
+                unzip mdlt.zip
+                rm -f mdlt.zip
+                find ./ -name "*.sh" -exec chmod +x {} \;
+                cd ..
+                ./mdlt/scripts/testRunner.sh /home/ec2-user/deployHost.props
           files:
+            /var/awslogs/etc/config/codedeploy_logs.conf:
+              content: !Sub |
+                [mdl-setup-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-setup.log
+                log_stream_name = mdl/{instance_id}-setup-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-func-test-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-func-test.log
+                log_stream_name = mdl/{instance_id}-func-test-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-shutdown-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/mdl-shutdown-test.log
+                log_stream_name = mdl/{instance_id}-shutdown-test-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-junit-jupiter-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /tmp/sam/TEST-junit-jupiter.xml
+                log_stream_name = mdl/{instance_id}-junit-jupiter-log
+                log_group_name = ${AWS::StackName}
+
+                [mdl-cfn-init-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file =  /var/log/cfn-init.log
+                log_stream_name = mdl/{instance_id}-cfn-init-log
+                log_group_name = ${AWS::StackName}
+              mode: '000644'
+              owner: root
+              group: root
+            /tmp/logs.props:
+              content: !Sub |
+                region=${AWS::Region}
+                logGroupName=${AWS::StackName}
+                MDLTWrapperInstanceName=${MDLTWrapperInstanceName}
+              mode: '000644'
+              owner: root
+              group: root
             /home/ec2-user/deployHost.props:
               content: !Join
                 - ''
@@ -188,12 +328,20 @@ Resources:
                   - !Ref MDLInstanceName
                   - |+
 
-                  - MdltBucketName=
-                  - !Ref MdltBucketName
+                  - MDLTWrapperInstanceName=
+                  - !Ref MDLTWrapperInstanceName
                   - |+
 
-                  - StackName=
+                  - MDLTStackName=
                   - !Ref 'AWS::StackName'
+                  - |+
+
+                  - MdltBucketName=
+                  - !Ref MdltBucket
+                  - |+
+
+                  - MDLStackName=
+                  - !Ref MDLStackName
                   - |+
 
                   - RegionName=
@@ -204,16 +352,8 @@ Resources:
                   - !Ref RollbackOnFailure
                   - |+
 
-                  - DeploymentBucketName=
-                  - !Join ['-', [!Ref MDLInstanceName, 'mdl-staging-bucket']]
-                  - |+
-
-                  - MDLTBranch=
-                  - !Ref MDLTBranch
-                  - |+
-
                   - DeployHostWaitHandle=
-                  - !Ref DeployHostWaitHandle
+                  - !Join ['', ['"', !Ref DeployHostWaitHandle, '"']]
                   - |+
 
                   - ReleaseVersion=
@@ -228,12 +368,36 @@ Resources:
                   - !Ref DeployComponents
                   - |+
 
-                  - InstallMdlYmlLUrl=
-                  - !Ref InstallMdlYmlLUrl
+                  - InstallMdlYmlUrl=
+                  - !Ref InstallMdlYmlUrl
                   - |+
 
                   - Environment=
                   - !Ref Environment
+                  - |+
+
+                  - MdltResultS3BucketName=
+                  - !Ref MdltResultS3BucketName
+                  - |+
+
+                  - DomainNameSuffix=
+                  - !Ref DomainNameSuffix
+                  - |+
+
+                  - HostedZoneName=
+                  - !Ref HostedZoneName
+                  - |+
+
+                  - CertificateArn=
+                  - !Ref CertificateArn
+                  - |+
+
+                  - MdltResultS3BucketName=
+                  - !Ref MdltResultS3BucketName
+                  - |+
+
+                  - KeyName=
+                  - !Ref KeyName
                   - |+
 
             /etc/cfn/cfn-hup.conf:
@@ -276,29 +440,17 @@ Resources:
       InstanceType: !Ref InstanceType
       SecurityGroupIds:
         - !Ref DeployHostSecurityGroup
-      SubnetId: !Select
-        - '0'
-        - !Split
-          - ','
-          - !Ref PrivateSubnetsParameterKey
+      SubnetId: !Select [0, !Split [',', !Ref MdltPrivateSubnetsParameter]]
       IamInstanceProfile: !Ref DeployHostInstanceProfile
       Tags:
         - Key: Name
           Value: !Sub '${MDLInstanceName}-DeployHostEc2Node'
-      UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash
-            - |
-              yum update -y aws-cfn-bootstrap
-            - |
-              # Deploy herd release and perform release validation
-            - '/opt/aws/bin/cfn-init -v -s '
-            - !Ref 'AWS::StackId'
-            - ' -r DeployHostEc2Instance '
-            - '         --region '
-            - !Ref 'AWS::Region'
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          yum update -y aws-cfn-bootstrap
+          #Deploy herd release and perform release validation
+          opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource DeployHostEc2Instance --region ${AWS::Region}
   DeployHostWaitHandle:
     Type: 'AWS::CloudFormation::WaitConditionHandle'
   DeployHostWaitCondition:
@@ -306,7 +458,7 @@ Resources:
     DependsOn: DeployHostEc2Instance
     Properties:
       Handle: !Ref DeployHostWaitHandle
-      Timeout: '10800'
+      Timeout: '14400'
 Outputs:
   DeployHostDNS:
     Value: !GetAtt

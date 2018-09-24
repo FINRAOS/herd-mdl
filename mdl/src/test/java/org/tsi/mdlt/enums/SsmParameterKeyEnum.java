@@ -18,18 +18,27 @@ package org.tsi.mdlt.enums;
 import org.tsi.mdlt.util.TestProperties;
 
 public enum SsmParameterKeyEnum {
-    ADMIN_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/AdministratorName"),
-    ADMIN_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/AdministratorPassword"),
+    ADMIN_USER("ldapAdminUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/AdministratorName"),
+    ADMIN_PASSWORD("ldapAdminPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/AdministratorPassword"),
 
-    MDL_APP_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/MdlAppUsername"),
-    MDL_APP_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/MDLAppPassword"),
+    HERD_ADMIN_USER("herdAdminUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdAdminUsername"),
+    Herd_ADMIN_PASSWORD("herdAdminPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdAdminPassword"),
 
-    SEC_APP_USER("ldapSecUser", "/app/MDL/{instanceName}/{environment}/LDAP/SecAppUsername"),
-    SEC_APP_PASSWORD("ldapSecUserPassword", "/app/MDL/{instanceName}/{environment}/LDAP/SecAppPassword"),
+    HERD_RO_USER("herdRoUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdRoUsername"),
+    Herd_RO_PASSWORD("herdRoPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdRoPassword"),
+
+    MDL_APP_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdMdlUsername"),
+    MDL_APP_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdMdlPassword"),
+
+    SEC_APP_USER("ldapSecUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdSecUsername"),
+    SEC_APP_PASSWORD("ldapSecUserPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdSecPassword"),
 
     LDAP_DN("ldap_dn", "/app/MDL/{instanceName}/{environment}/LDAP/BaseDN"),
     LDAP_HOSTNAME("ldap_hostname", "/app/MDL/{instanceName}/{environment}/LDAP/HostName"),
-    AUTH_GROUP("authGroup", "/app/MDL/{instanceName}/{environment}/LDAP/AuthGroup");
+    AUTH_GROUP("authGroup", "/app/MDL/{instanceName}/{environment}/LDAP/AuthGroup"),
+
+    VPC_ID("vpcId", "/global/{instanceName}/{environment}/VPC/ID"),
+    PRIVATE_SUBNETS("privateSubnets", "/global/{instanceName}/{environment}/VPC/SubnetIDs/private");
 
     private String variableName;
     private String parameterKey;

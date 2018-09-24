@@ -67,12 +67,12 @@ public class TagTest extends BaseTest {
     private static final String ES_EC2_IP = StackOutputPropertyReader.get(StackOutputKeyEnum.ES_EC2_IP);
 
     private static final String EC_2_FILTER_PRIVATE_IP = "private-ip-address";
-    private static final String DEPLOY_HOST_SG_SUFFIX = "DelpyHostSecurityGroup";
+    private static final String DEPLOY_HOST_SG_SUFFIX = "DeployHostSecurityGroup";
 
     @Test
     public void testSqsTagsAreSameAsHerdEC2Stack() throws Exception {
         String sqsNamePrefix = INSTANCE_NAME;
-        String herdStackNamePrefix = APP_STACK_NAME + "-" + "HerdEC2Stack";
+        String herdStackNamePrefix = APP_STACK_NAME + "-MdlStack-";
 
         CloudFormationClient cloudFormationClient = new CloudFormationClient(APP_STACK_NAME);
         List<Tag> stackTags = cloudFormationClient.getStackByNamePrefix(herdStackNamePrefix).getTags();
@@ -109,10 +109,10 @@ public class TagTest extends BaseTest {
         }
 
         LogVerification("Verify wrapper stack tags are copied to S3");
-        String shepHerdS3BucketName = StackOutputPropertyReader.get(StackOutputKeyEnum.SHEPHERD_S3_BUCKET);
+        String s3BucketName = StackOutputPropertyReader.get(StackOutputKeyEnum.MDL_STAGING_BUCKET_NAME);
         AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
             .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
-        Map<String, String> s3Tags = s3.getBucketTaggingConfiguration(shepHerdS3BucketName).getTagSet().getAllTags();
+        Map<String, String> s3Tags = s3.getBucketTaggingConfiguration(s3BucketName).getTagSet().getAllTags();
 
         wrapperStackTags.forEach(tag -> {
             String key = tag.getKey();

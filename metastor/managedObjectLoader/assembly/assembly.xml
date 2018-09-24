@@ -32,10 +32,12 @@
     <fileSet>
       <directory>scripts</directory>
       <outputDirectory>managedObjectLoader/scripts</outputDirectory>
+      <lineEnding>unix</lineEnding>
     </fileSet>
 	  <fileSet>
 		  <directory>src/main/workflow-def</directory>
 		  <outputDirectory>managedObjectLoader/workflow-def</outputDirectory>
+          <lineEnding>unix</lineEnding>
 	  </fileSet>
   </fileSets>
 </assembly>

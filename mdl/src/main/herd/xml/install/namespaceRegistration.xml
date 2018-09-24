@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Copyright 2018 herd-mdl contributors
 
@@ -13,8 +14,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<emrClusterCreateRequest>
-   <namespace>MDLT</namespace>
-   <emrClusterDefinitionName>MDLTTestCluster</emrClusterDefinitionName>
-   <emrClusterName>$MDLInstanceName_Cluster</emrClusterName>
-</emrClusterCreateRequest>
+<namespaceCreateRequest>
+    <namespaceCode>{{namespace}}</namespaceCode>
+</namespaceCreateRequest>

@@ -25,10 +25,12 @@
 		<fileSet>
 			<directory>rds</directory>
 			<outputDirectory>metastoreOperations/rds</outputDirectory>
+            <lineEnding>unix</lineEnding>
 		</fileSet>
 		<fileSet>
 			<directory>samples</directory>
 			<outputDirectory>metastoreOperations/samples</outputDirectory>
+            <lineEnding>unix</lineEnding>
 		</fileSet>
     </fileSets>
 </assembly>

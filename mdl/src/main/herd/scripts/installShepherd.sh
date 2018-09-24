@@ -46,6 +46,7 @@ fi
 execute_cmd "echo \"From $0\""
 # Download and serve herd-ui (shepherd)
 execute_cmd "mkdir -p ${deployLocation}/herd-ui"
+#TODO failed sometimes, add retry on wget if this happens very often
 execute_cmd "wget --quiet --random-wait https://registry.npmjs.org/@herd/herd-ui-dist/-/herd-ui-dist-${herdUiVersion}.tgz -O ${deployLocation}/herd-ui/herd-ui.tgz"
 execute_cmd "cd ${deployLocation}/herd-ui"
 execute_cmd "tar -xzf herd-ui.tgz"
@@ -55,8 +56,8 @@ execute_cmd "aws s3 sync . s3://${shepherdS3BucketName}"
 # Change Shepherd based on authentication selection
 if [ "${enableSSLAndAuth}" = "true" ] ; then
     execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/true/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${mdlInstanceName}herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}/${httpProtocol}:\/\/${mdlInstanceName}herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
+    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${mdlInstanceName}-herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
+    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}/${httpProtocol}:\/\/${mdlInstanceName}-herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
 else
     execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/false/g\" ${deployLocation}/conf/configuration.json"
     execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}//g\" ${deployLocation}/conf/configuration.json"

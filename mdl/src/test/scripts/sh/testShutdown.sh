@@ -37,14 +37,14 @@ function execute_cmd {
 
 #MAIN
 deployPropertiesFile=$1
+testPropsFile=$2
 
 # Source the properties
 . ${deployPropertiesFile}
-
+. ${testPropsFile}
 execute_cmd "cd /home/ec2-user"
-export APP_LIB_JARS=`find lib -maxdepth 1 -type f -name \*.jar -printf '%p,' 2>/dev/null | sed "s/,/:/g"`
 
-# Execute the test cases
-execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/lib/herd-mdl-1.0.0-tests.jar:$APP_LIB_JARS org.tsi.mdlt.util.TestWrapper shutdown"
+# Shutdown mdl stack
+execute_cmd "java -DDeployPropertiesFile=$deployPropertiesFile -cp mdlt/herd-mdl-${ReleaseVersion}-tests.jar:mdlt/mdlt-dependencies-${ReleaseVersion}.jar org.tsi.mdlt.util.TestWrapper shutdown"
 
 exit 0

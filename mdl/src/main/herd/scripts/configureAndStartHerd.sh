@@ -35,10 +35,23 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+#MAIN
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
+
+execute_cmd "aws configure set default.region ${region}"
+
+# Get admin user and password from parameter store
+herdAdminUsername=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --region ${region} --output text --query Parameter.Value)
+herdAdminPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --region ${region} --output text --query Parameter.Value)
+
 # Curl commands need to be retried multiple times to avoid network errors
 function execute_curl_cmd {
-  mdlUserLdapPassword=$(aws ssm get-parameter --name ${ldapMdlAppUserPasswordParameterKey} --with-decryption --region ${region} --output text --query Parameter.Value)
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapMdlAppUsername}:${mdlUserLdapPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -52,24 +65,19 @@ function execute_curl_cmd {
   fi
 }
 
-
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
 execute_cmd "cd /home/mdladmin"
-execute_cmd "aws configure set default.region ${region}"
+
+#Configure cloudwatch log for herd
+execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"
+execute_cmd "sudo bash -c 'echo >> /var/awslogs/etc/config/codedeploy_logs.conf; cat /home/mdladmin/deploy/mdl/conf/logs.conf >> /var/awslogs/etc/config/codedeploy_logs.conf'"
+execute_cmd "sudo service awslogs restart"
 
 # Copy stack tags to Sqs & Cloudfront
 function addStackTagsToSqs(){
-    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags" --output json | jq -c '.[]')
-    isTagExisted=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
+    stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags[]" --output json)
+    tagExists=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
 
-    if [ "${isTagExisted}" != "false" ] ; then
+    if [ "${tagExists}" != "false" ] ; then
         echo "tagging sqs"
         sqs_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
         sqs_tags=${sqs_tags//\"/\\\"}
@@ -80,9 +88,21 @@ function addStackTagsToSqs(){
     fi
 }
 
-function addStackTagsToCloudFront(){
-    stack_tags=$(aws cloudformation describe-stacks --stack-name tagsqs --query "Stacks[*].Tags" --output json | jq -c '.[]')
-    #TODO: difficulty in getting cloudfront arn by cli get command directly
+function waitIndexToBeReady(){
+    indexName=$1
+    index_status=$(curl --silent --insecure --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+    echo index_status="${index_status}"
+    while [ "${index_status}" == "BUILDING" ]
+    do
+      sleep 30
+      index_status=$(curl --silent --insecure  --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+      echo index_status="${index_status}"
+    done
+    if [ "${index_status}" != "READY" ]
+    then
+        echo "Invalid search index status. Status: ${index_status}"
+        exit 1
+    fi
 }
 
 execute_cmd "echo \"From $0\""
@@ -114,23 +134,50 @@ if [ "${refreshDatabase}" = "true" ] ; then
 
     # Run System job
     execute_curl_cmd "curl ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/buildInfo --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
+    #OutOfMemory issue in Herd
+    #execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
 
+    # Create namespaces
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+
     # Create bdef and tag indices in elasticsearch and activate them
+    #create and activate bdef index
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"bdef\"},\"searchIndexType\":\"BUS_OBJCT_DFNTN\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
     echo "Business object definition index -> ${indexName}"
+    waitIndexToBeReady "${indexName}"
     execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
     execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
 
+    #create and activate tag index
     execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"tag\"},\"searchIndexType\":\"TAG\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
     indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
     echo "Tag index -> ${indexName}"
+    waitIndexToBeReady "${indexName}"
     execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
     execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
+fi
+
+if [ "${enableSSLAndAuth}" = "true" ] ; then
+
+    # Get app users from the parameter store
+    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+    read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+
+    # Add READ/WRITE permissions for the MDL user on the MDL namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ/WRITE permissions for the SEC user on the SEC namespace
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+    # Add READ permissions for the RO user on the SEC, MDL namespaces
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
 fi
 
 # Execute the demo script if asked

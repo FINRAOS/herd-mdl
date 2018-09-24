@@ -45,7 +45,11 @@ deploy:
   - provider: releases
     api_key:
       secure: jNXgRurm8gs6IGAc9zoUYsSAF0o3VmVQuaE5DxB8LEkmVsCEWQNEWU9eEFm/hyVqV1kBMdPVpH0jMfpeYvRfsJNMrcxr3gij2Unage7UQb4tFMcjpCIhMHm0UizutFWLhUNvxuLBUgMeNaQricPbaoC3OttUFlpavHKXLmd3Cb7CybMZj7fKIjNKRf6mBqD1BMFPJDF2CixAbXurg6730xBDR4GWI3HDYgy8dzMN4zAe35pqvA3BjArE3ziV4zQubor/INISVkjdJlZhg+Q0qUnriBI9ybTUl7bFL97NFTUB1s2A9Opk/xcajCvC7u54N3pTsOk0TexGsSzC/QhxmJRZJFE8T71bAbmxDQC8OIPdhz647Ge/IcL2TnBl1vJBxbh0JkRffT8vshFo3OokPNRoTih/GJpbDOS105T+F6FlYBUMVKo3FGWxgwm+QPblRo4N32tOnKBR7H8syz88yqoOO5bVEorXaqFdYOEviCLZhV4kebpopnn5QdDE7JCjj80yI4Rwcw4I4/ROTcSCvnZhQbMk4nvPzuaO3Hbq5Sc1iPKlB6M+jlHiTzEF+WDu5yw0v8xk0Hr+9LsHY44psLALqQcHLf/H34QCiXhzT0vPMngI9ZjTHKc+EyqeHYVJ17cEFTlLN/lLYIQl1zvj5ITM0ruyuCyOu0pG0YwLOW0=
-    file: '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/herd-mdl-${component_version}-dist.zip'
+    file:
+      - '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/herd-mdl-${component_version}-dist.zip'
+      - '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/herd-mdlt-${component_version}-dist.zip'
+      - '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/mdlt/scripts/cft/mdlt.yml'
+      - '${TRAVIS_BUILD_DIR}/${RELEASE_COMPONENT}/target/cft/installMDL.yml'
     skip_cleanup: true
     on:
       repo: FINRAOS/herd-mdl
@@ -79,3 +83,10 @@ deploy:
       condition: ${RELEASE_COMPONENT} = metastor && ${RELEASE} = "true"
     name: ${RELEASE_COMPONENT}-v${component_version}
     body: Automated herd-mdl (metastor) build from $TRAVIS_BRANCH ($TRAVIS_COMMIT) built by Travis CI on $(date +'%F %T %Z').
+
+  - provider: script
+    script: bash scripts/publish_docker.sh
+    on:
+      repo: FINRAOS/herd-mdl
+      branch: master
+      condition: ${RELEASE_COMPONENT} = mdl && ${DOCKER_RELEASE} = "true" && ${RELEASE} = "true"

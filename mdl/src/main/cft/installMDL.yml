@@ -20,7 +20,7 @@ Parameters:
     Description: >
       MDL release version to use. [REQUIRED]
     Type: String
-    Default: '1.1.0'
+    Default: '1.2.0'
   DeployComponents:
     Type: String
     Default: All
@@ -44,11 +44,11 @@ Parameters:
       - 'false'
     Type: String
   HerdDBClass:
-    Default: db.m4.large
+    Default: db.t2.medium
     Description: Database instance class for Herd
     Type: String
   MetastorDBClass:
-    Default: db.m4.large
+    Default: db.m3.medium
     Description: Database instance class for Metastor
     Type: String
   HerdDBSize:
@@ -162,33 +162,42 @@ Parameters:
   EsInstanceType:
     Description: Elasticsearch EC2 node instance type
     Type: String
-    Default: t2.medium
+    Default: m4.large
   HerdInstanceType:
     Description: Herd Application EC2 instance type
     Type: String
-    Default: m4.2xlarge
+    Default: m4.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   MetastorInstanceType:
     Description: Metastor Application EC2 instance type
     Type: String
-    Default: m4.2xlarge
+    Default: m4.large
     ConstraintDescription: must be a valid EC2 instance type.
   BdsqlMasterInstanceType:
     Description: Bdsql Application EMR Master instance type
     Type: String
-    Default: m4.4xlarge
+    Default: m4.large
   BdsqlCoreInstanceType:
     Description: Bdsql Application EMR Core instance type
     Type: String
-    Default: m4.4xlarge
+    Default: m4.large
   LdapInstanceType:
-    Default: t2.medium
+    Default: m4.large
     Description: ldap EC2 instance type
     Type: String
   NumberOfBdsqlCoreInstances:
     Description: Number of Core Instances for the EMR cluster
     Type: String
     Default: '1'
+  CloudWatchRetentionDays:
+    Description: 'Retention days for CloudWatch logs'
+    Type: Number
+    Default: 90
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+  PrestoMaxMemoryPerNode:
+    Description: query.max-memory-per-node parameter for Presto
+    Type: String
+    Default: 3GB
 Metadata:
   'AWS::CloudFormation::Interface':
     ParameterGroups:
@@ -218,6 +227,7 @@ Metadata:
         Parameters:
           - ImageId
           - MDLInstanceName
+          - CloudWatchRetentionDays
       - Label:
           default: RDS Parameters
         Parameters:
@@ -234,7 +244,7 @@ Metadata:
           - CertificateInfo
           - LdapDN
       - Label:
-          default: EC2 Instance Parameters
+          default: Instance Parameters
         Parameters:
           - EsInstanceType
           - HerdInstanceType
@@ -243,6 +253,7 @@ Metadata:
           - BdsqlMasterInstanceType
           - BdsqlCoreInstanceType
           - NumberOfBdsqlCoreInstances
+          - PrestoMaxMemoryPerNode
       - Label:
           default: Tag Parameters
         Parameters:
@@ -308,6 +319,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_location = event['ResourceProperties']['DeploymentBucketLocation']
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdl-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               deployment_bucket_name = deployment_bucket_location
               prefix = release_version
@@ -322,7 +334,6 @@ Resources:
                   try:
                       os.makedirs('/tmp/downloads/')
                       os.makedirs('/tmp/extracts/')
-                      release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{}/herd-mdl-{}-dist.zip'.format(release_version, release_version)
                       local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('mdl.zip'))
                       urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
 
@@ -394,6 +405,7 @@ Resources:
         DeploymentBucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
         DeployComponents: !Ref DeployComponents
         CertificateInfo: !Ref CertificateInfo
+        PrestoMaxMemoryPerNode: !Ref PrestoMaxMemoryPerNode
         MDLInstanceName: !Ref MDLInstanceName
         CreateIAMRoles: !Ref CreateIAMRoles
         HerdDBClass: !Ref HerdDBClass
@@ -426,6 +438,7 @@ Resources:
         CustomTagName: !Ref CustomTagName
         CustomTagValue: !Ref CustomTagValue
         NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
+        CloudWatchRetentionDays: !Ref CloudWatchRetentionDays
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
@@ -455,3 +468,6 @@ Outputs:
     Value: !GetAtt MdlStack.Outputs.BdsqlJksURL
     Description: URL for Bdsql jks file
     Condition: DeployBDSQLWithAuth
+  CloudWatchLogGroupName:
+    Value: !GetAtt MdlStack.Outputs.CloudWatchLogGroupName
+    Description: cloud watch log group name

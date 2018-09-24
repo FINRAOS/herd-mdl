@@ -36,7 +36,7 @@ function execute_cmd {
 }
 
 function execute_curl_cmd {
-	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${ldapAppUsername}:${ldapAppPassword}"
+	cmd="${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" -u ${herdAdminUsername}:${herdAdminPassword}"
 	echo "${1} --retry 5 --max-time 120 --retry-delay 7 --write-out \"\nHTTP_CODE:%{http_code}\n\" "
 	eval $cmd > /tmp/curlCmdOutput 2>&1
 	echo ""
@@ -50,9 +50,9 @@ function execute_curl_cmd {
 }
 
 function execute_uploader_cmd {
-        cmd="java -jar ./mdl/herd/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60"
+        cmd="java -jar ./mdl/herd/herd-uploader-app.jar --force -e s3-external-1.amazonaws.com -l ./mdlt/inputs/data/herd/${2}/ -m ${1} -V -H ${HerdLoadBalancerDNSName} ${port} -R 3 -D 60 -disableHostnameVerification true"
         echo $cmd
-        cmdWithCredentials="${cmd} -u ${ldapAppUsername} -w ${ldapAppPassword}"
+        cmdWithCredentials="${cmd} -u ${herdAdminUsername} -w ${herdAdminPassword}"
         eval $cmdWithCredentials
         check_error ${PIPESTATUS[0]} "$cmd"
 }
@@ -85,14 +85,14 @@ fi
 . ${testConfigFile}
 
 PrestoClusterId=${BdsqlEMRPrestoCluster}
-ldapAppUserSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername"
-ldapAppUserPwdSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword"
+herdAdminSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername"
+herdAdminPwdSsmKey="/app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdAdminPassword"
 
 execute_cmd "cd /home/ec2-user"
 execute_cmd "aws configure set default.region ${RegionName}"
 
-ldapAppUsername=$(aws ssm get-parameter --name "${ldapAppUserSsmKey}" --output text --query 'Parameter.Value')
-ldapAppPassword=$(aws ssm get-parameter --name  "${ldapAppUserPwdSsmKey}" --with-decryption --output text --query 'Parameter.Value')
+herdAdminUsername=$(aws ssm get-parameter --name "${herdAdminSsmKey}" --output text --query 'Parameter.Value')
+herdAdminPassword=$(aws ssm get-parameter --name  "${herdAdminPwdSsmKey}" --with-decryption --output text --query 'Parameter.Value')
 
 # Set the port and SSL information for uploader based on https or http
 if [ "${EnableSSLAndAuth}" = "true" ] ; then

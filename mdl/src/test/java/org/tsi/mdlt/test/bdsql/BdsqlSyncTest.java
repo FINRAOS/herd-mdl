@@ -23,71 +23,65 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.NamingException;
 
-import org.junit.Assume;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.pojos.User;
+import org.tsi.mdlt.util.HerdRestUtil;
 import org.tsi.mdlt.util.LdapUtil;
-import org.tsi.mdlt.util.TestProperties;
+import org.tsi.mdlt.util.shell.ShellHelper;
 
-/**
- * Application existing ldap/bdsql permission mappings
- * 1. Ldap Groups: APP_MDL_Users
- * ldap users: mdl_app, mdl_test_1, mdl_test_2
- * bdsql permission schemas: read permission to all bdsql non-user schemas except sec_demo_data, default read permission to all newly created schema too.
- * <p>
- * 2. Ldap Groups: APP_MDL_ACL_RO_sec_market_data
- * ldap users: mdl_test_1(we should add mdl_app too)
- * bdsql permission schemas: read permission to sec_demo_data
- */
-@BdsqlBaseTest.DisableOnAuthenticationDisabled
-//Note: Conditional disable annotation doesn't work when running as java jar
+import org.finra.herd.model.api.xml.BusinessObjectData;
+
+@Tag("authTest")
 public class BdsqlSyncTest extends BdsqlBaseTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String PRESTO_NEW_OBJECT_SH = "prestoObjSetup.sh";
     private static final String BDSQL_SYNC_SH = "prestoSyncJob.sh";
 
-    private static final String MDL_USER_GROUP = "APP_MDL_Users";
+    private static final String MDL_USER_GROUP = "APP_MDL_ACL_RO_mdl_rw";
 
-    private static final String LDAP_USER_NAMESPACE = "ldap_namespace";
-    private static final String LDAP_USER_NEWUSER = "ldap_newuser";
-    private static final String LDAP_USER_DELETEUSER = "ldap_deleteuser";
+    private static final String LDAP_NEWPUBLICNAMESPACE_NEWUSER = "ldap_publicnamespace";
+    private static final String LDAP_MDL_NEWUSER = "ldap_newuser";
+    private static final String LDAP_MDL_DELETEUSER = "ldap_deleteuser";
+
+    private static final User HERD_ADMIN_USER = User.getHerdAdminUser();
 
     @BeforeAll
-    public static void setup() throws NamingException {
-        boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        if (!isAuthEnabled) {
-            LOGGER.info("Skip bdsql sync testcases as enableAuth is disabled");
-            Assume.assumeTrue(isAuthEnabled);
-        } else {
-            LdapUtil.listEntries();
-        }
+    public static void setup() throws NamingException, IOException, InterruptedException {
+        cleanupLdapUsers();
+        LdapUtil.listEntries();
     }
 
     @AfterAll
+    public static void teardown() throws InterruptedException, NamingException, IOException {
+        cleanupLdapUsers();
+        syncBdsqlAuth();
+    }
+
     public static void cleanupLdapUsers() throws NamingException, IOException, InterruptedException {
-        LOGGER.info("Ldap User list");
+        LOGGER.info("Ldap User list before cleanup");
         LdapUtil.listEntries();
-        deleteEntryIgnoringError(LDAP_USER_NAMESPACE);
-        deleteEntryIgnoringError(LDAP_USER_NEWUSER);
-        deleteEntryIgnoringError(LDAP_USER_DELETEUSER);
+        deleteEntryIgnoringError(LDAP_NEWPUBLICNAMESPACE_NEWUSER);
+        deleteEntryIgnoringError(LDAP_MDL_NEWUSER);
+        deleteEntryIgnoringError(LDAP_MDL_DELETEUSER);
 
-        removeUserFromGroupIgnoringError(LDAP_USER_NEWUSER, MDL_USER_GROUP);
-        removeUserFromGroupIgnoringError(LDAP_USER_DELETEUSER, MDL_USER_GROUP);
-
+        removeUserFromGroupIgnoringError(LDAP_MDL_NEWUSER, MDL_USER_GROUP);
+        removeUserFromGroupIgnoringError(LDAP_MDL_DELETEUSER, MDL_USER_GROUP);
         LOGGER.info("Ldap User list after cleanup");
         LdapUtil.listEntries();
-        syncBdsqlAuth();
     }
 
     private static void deleteEntryIgnoringError(String username) {
@@ -102,6 +96,15 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
     private static void removeUserFromGroupIgnoringError(String username, String groupName) {
         try {
             LdapUtil.removeUserFromGroup(username, groupName);
+        }
+        catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
+    }
+
+    private static void deleteGroupIgnoringError(String groupName) {
+        try {
+            LdapUtil.deleteAdGroup(groupName);
         }
         catch (Exception e) {
             LOGGER.error(e.getMessage());
@@ -129,33 +132,39 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         LogVerification("Existing ldap user with schema permission can access new table");
         String jdbcUrl = getValidPrestoJdbcUrl(schema);
         String selectQuery = getSelectQuery(schema, objectName);
-        assertEquals(2, executePrestoSelect(selectQuery, jdbcUrl, User.getLdapMdlAppUser()).size());
+        assertEquals(2, executePrestoSelect(selectQuery, jdbcUrl, User.getLdapSecAppUser()).size());
 
         LogVerification("Existing ldap user without schema permission cannot access new table");
         SQLException authorizationException = assertThrows(SQLException.class, () -> {
-            executePrestoSelect(selectQuery, jdbcUrl, User.getLdapSecAppUser());
+            executePrestoSelect(selectQuery, jdbcUrl, User.getLdapMdlAppUser());
         });
         verifyErrorMsgIsAccessDenied(authorizationException);
+
+        LogStep("Clean up test data");
+        cleanupBusinessData(HERD_ADMIN_USER, getBusinessObjectData(schema, objectName), false);
     }
 
     @Test
     /**
-     * verify existing ldap user access to new herd object with new namespace, existing ldap user authorization works correctly
+     * verify existing ldap user access to new herd object with new public namespace, existing ldap user authorization works correctly
      */
-    public void newNamespaceNewObjectTest() throws IOException, InterruptedException, ClassNotFoundException, NamingException, SQLException {
+    public void newPublicNamespaceNewObjectTest() throws IOException, InterruptedException, ClassNotFoundException, NamingException, SQLException {
         String schema = "mdlt_demo_data";
         String objectName = "testdata";
 
-        LogStep("Add Ldap user without AD group and sync");
-        String username = LDAP_USER_NAMESPACE;
+        String username = LDAP_NEWPUBLICNAMESPACE_NEWUSER;
         String password = "ldapPwd";
         User ldapUser = new User(username, password);
+
+        LogStep("Cleanup before test");
+        deleteEntryIgnoringError(username);
+
+        LogStep("Add Ldap user without AD group and sync");
         LdapUtil.addEntry(ldapUser);
-        syncBdsqlAuth();
         TimeUnit.SECONDS.sleep(15);
 
         LogStep("Create new namespace, herd object formats, object definition and upload herd data");
-        executeShellScript(PRESTO_NEW_OBJECT_SH, schema, objectName, "true");
+        executeShellScript(PRESTO_NEW_OBJECT_SH, schema, objectName, Boolean.toString(true));
 
         LogStep("Wait for hive data inserted");
         waitForSchemaTableCreated(10, schema, objectName);
@@ -164,7 +173,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         syncBdsqlAuth();
         TimeUnit.SECONDS.sleep(10);
 
-        LogVerification("ldap user with AD group can access new schema");
+        LogVerification("ldap user with public AD group can access new public schema");
         assertEquals(2, executePrestoSelect(getSelectQuery(schema, objectName), getValidPrestoJdbcUrl(schema), User.getLdapMdlAppUser()).size());
 
         LogVerification("ldap user without AD group cannot access new schema");
@@ -173,9 +182,52 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         });
         verifyErrorMsgIsAccessDenied(authorizationException);
 
-        LogStep("Delete User and sync");
+        LogStep("Delete User");
         LdapUtil.deleteEntry(username);
+
+        LogStep("Clean up test data");
+        cleanupBusinessData(HERD_ADMIN_USER, getBusinessObjectData(schema, objectName), true);
+    }
+
+    @Test
+    /**
+     * verify existing ldap user access to new herd object with new restricted namespace(namespace has corresponding ldap AD group),
+     * existing ldap user authorization works correctly
+     */
+    public void newPrivateNamespaceNewObjectTest() throws IOException, InterruptedException, ClassNotFoundException, NamingException, SQLException {
+        String schema = "mdlt_sec";
+        String adGroupName = "APP_MDL_ACL_RO_" + schema.toLowerCase();
+        String objectName = "testdata";
+        User secUser = User.getLdapSecAppUser();
+
+        LogStep("Cleanup ldap before test");
+        deleteGroupIgnoringError(adGroupName);
+
+        LogStep("Create new private namespace, herd object formats, object definition and upload herd data");
+        executeShellScript(PRESTO_NEW_OBJECT_SH, schema, objectName, "true");
+
+        LogStep("Wait for hive data inserted");
+        waitForSchemaTableCreated(10, schema, objectName);
+
+        LogStep("Create AD group for new namespace and add sec user to new ad group and sync");
+        LdapUtil.createAdGroup(adGroupName, secUser.getUsername());
         syncBdsqlAuth();
+        TimeUnit.SECONDS.sleep(15);
+
+        LogVerification("ldap user with AD group can access new schema");
+        assertEquals(2, executePrestoSelect(getSelectQuery(schema, objectName), getValidPrestoJdbcUrl(schema), secUser).size());
+
+        LogVerification("ldap user without AD group cannot access new schema");
+        SQLException authorizationException = assertThrows(SQLException.class, () -> {
+            executePrestoSelect(getSelectQuery(schema, objectName), getValidPrestoJdbcUrl(schema), User.getLdapMdlAppUser());
+        });
+        verifyErrorMsgIsAccessDenied(authorizationException);
+
+        LogStep("Delete AD group and sync");
+        LdapUtil.deleteAdGroup(adGroupName);
+
+        LogStep("Clean up test data");
+        cleanupBusinessData(HERD_ADMIN_USER, getBusinessObjectData(schema, objectName), true);
     }
 
     @Test
@@ -187,11 +239,14 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         String objectName = "mdl_object";
         String jdbcUrl = getValidPrestoJdbcUrl(schema);
         String selectQuery = getSelectQuery(schema, objectName);
-
-        LogStep("Create Ldap user and Sync");
-        String username = LDAP_USER_NEWUSER;
+        String username = LDAP_MDL_NEWUSER;
         String password = "ldapPwd";
         User newLdapUser = new User(username, password);
+
+        LogStep("Cleanup ldap before test");
+        deleteEntryIgnoringError(username);
+
+        LogStep("Create Ldap user and Sync");
         LdapUtil.addEntry(newLdapUser);
         //sleep 10 seconds before sync as new ldap user may not be picked if sync immediately
         TimeUnit.SECONDS.sleep(10);
@@ -244,11 +299,15 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
         String objectName = "mdl_object";
         String jdbcUrl = getValidPrestoJdbcUrl(schema);
         String selectQuery = getSelectQuery(schema, objectName);
-
-        LogStep("Create ldap user, add user to AD group and sync");
-        String username = LDAP_USER_DELETEUSER;
+        String username = LDAP_MDL_DELETEUSER;
         String password = "ldapPwd";
         User newLdapUser = new User(username, password);
+
+        LogStep("Cleanup ldap before test");
+        removeUserFromGroupIgnoringError(username, MDL_USER_GROUP);
+        deleteEntryIgnoringError(username);
+
+        LogStep("Create ldap user, add user to AD group and sync");
         LdapUtil.addEntry(newLdapUser);
         LdapUtil.addUserToGroup(username, MDL_USER_GROUP);
         syncBdsqlAuth();
@@ -261,7 +320,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
                 return executePrestoSelect(selectQuery, jdbcUrl, newLdapUser).size() > 0;
             });
 
-        LogStep("Delete user from Ldap");
+        LogStep("Remove user from Ldap");
         LdapUtil.deleteEntry(username);
         syncBdsqlAuth();
         TimeUnit.SECONDS.sleep(15);
@@ -271,8 +330,6 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
             executePrestoSelect(selectQuery, jdbcUrl, newLdapUser);
         });
         verifyErrorMsgIsAuthenticationFailed(exception);
-
-        LdapUtil.removeUserFromGroup(username, MDL_USER_GROUP);
     }
 
     private void waitForSchemaTableCreated(int timeoutMinutes, String schema, String tablename) throws ClassNotFoundException, InterruptedException {
@@ -300,5 +357,50 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
     private void verifyErrorMsgIsAccessDenied(SQLException exception) {
         assertTrue(exception.getMessage().contains("Access Denied"), "expect message not correct:" + exception.getMessage());
+    }
+
+    private void cleanupBusinessData(User user, BusinessObjectData businessObjectData, boolean deleteNamespace) {
+        String namespace = businessObjectData.getNamespace();
+        String objectName = businessObjectData.getBusinessObjectDefinitionName();
+
+        try {
+            LogStep("Delete Business object data");
+            Response response = HerdRestUtil.deleteBusinessObjectData(user, businessObjectData);
+            BusinessObjectData responseBusinessObject = response.as(BusinessObjectData.class);
+
+            LogStep("Delete business data from s3 bucket");
+            String bucketName = responseBusinessObject.getStorageUnits().get(0).getStorage().getAttributes().stream().filter(attribute -> attribute.getName().equals("bucket.name")).findFirst().get().getValue();
+            String directoryPath = responseBusinessObject.getStorageUnits().get(0).getStorageDirectory().getDirectoryPath();
+            ShellHelper.executeShellCommand(String.format("aws s3 rm s3://%s/%s/ --recursive", bucketName, directoryPath), new HashMap<>());
+
+            LogStep("Delete business object notification registration");
+            HerdRestUtil.deleteBusinessObjectNotification(user, namespace, namespace + "_" + objectName + "_OBJECT_MDL_USAGE_TXT");
+
+            LogStep("Delete business object format registration");
+            HerdRestUtil.deleteBusinessObjectFormat(user, businessObjectData);
+
+            LogStep("Delete business object definition");
+            HerdRestUtil.deleteBusinessObjectDefinition(user, namespace, objectName);
+
+            if (deleteNamespace) {
+                LogStep("Delete namespace");
+                HerdRestUtil.deleteNamespace(user, namespace);
+            }
+        } catch (Exception e){
+            LOGGER.info("Failed on data cleanup, doesn't fail the testcase");
+            LOGGER.warn(e.getMessage());
+        }
+    }
+
+    private BusinessObjectData getBusinessObjectData(String namespace, String objectName) {
+        BusinessObjectData businessObjectData = new BusinessObjectData();
+        businessObjectData.setNamespace(namespace);
+        businessObjectData.setBusinessObjectDefinitionName(objectName);
+        businessObjectData.setBusinessObjectFormatFileType("TXT");
+        businessObjectData.setBusinessObjectFormatUsage("MDL");
+        businessObjectData.setBusinessObjectFormatVersion(0);
+        businessObjectData.setPartitionValue("2017-08-01");
+        businessObjectData.setVersion(0);
+        return businessObjectData;
     }
 }

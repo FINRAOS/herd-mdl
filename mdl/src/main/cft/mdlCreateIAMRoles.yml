@@ -127,6 +127,7 @@ Resources:
                   - 'kms:GenerateRandom'
                   - 'kms:TagResource'
                   - 'rds:ModifyDBInstance'
+                  - 'rds:DescribeDBInstances'
                   - 'route53:CreateHostedZone'
                   - 'route53:UpdateHostedZoneComment'
                   - 'route53:GetHostedZone'
@@ -260,6 +261,7 @@ Resources:
       Value: !Ref MDLEMRServiceRole
       Description: Name of MDL EMR Service Role
   MDLInstanceProfileParameter:
+    DependsOn: MDLEMRServiceRoleParameter
     Type: 'AWS::SSM::Parameter'
     Properties:
       Name: !Join
@@ -273,6 +275,7 @@ Resources:
       Value: !Ref MDLInstanceProfile
       Description: 'Name of MDL instance profile '
   MDLInstanceRoleParameter:
+    DependsOn: MDLInstanceProfileParameter
     Type: 'AWS::SSM::Parameter'
     Properties:
       Name: !Join
@@ -288,6 +291,7 @@ Resources:
         - Arn
       Description: Name of MDL instance service role
   MDLServerDeploymentRoleParameter:
+    DependsOn: MDLInstanceRoleParameter
     Type: 'AWS::SSM::Parameter'
     Properties:
       Name: !Join

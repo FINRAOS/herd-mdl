@@ -1,0 +1,118 @@
+<!--
+  Copyright 2018 herd-mdl contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<emrClusterDefinitionCreateRequest>
+   <emrClusterDefinitionKey>
+      <namespace>$namespace</namespace>
+      <emrClusterDefinitionName>$clusterDefinitionName</emrClusterDefinitionName>
+   </emrClusterDefinitionKey>
+   <emrClusterDefinition>
+      <sshKeyPairName>$emrKeyPairName</sshKeyPairName>
+      <subnetId>$emrClusterSubnets</subnetId>
+      <logBucket>s3://$emrClusterLogBucket/EMR/MDLTTestCluster/</logBucket>
+      <keepAlive>true</keepAlive>
+      <visibleToAll>true</visibleToAll>
+      <terminationProtection>true</terminationProtection>
+      <encryptionEnabled>false</encryptionEnabled>
+      <serviceIamRole>$emrClusterServiceRole</serviceIamRole>
+      <ec2NodeIamProfileName>$emrClusterEC2InstanceProfile</ec2NodeIamProfileName>
+      <releaseLabel>emr-5.3.1</releaseLabel>
+      <instanceDefinitions>
+         <masterInstances>
+            <instanceCount>1</instanceCount>
+            <instanceType>m4.xlarge</instanceType>
+         </masterInstances>
+      </instanceDefinitions>
+      <nodeTags>
+         <nodeTag>
+            <tagName>Name</tagName>
+            <tagValue>MDLTTestCluster</tagValue>
+         </nodeTag>
+         <nodeTag>
+            <tagName>SDLC</tagName>
+            <tagValue>QA</tagValue>
+         </nodeTag>
+         <nodeTag>
+            <tagName>Purpose</tagName>
+            <tagValue>MATCHING</tagValue>
+         </nodeTag>
+      </nodeTags>
+      <applications>
+         <application>
+            <name>Hadoop</name>
+         </application>
+         <application>
+            <name>Spark</name>
+         </application>
+         <application>
+            <name>Hbase</name>
+         </application>
+         <application>
+            <name>Ganglia</name>
+         </application>
+         <application>
+            <name>Pig</name>
+         </application>
+         <application>
+            <name>Hive</name>
+         </application>
+      </applications>
+      <configurations>
+          <configuration>
+              <classification>emrfs-site</classification>
+              <properties>
+                  <property>
+                      <name>fs.s3.enableServerSideEncryption</name>
+                      <value>true</value>
+                  </property>
+                  <property>
+                      <name>fs.s3.serverSideEncryptionAlgorithm</name>
+                      <value>AES256</value>
+                  </property>
+              </properties>
+          </configuration>
+
+
+          <configuration>
+              <classification>hadoop-env</classification>
+              <configurations>
+                  <configuration>
+                      <classification>export</classification>
+                      <properties>
+                          <property>
+                              <name>JAVA_HOME</name>
+                              <value>/usr/lib/jvm/java-1.8.0</value>
+                          </property>
+                      </properties>
+                  </configuration>
+              </configurations>
+          </configuration>
+          <configuration>
+              <classification>hive-env</classification>
+              <configurations>
+                  <configuration>
+                      <classification>export</classification>
+                      <properties>
+                          <property>
+                              <name>HADOOP_HEAPSIZE</name>
+                              <value>16384</value>
+                          </property>
+                      </properties>
+                  </configuration>
+              </configurations>
+          </configuration>
+      </configurations>
+   </emrClusterDefinition>
+</emrClusterDefinitionCreateRequest>
