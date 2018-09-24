@@ -83,3 +83,10 @@ deploy:
       condition: ${RELEASE_COMPONENT} = metastor && ${RELEASE} = "true"
     name: ${RELEASE_COMPONENT}-v${component_version}
     body: Automated herd-mdl (metastor) build from $TRAVIS_BRANCH ($TRAVIS_COMMIT) built by Travis CI on $(date +'%F %T %Z').
+
+  - provider: script
+    script: bash scripts/publish_docker.sh
+    on:
+      repo: FINRAOS/herd-mdl
+      branch: master
+      condition: ${RELEASE_COMPONENT} = mdl && ${DOCKER_RELEASE} = "true" && ${RELEASE} = "true"

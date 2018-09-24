@@ -27,30 +27,27 @@
 #------------------------------------------------------------------------------------------------------------------#
 
 # Checking if required number of arguments are passed
-if [ $# -lt 3 ]
+if [ $# -lt 1 ]
   then
     echo "-------------------------------------------------------------------------------------------------"
-    echo "Usage: $0 <OBJ_REG_REQEUST> <HERD_URL> <HERD_CRED>											   "
+    echo "Usage: $0 <OBJ_REG_REQEUST>"
     echo "Invalid number of arguments supplied.. Exiting..                                                 "
     echo "-------------------------------------------------------------------------------------------------"
     exit 1
 fi
 
 JIRA_ISSUE=$1
-HERD_REST_URL=$2
-HERD_CREDENTIAL=$3
+HERD_REST_URL="{{DM_REST_URL}}"
+HERD_CREDENTIAL={{DMPASS_BASE64_CRED_PATH}}
 
 # Constants required to set before running the script
-CLUSTER_DEF="" #DM get cluster def
-CLUSTER_NAME="" #DM
-RDS_HOST="" #metastor
-DB_USER="" #metastor DB
-DB_PWD=""
+CLUSTER_DEF="{{CLUSTER_DEF_NAME}}"
+CLUSTER_NAME="registerBusinessObjects"
+RDS_HOST="{{RDS_HOST}}"
+DB_USER="{{MS_HIVE_0_13_USER}}"
+DB_PWD="{{{MS_HIVE_0_13_PWD}}}"
 
-# Fail script if any of these values are not set
-if [[ -z $CLUSTER_DEF || -z $CLUSTER_NAME || -z $RDS_HOST || -z $DB_USER || $DB_PWD ]]; then
-	echo "One or all of the value missing, please provide all values: CLUSTER_DEF, CLUSTER_NAME, RDS_HOST, DB_USER, DB_PWD"
-fi
+MDL_METASTOR_NAMESPACE="{{MDL_METASTOR_NAMESPACE}}"
 
 delim="##### WARNING #####"
 warning_count=0
@@ -167,7 +164,7 @@ function clean_logfile() {
 function join { local IFS="$1"; shift; echo "$*"; }
 
 function submit_notifications_for_backloading(){
-	echo -e "\n##############################################\n\nMETASTOR object registration script back load partitions status.\n" >> $back_load_partitions_status_file
+	echo -e "\n##############################################\n\n$MDL_METASTOR_NAMESPACE object registration script back load partitions status.\n" >> $back_load_partitions_status_file
 
 	# Output the list of lines with status to a temp file and then append the logfile to this file. Doing so will result
 	# in an email that shows the lines with warnings at the top of the email rather than at the end making it easier to read.
@@ -195,7 +192,7 @@ function passemail() {
 
     if [ $warnings_detected -gt 0 ]
     then
-        echo -e "\n##############################################\n\nMETASTOR object registration script completed with detected errors.\n" >> $logfile
+        echo -e "\n##############################################\n\n$MDL_METASTOR_NAMESPACE object registration script completed with detected errors.\n" >> $logfile
 
         # Output the list of lines with warnings to a temp file and then append the logfile to this file. Doing so will result
         # in an email that shows the lines with warnings at the top of the email rather than at the end making it easier to read.
@@ -220,7 +217,7 @@ function passemail() {
     	submit_notifications_for_backloading
 
         echo -e "\n##############################################\n"            >> $logfile
-        echo -e "\nMETASTOR object registration script completed successfully.\n" >> $logfile
+        echo -e "\n$MDL_METASTOR_NAMESPACE object registration script completed successfully.\n" >> $logfile
         leave 0
     fi
 }
@@ -567,47 +564,12 @@ then
     exit 1
 fi
 
-if [ -f "buildinfo" ]
-then
-    # Grab the buildid from the buildinfo file for this build:
-    buildid=`grep "Build ID:" buildinfo | awk ' { print $NF } '`
+# generate logfile based on ENV, app and date
+logfile="object_registration.log"
+back_load_partitions_log_file="back_load_partitions.log"
+back_load_partitions_status_file="/tmp/back_load_partitions.status"
+warnings_file="/tmp/$MDL_METASTOR_NAMESPACE.object_registration.warnings"
 
-    # Grab the app, component and git info from the buildinfo file:
-    app=`grep "Application:" buildinfo | awk ' { print $NF } '`
-    component=`grep "Component:" buildinfo | awk ' { print $NF } '`
-    git_url=`grep "GIT URL:" buildinfo | awk ' { print $NF } '`
-    git_branch=`grep "GIT BRANCH:" buildinfo | awk ' { print $NF } '`
-    git_commit=`grep "GIT COMMIT:" buildinfo | awk ' { print $NF } '`
-
-    if [ -z "$buildid" ]
-    then
-        echo "buildid not set" >> $logfile
-        exit 1
-    fi
-
-    # generate logfile based on ENV, app and date
-    logfile="object_registration.log"
-    back_load_partitions_log_file="back_load_partitions.log"
-    back_load_partitions_status_file="/tmp/back_load_partitions.status"
-    warnings_file="/tmp/METASTOR.object_registration.warnings"
-
-    # Start echoing information to the logfile
-    echo -e "------------------------------"   | tee -a $logfile
-    echo -e "Deployment Log"                   | tee -a $logfile
-    echo -e "------------------------------"   | tee -a $logfile
-    echo -e "\nApplication : $app"             | tee -a $logfile
-    echo -e "Component     : $component"       | tee -a $logfile
-    echo -e "Build ID      : $buildid"         | tee -a $logfile
-    echo -e "JIRA Issue    : $JIRA_ISSUE"      | tee -a $logfile
-    echo -e "Git URL       : $git_url"         | tee -a $logfile
-    echo -e "Git BRANCH    : $git_branch"      | tee -a $logfile
-    echo -e "Git Commit    : $git_commit"      | tee -a $logfile
-    echo -e "Host          : $host"            | tee -a $logfile
-    echo -e "Current User  : $user"            | tee -a $logfile
-else
-    echo -e "\nCould not read the buildinfo file, exiting."   >> $logfile
-    exit  1
-fi
 
 #--------------------------------------------------------------------------------------------------------#
 #                                         START OF DEPLOYMENT ACTIONS                                    #
@@ -864,10 +826,10 @@ do
     # Define the URI for the POST and DELETE commands
     POST_URI=notificationRegistrations/businessObjectDataNotificationRegistrations
     STORAGE_POST_URI=notificationRegistrations/storageUnitNotificationRegistrations
-    PUT_URI=notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/METASTOR/notificationNames/$NOTIFICATION_NAME
-    STORAGE_PUT_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/METASTOR/notificationNames/
-    DELETE_URI=notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/METASTOR/notificationNames/$NOTIFICATION_NAME
-    STORAGE_DELETE_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/METASTOR/notificationNames/
+    PUT_URI=notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/$MDL_METASTOR_NAMESPACE/notificationNames/$NOTIFICATION_NAME
+    STORAGE_PUT_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/$MDL_METASTOR_NAMESPACE/notificationNames/
+    DELETE_URI=notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/$MDL_METASTOR_NAMESPACE/notificationNames/$NOTIFICATION_NAME
+    STORAGE_DELETE_URI=notificationRegistrations/storageUnitNotificationRegistrations/namespaces/$MDL_METASTOR_NAMESPACE/notificationNames/
 
     # Define the URI for the Business Object Format GET commands
     GET_FORMAT_URI=businessObjectFormats/namespaces/$NAMESPACE/businessObjectDefinitionNames/$BO_DEFINITION_NAME/businessObjectFormatUsages/$BO_FORMAT_USAGE/businessObjectFormatFileTypes/$BO_FORMAT_FILE_TYPE

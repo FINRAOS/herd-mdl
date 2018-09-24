@@ -90,17 +90,17 @@ function addStackTagsToSqs(){
 
 function waitIndexToBeReady(){
     indexName=$1
-    index_status=$(curl --silent --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+    index_status=$(curl --silent --insecure --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
     echo index_status="${index_status}"
     while [ "${index_status}" == "BUILDING" ]
     do
-      sleep 30s
-      index_status=$(curl --silent --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
+      sleep 30
+      index_status=$(curl --silent --insecure  --request GET --header 'Accept: application/json' --user ${herdAdminUsername}:${herdAdminPassword} ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes/${indexName} | jq -r '.searchIndexStatus')
       echo index_status="${index_status}"
     done
     if [ "${index_status}" != "READY" ]
     then
-        error "Invalid search index status. Status: ${index_status}"
+        echo "Invalid search index status. Status: ${index_status}"
         exit 1
     fi
 }
