@@ -5,10 +5,14 @@ pages:
   - What is Herd-MDL?: index.md
   - Basic Install: basic-install.md
   - User Guide: user-guide.md
+  - Developer guide: dev-guide.md
   - Administration: admin-guide.md
   - Technical Overview: tech-overview.md
+  - Users and Groups: ldap-tree.md
+  - Authorizations and Security: authorizations-overview.md
   - Advanced Install: advanced-install.md
- 
+  - MDLT: mdlt.md
+
 # Configuration
 theme:
   name: null

@@ -30,7 +30,7 @@ Browse the catalog
 *   Locate the Herd-UI URL in output of Herd-MDL wrapper stack and enter that URL into a web browser
 *   Browse by clicking 'SEC' on the Herd-UI home page.
 *   Only a single category (SEC) is created in the demo install.
-*   Herd administrators and/rr data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.
+*   Herd administrators and/or data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.
 *   The Category page has a description of the category and a list of Data Entities that have been tagged with this category
 *   The list shows a short description of each Data Entity along with its display name and physical name.
 *   Users can filter the list of Data Entities by clicking on checkboxes to the left. This list includes all categories of all Data Entities in the list.
@@ -126,17 +126,19 @@ Load data using the Uploader Tool, an ingestion utility created by the Herd team
 
 ```
 {
-"namespace": "SEC\_MARKET\_DATA",
-"businessObjectDefinitionName": "SecurityData",
-"businessObjectFormatUsage": "MDL",
-"businessObjectFormatFileType": "TXT",
-"businessObjectFormatVersion": "0",
-"partitionKey": "TDATE",
-"partitionValue": "2017-08-10",
-"manifestFiles" : \[ {
-"fileName" : "2017-08-10.security-data.txt",
-"rowCount" : 504
-}\]
+  "namespace": "SEC_MARKET_DATA",
+  "businessObjectDefinitionName": "SecurityData",
+  "businessObjectFormatUsage": "MDL",
+  "businessObjectFormatFileType": "TXT",
+  "businessObjectFormatVersion": "0",
+  "partitionKey": "TDATE",
+  "partitionValue": "2017-08-10",
+  "manifestFiles" : [ 
+    {
+      "fileName" : "2017-08-10.security-data.txt",
+      "rowCount" : 504
+    }
+  ]
 }
 ```
 
@@ -144,7 +146,7 @@ Load data using the Uploader Tool, an ingestion utility created by the Herd team
 *   In that same directory, execute the following command (your uploader version will differ)
 
 ```
-java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD\_LOAD\_BALANCER\_DNS\_NAME}
+java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD_LOAD_BALANCER_DNS_NAME}
 ```
 
 *   The uploader tool performs the following steps:

@@ -1,32 +1,34 @@
 Herd-MDL Administration Guide
 ========================
 
-## How To Login to EC2 Instance of MDL
+## How to SSH to an EC2 Instance in MDL
 
-**Prerequisite**
+**Prerequisites**
 
-*   AWS Console Access of the AWS Account, where MDL is created
-    
-*   SSH Client (Example Putty)
-*   MDL Instance Name of the MDL stack
-    *   This is the parameter to the MDL Cloudformation Stack
-*   Bastion Host in the VPC in case of connectivity issues to the private subnet
+*   AWS Console Access of the AWS Account, where MDL is created.
+*   SSH Client (Example Putty).
+*   MDL Instance Name of the MDL stack.
+    *   This is the parameter to the MDL Cloudformation Stack.
+*   Bastion Host in the VPC in case of connectivity issues to the private subnet.
   
 **Steps**
 
 *   Login to AWS Console and navigate to SSM Parameter section (Refer [AWS Documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html))
-*   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/KEYS/KeypairName
-    *   Example : /app/MDL/mdl/dev/KEYS/KeypairName
-*   Get the Value for the above parameter. That value specifies the keyName which holds the pem file
-    *   Example: app\_mdl\_dev
-*   Open Parameter "app\_mdl\_dev" - Value from the previous step
-    *   The value of this parameter is a SecureString and that is the PEM file for the node
-*   Login to the node using SSH client with user name "ec2-user" and the PEM file from previous step
+*   Search for the parameter: /app/MDL/${MDLInstanceName}/${Environment}/KEYS/KeypairName
+    *   Example : _/app/MDL/mdl/dev/KEYS/KeypairName_
+*   Get the Value for the above parameter. That value specifies the keypair-name which holds the pem file
+    *   Example: _app_mdl_dev_
+*   Get Parameter "app_mdl_dev" - Value from the previous step
+    *   The value of this parameter is a SecureString which is the private-key material for the keypair created for your stack. Copy the contents into a new file: `key.pem` and make it read-only: 
+>`$ chmod 400 key.pem`
+*   Login to the node using SSH client with user name "ec2-user" and the PEM file from previous step: 
+>`$ ssh -i /path/to/key.pem ec2-user@<ip-address-ec2>`
     *   Default AMI has ec2-user configuration
 
-## How To Find MDL User Credentials to Login to Herd/Shepherd/Bdsql
+## How to find MDL User Credentials to login to Herd/Shepherd/Bdsql
 
-This section describes how to locate credentials required for endpoints when you have installed with EnableSSLAndAuth=true. 
+This section describes how to locate credentials required for endpoints when you have installed with EnableSSLAndAuth=true.
+> Note: A detailed description and a list of all default users and auth groups created for your stack can be found in the [manage OpenLdap section](#managing-openldap-users-and-groups)
 
 **Prerequisites**
 
@@ -39,19 +41,19 @@ This section describes how to locate credentials required for endpoints when you
 
 *   Login to AWS Console and navigate to SSM Parameter section (Refer [AWS Documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html))
 *   User Name
-    *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername
-        *   Example :  /app/MDL/mdl/dev/LDAP/MdlAppUsername
+    *   Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername on the console
+        *   Example :  `/app/MDL/mdlstack/dev/LDAP/User/HerdAdminUsername`
     *   Get the Value for the above parameter. That value specifies the user name for Herd/Bdsql/Shepherd
-        *   Example: ldap\_mdl\_app_user
+        *   Example: `herd_admin_user`
 *   Password  
-    *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword
-        *   Example :  /app/MDL/mdl/dev/LDAP/MDLAppPassword
-    *   Get the Value for the above parameter. That value specifies the password for Herd/Bdsql/Shepherd, and this parameter is a Secure String
-        *   Example: ODMyOTdmZmE5
+    *   Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/Password/HerdAdminPassword on the console
+        *   Example :  `/app/MDL/mdlstack/dev/LDAP/Password/HerdAdminPassword`
+    *   Get the Value for the above parameter, it is a 12-letter AlphaNumeric String which specifies the password for Herd/Bdsql/Shepherd, and it is a Secure String
+        *   Example: `ODMyOTdmZmE5`
 *   Use the above User name, and Password to login to Herd/Shepherd/Bdsql  
 
 
-## How Tos for initial creation of Herd metadata 
+## How-tos for initial creation of Herd metadata 
 
 
 Refer to [Herd Documentation](https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data#create-a-new-storage-instance) for details on the following:
@@ -61,7 +63,7 @@ Refer to [Herd Documentation](https://github.com/FINRAOS/herd/wiki/quick-start-t
 *  Create New Format in Herd
 *  Register Data in Herd
 
-## How To Add the Object in Herd to Metastor
+## How to propogate an 'Object' from Herd to Metastor
 
 Once Business Object is created in Herd, there is an additional step to include the Objet in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.
 
@@ -137,7 +139,7 @@ cat objectNotification.xml | curl -H "Content-Type: application/xml" -d @- -X PO
         *   Example: ODMyOTdmZmE5
     *   Use the above URL, User name, and Password to login to Bdsql using the SQL Client that supports Presto JDBC Driver
 
-## How To Manage OpenLDAP Users & Groups
+## Managing OpenLDAP Users and Groups
 
 MDL provides a helper script to manage users and groups. The script is deployed onto the OpenLDAP server in /home/mdladmin/deploy/mdl/scripts/.
 
@@ -146,128 +148,300 @@ MDL provides a helper script to manage users and groups. The script is deployed 
 \# ./manageLdap.sh --help
 
 Usage:
-```manageLdap.sh --action \[create\_user|create\_group|add\_user\_to\_group|show\_directory\] \[--user name\] \[--group name\] \[--dn distinguishedname\]```
+```manageLdap.sh --action [create_user|create_group|add_attribute|replace_attribute|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]```
 
 Examples:
 ```
-manageLdap.sh --action create_user --user userA
-manageLdap.sh --action create_group --user userA --group groupA
-manageLdap.sh --action add\_user\_to_group --user userB --group groupA
-manageLdap.sh --action delete_object --dn "cn=userA,ou=People,ou=Groups,cn=domain,cn=com"
-manageLdap.sh --action show_directory
-manageLdap.sh --help
+  manageLdap.sh --action create_user --user userA --password password --email test@gmail.com --phone 1-234-567-8901
+  manageLdap.sh --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901
+  manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com
+  manageLdap.sh --action create_group --user userA --group groupA
+  manageLdap.sh --action add_user_to_group --user userB --group groupA
+  manageLdap.sh --action remove_user_from_group --user userB --group groupA
+  manageLdap.sh --action delete_object --dn "cn=userA,ou=People,ou=Groups,dc=domain,dc=com"
+  manageLdap.sh --action delete_user --user userA
+  manageLdap.sh --action delete_group --group groupA
+  manageLdap.sh --action show_directory
+  manageLdap.sh --help
 ```
 
-**Create new user**
+**Create new user:**
+```
+\# ./manageLdap.sh --action create_user --user userA --password password
+\# ./manageLdap.sh --action create_user --user userB --password password --email test@gmail.com 
+\# ./manageLdap.sh --action create_user --user userC --password password --email test@gmail.com --phone 1-234-567-8901
+```
 
-```\# ./manageLdap.sh --action create_user --user userA```
+adding new entry "cn=$username,ou=People,dc=finra,dc=org"
 
-adding new entry "uid=userA,ou=People,dc=finra,dc=org"
-
-**Create new group**
+**Create new group:**
 
 ```\# ./manageLdap.sh --action create_group --user userA --group groupA```
 
 adding new entry "cn=groupA,ou=Groups,dc=finra,dc=org"
 
-**Add user to group**
+**Add user to group:**
 
-```\# ./manageLdap.sh --action add\_user\_to_group --user userB --group groupA```
+```\# ./manageLdap.sh --action add_user_to_group --user userA --group groupA```
 
+add member:
+        cn=userA,ou=People,dc=finra,dc=org
 modifying entry "cn=groupA,ou=Groups,dc=finra,dc=org"
 
-**Delete object**
+**Remove user from group:**
+
+```\# ./manageLdap.sh --action remove_user_from_group --user userA --group groupA```
+
+delete member:
+        cn=userA,ou=People,dc=finra,dc=org
+modifying entry "cn=groupA,ou=Groups,dc=finra,dc=org"
+
+**Delete user:**
+
+```\# ./manageLdap.sh --action delete_user --user userA```
+
+deleting entry "cn=userA,ou=People,dc=finra,dc=org"
+
+**Delete group:**
+
+```\# ./manageLdap.sh --action delete_group --group groupA```
+
+deleting entry "cn=groupA,ou=Groups,dc=finra,dc=org"
+
+**Delete object:**
 
 ```\# ./manageLdap.sh --action delete_object --dn "uid=userA,ou=People,dc=finra,dc=org"```
 
-**Show directory information**
+**Add new user attribute:**
+
+```\# ./manageLdap.sh --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901```
+
+**Modify existing user attribute value:**
+
+```\# ./manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com``
+
+
+**Show directory information:**
 
 ```
 \# ./manageLdap.sh --action show_directory
-\# extended LDIF
+# extended LDIF
 #
-\# LDAPv3
-\# base <dc=finra,dc=org> with scope subtree
-\# filter: (objectclass=*)
-\# requesting: ALL
+# LDAPv3
+# base <dc=mdl,dc=org> with scope subtree
+# filter: (objectclass=*)
+# requesting: ALL
 #
-```
 
-```
-\# finra.org
-dn: dc=finra,dc=org
+# mdl.org
+dn: dc=mdl,dc=org
 objectClass: dcObject
 objectClass: organization
-o: finra.org
-dc: finra
+dc: mdl.org
+o: mdl
 
-\# People, finra.org
-dn: ou=People,dc=finra,dc=org
-objectClass: top
+# People, mdl.org
+dn: ou=People,dc=mdl,dc=org
 objectClass: organizationalUnit
 ou: People
 
-\# Groups, finra.org
-dn: ou=Groups,dc=finra,dc=org
-objectClass: top
+# Groups, mdl.org
+dn: ou=Groups,dc=mdl,dc=org
 objectClass: organizationalUnit
 ou: Groups
 
-\# ldap\_mdl\_app_user, People, finra.org
-dn: uid=ldap\_mdl\_app_user,ou=People,dc=finra,dc=org
-uid: ldap\_mdl\_app_user
-cn: ldap\_mdl\_app_user
-sn: null
+# mdl_user, People, mdl.org
+dn: cn=mdl_user,ou=People,dc=mdl,dc=org
 objectClass: inetOrgPerson
-userPassword:: e1NTSEF9SXUwdXJHdXl1cnVkSFFISE4wbmRQZU05ZEkrRiszYng=
-
-\# ldap\_sec\_app_user, People, finra.org
-dn: uid=ldap\_sec\_app_user,ou=People,dc=finra,dc=org
-uid: ldap\_sec\_app_user
-cn: ldap\_sec\_app_user
+objectClass: posixAccount
+uid: mdl_user
+cn: mdl_user
 sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9UlVGVGoxVnJ2c3dVemxZdDlvRHltTXNXMnByaDFlWGo=
+userPassword:: e1NTSEF9SVhKL2NJb3Fmb2VkaVd5Tkp0U1BGN3EzOVpsdGk5RWE=
+uidNumber: 10002
+gidNumber: 1001
+homeDirectory: /home/mdl_user
+mail: mdl_user@mdl.org
+loginShell: /bin/bash
 
-\# APP\_MDL\_Users, Groups, finra.org
-dn: cn=APP\_MDL\_Users,ou=Groups,dc=finra,dc=org
+# sec_user, People, mdl.org
+dn: cn=sec_user,ou=People,dc=mdl,dc=org
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: sec_user
+cn: sec_user
+sn: null
+userPassword:: e1NTSEF9WVlaaGJxYmhGbTRwQ1JWaERRdUdVV3gyc3l4OHlPWUU=
+uidNumber: 10003
+gidNumber: 1001
+homeDirectory: /home/sec_user
+mail: sec_user@mdl.org
+loginShell: /bin/bash
+
+# admin_user, People, mdl.org
+dn: cn=admin_user,ou=People,dc=mdl,dc=org
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: admin_user
+cn: admin_user
+sn: null
+userPassword:: e1NTSEF9VktJdkR2R1RLRENIOTRFK05FNXEwRUVEYWExdU5lQ0Q=
+uidNumber: 10004
+gidNumber: 1001
+homeDirectory: /home/admin_user
+mail: admin_user@mdl.org
+loginShell: /bin/bash
+
+# ro_user, People, mdl.org
+dn: cn=ro_user,ou=People,dc=mdl,dc=org
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: ro_user
+cn: ro_user
+sn: null
+userPassword:: e1NTSEF9L2ZodFFBSUwwU1hFUUIwc2dzSVJiSFY3VW0wUlkySWg=
+uidNumber: 10005
+gidNumber: 1001
+homeDirectory: /home/ro_user
+mail: ro_user@mdl.org
+loginShell: /bin/bash
+
+# basic_user, People, mdl.org
+dn: cn=basic_user,ou=People,dc=mdl,dc=org
+objectClass: inetOrgPerson
+objectClass: posixAccount
+uid: basic_user
+cn: basic_user
+sn: null
+userPassword:
+uidNumber: 10006
+gidNumber: 1001
+homeDirectory: /home/basic_user
+mail: basic_user@mdl.org
+loginShell: /bin/bash
+
+# APP_MDL_ACL_RO_herd_admin, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_herd_admin,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_ACL_RO_herd_admin
 objectClass: top
 objectClass: groupOfNames
-member: uid=ldap\_mdl\_app_user,ou=People,dc=finra,dc=org
-cn: APP\_MDL\_Users
+member: cn=admin_user,ou=People,dc=mdl,dc=org
 
-\# userB, People, finra.org
-dn: uid=userB,ou=People,dc=finra,dc=org
-uid: userB
-cn: userB
-sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9bVZJTGJLcTk4THNmSFVSeXhyQ3d5U0Qybm0xQnNMY0E=
-
-\# userA, People, finra.org
-dn: uid=userA,ou=People,dc=finra,dc=org
-uid: userA
-cn: userA
-sn: null
-objectClass: inetOrgPerson
-userPassword:: e1NTSEF9WlpFeHhaL3pFZmZ0dUJJbWdoSkJkUy9aV0hEejVYY2g=
-
-\# groupA, Groups, finra.org
-dn: cn=groupA,ou=Groups,dc=finra,dc=org
+# APP_MDL_ACL_RO_herd_ro, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_herd_ro,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_ACL_RO_herd_ro
 objectClass: top
 objectClass: groupOfNames
-member: uid=userA,ou=People,dc=finra,dc=org
-member: uid=userB,ou=People,dc=finra,dc=org
-cn: groupA
+member: cn=ro_user,ou=People,dc=mdl,dc=org
+member: cn=basic_user,ou=People,dc=mdl,dc=org
 
-\# search result
+# APP_MDL_ACL_RO_mdl_rw, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_mdl_rw,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_ACL_RO_mdl_rw
+objectClass: top
+objectClass: groupOfNames
+member: cn=mdl_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
+
+# APP_MDL_ACL_RO_sec_market_data_rw, Groups, mdl.org
+dn: cn=APP_MDL_ACL_RO_sec_market_data_rw,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_ACL_RO_sec_market_data_rw
+objectClass: top
+objectClass: groupOfNames
+member: cn=sec_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
+
+# APP_MDL_Users, Groups, mdl.org
+dn: cn=APP_MDL_Users,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_Users
+objectClass: top
+objectClass: groupOfNames
+member: cn=mdl_user,ou=People,dc=mdl,dc=org
+member: cn=sec_user,ou=People,dc=mdl,dc=org
+member: cn=ro_user,ou=People,dc=mdl,dc=org
+member: cn=admin_user,ou=People,dc=mdl,dc=org
+
+# search result
 search: 2
 result: 0 Success
 
-\# numResponses: 10
-\# numEntries: 9
+# numResponses: 15
+# numEntries: 14
 ```
   
+## How to find Herd-MDL logs in CloudWatch
+Note: Logs are created in cloudwatch only when the log content is NOT empty; therefore, some of the log streams mentioned below may not be found if there is no content in the logs.
+
+### Logs inside customized stack log group
+
+**Steps:**
+
+*   Login to the AWS Console and navigate to CloudWatch.
+*   Click on 'Logs' in the left panel.
+*   Filter Log Groups with your stack's cloudwatch log-group name.
+    *   **where to find the stack's log group name?**: it's the value for the parameter: _CloudWatchLogGroupName_ in the outputs section of the MDL stack.(Example value: `logtest-MdlStack-10IBXFGDHF94M`)
+*   Click on above filtered stack log group to access it: inside this stack log group folder, you will find the logs saved as individual log streams.
+
+**Elastic Search Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| CodeDeploy Logs | elasticsearch/codedeploy/*
+| Apache Logs | elasticsearch/apache/*
+| Elastic Search Logs | elasticsearch/*
+  
+**Herd Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | herd/codedeploy/*
+| **Apache Logs** | herd/apache/*
+| **Tomcat Logs** | herd/tomcat/*
+| **Application Logs** | herd/application/herd.log
+
+**Metastor Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Logs** | metastor/codedeploy/*
+
+
+**Bdsql Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **EMR bootstrap Logs** | /bdsql/bootstrap/*
+| **EMR hadoop step Logs** | /bdsql/hadoop/step/*
+
+**OpenLdap Log Streams:**
+
+|   |   |
+| ----- | ----- |
+| **Description** | **Location(format)**
+| **CodeDeploy Log** | openldap/codedeploy/*
+
+
+### Logs with aws default log group
+
+**Rds Log Group:**
+
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Rds Log** | /aws/rds/instance/{{RdsInstanceName}}/{{logType}}/{{RdsInstanceName}} |  <table><tr><td>/aws/rds/instance/logtest-prod-metastor/error</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/general</td></tr><td>/aws/rds/instance/logtest-prod-metastor/audit</td></tr><tr><td>/aws/rds/instance/logtest-prod-metastor/slowquery</td></tr></table>|
+
+
+**Lambda Log Group:**
+
+|   |   |   |
+| ----- | ----- | ----- |
+| **Description** | **Location(format)** | *Example* |
+| **Lambda Log** | /aws/lambda/{{lambda_function_name}}	| /aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4 |
+
 
 ## Troubleshooting
 
@@ -294,7 +468,7 @@ Cloud formation fails with error "Already exists in stack". This happens while c
 
 *Cause*
 
-There is already another stack with the same MDLInstanceName in the AWS account. 
+There is already another stack with the same MDLInstanceName in the same AWS account in the same region . 
 
 *Solution*
 
