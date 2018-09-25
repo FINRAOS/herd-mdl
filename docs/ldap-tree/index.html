@@ -11,7 +11,7 @@
       <meta http-equiv="x-ua-compatible" content="ie=edge">
       
       
-        <link rel="canonical" href="https://finraos.github.io/herd-mdl/">
+        <link rel="canonical" href="https://finraos.github.io/herd-mdl/ldap-tree/">
       
       
       
@@ -29,22 +29,22 @@
       
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
-      <link rel="shortcut icon" href="./">
+      <link rel="shortcut icon" href="../">
       <meta name="generator" content="mkdocs-0.17.5, mkdocs-material-2.5.4">
     
     
       
-        <title>Herd-MDL</title>
+        <title>Users and Groups - Herd-MDL</title>
       
     
     
-      <link rel="stylesheet" href="./assets/stylesheets/application.css">
+      <link rel="stylesheet" href="../assets/stylesheets/application.css">
       
-        <link rel="stylesheet" href="./assets/stylesheets/application-palette.css">
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.css">
       
     
     
-      <script src="./assets/javascripts/modernizr.js"></script>
+      <script src="../assets/javascripts/modernizr.js"></script>
     
     
       
@@ -72,7 +72,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
     <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
     
-      <a href="#what-is-herd-mdl" tabindex="1" class="md-skip">
+      <a href="#mdl-openldap-organization" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -83,7 +83,7 @@
       <div class="md-flex__cell md-flex__cell--shrink">
         <a target="_parent" href="https://finraos.github.io/herd-mdl/" title="Herd-MDL" class="md-header-nav__button md-logo">
           
-            <img src="./images/herd_logo_large.png" width="24" height="24">
+            <img src="../images/herd_logo_large.png" width="24" height="24">
           
         </a>
       </div>
@@ -98,7 +98,7 @@
                 Herd-MDL
               </span>
               <span class="md-header-nav__topic">
-                What is Herd-MDL?
+                Users and Groups
               </span>
             
           
@@ -155,13 +155,85 @@
   <label class="md-nav__title md-nav__title--site" for="drawer">
     <span class="md-nav__button md-logo">
       
-        <img src="./images/herd_logo_large.png" width="24" height="24">
+        <img src="../images/herd_logo_large.png" width="24" height="24">
       
     </span>
     Herd-MDL
   </label>
   
   <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+      What is Herd-MDL?
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+      Basic Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+      User Guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+      Developer guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+      Administration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+      Technical Overview
+    </a>
+  </li>
+
     
       
       
@@ -176,11 +248,11 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="toc">
-        What is Herd-MDL?
+        Users and Groups
       </label>
     
-    <a href="." title="What is Herd-MDL?" class="md-nav__link md-nav__link--active">
-      What is Herd-MDL?
+    <a href="./" title="Users and Groups" class="md-nav__link md-nav__link--active">
+      Users and Groups
     </a>
     
       
@@ -192,23 +264,36 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-herd-mdl" title="What is Herd-MDL?" class="md-nav__link">
-    What is Herd-MDL?
+  <a href="#mdl-openldap-organization" title="MDL OpenLDAP organization" class="md-nav__link">
+    MDL OpenLDAP organization
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-can-i-do-with-herd-mdl" title="What can I do with Herd-MDL?" class="md-nav__link">
-    What can I do with Herd-MDL?
+  <a href="#attributes-on-mdl-ldap-objects" title="Attributes on MDL LDAP objects" class="md-nav__link">
+    Attributes on MDL LDAP objects
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-does-herd-mdl-work" title="How does Herd-MDL work?" class="md-nav__link">
-    How does Herd-MDL work?
+  <a href="#memberof-overlay" title="memberOf Overlay" class="md-nav__link">
+    memberOf Overlay
   </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ldap-directory-tree" title="LDAP directory tree" class="md-nav__link">
+    LDAP directory tree
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -227,79 +312,7 @@
 
 
   <li class="md-nav__item">
-    <a href="basic-install/" title="Basic Install" class="md-nav__link">
-      Basic Install
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="user-guide/" title="User Guide" class="md-nav__link">
-      User Guide
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="dev-guide/" title="Developer guide" class="md-nav__link">
-      Developer guide
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="admin-guide/" title="Administration" class="md-nav__link">
-      Administration
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="tech-overview/" title="Technical Overview" class="md-nav__link">
-      Technical Overview
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="ldap-tree/" title="Users and Groups" class="md-nav__link">
-      Users and Groups
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
       Authorizations and Security
     </a>
   </li>
@@ -311,7 +324,7 @@
 
 
   <li class="md-nav__item">
-    <a href="advanced-install/" title="Advanced Install" class="md-nav__link">
+    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
     </a>
   </li>
@@ -323,7 +336,7 @@
 
 
   <li class="md-nav__item">
-    <a href="mdlt/" title="MDLT" class="md-nav__link">
+    <a href="../mdlt/" title="MDLT" class="md-nav__link">
       MDLT
     </a>
   </li>
@@ -348,23 +361,36 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-herd-mdl" title="What is Herd-MDL?" class="md-nav__link">
-    What is Herd-MDL?
+  <a href="#mdl-openldap-organization" title="MDL OpenLDAP organization" class="md-nav__link">
+    MDL OpenLDAP organization
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-can-i-do-with-herd-mdl" title="What can I do with Herd-MDL?" class="md-nav__link">
-    What can I do with Herd-MDL?
+  <a href="#attributes-on-mdl-ldap-objects" title="Attributes on MDL LDAP objects" class="md-nav__link">
+    Attributes on MDL LDAP objects
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-does-herd-mdl-work" title="How does Herd-MDL work?" class="md-nav__link">
-    How does Herd-MDL work?
+  <a href="#memberof-overlay" title="memberOf Overlay" class="md-nav__link">
+    memberOf Overlay
   </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ldap-directory-tree" title="LDAP directory tree" class="md-nav__link">
+    LDAP directory tree
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -383,23 +409,53 @@
               
                 
                 
-                  <h1>What is Herd-MDL?</h1>
+                  <h1>Users and Groups</h1>
                 
-                <h2 id="what-is-herd-mdl">What is Herd-MDL?<a class="headerlink" href="#what-is-herd-mdl" title="Permanent link">&para;</a></h2>
-<p>Herd-MDL is a managed data lake in the cloud. The product helps manage data with the Herd metadata catalog, explore data with Herd-UI, and access data with the BDSQL Interactive Query tool. All this data is stored in cost-efficient, highly elastic cloud storage and is accessible from a wide variety of compute platforms.</p>
-<h2 id="what-can-i-do-with-herd-mdl">What can I do with Herd-MDL?<a class="headerlink" href="#what-can-i-do-with-herd-mdl" title="Permanent link">&para;</a></h2>
-<p>Herd-MDL enables organizations to store, manage, process, and analyze massive amounts of data in the cloud. The initial use cases supported are:</p>
-<p><strong>Search and Discover</strong>
-End users use Herd-UI to locate and understand data in your data lake. Full-text search of all descriptive metadata ensures that users can quickly find data of interest for their analytical needs.</p>
-<p><strong>Interactive Query</strong>
-SQL-based access to all data in the Herd catalog. A simple JDBC endpoint backed by a powerful Presto query cluster queries across petabytes of data and trillions of rows in seconds. And a native Hive Metastore interface is available for downstream access by tools in the Hadoop ecosystem, Spark, or other tools like AWS Athena</p>
-<p><strong>Ingest and Catalog</strong>
-Ingest data into Herd-MDL with proven high-volume loader utility or with API-based integration. Register data with the Herd catalog to enable search/discovery and interactive query capabilities.</p>
-<p><strong>Integrate</strong>
-Herd and Herd-MDL are API-first products. Teams at FINRA have integrated custom data intake apps, ETL frameworks, EMR-based batch analytcis, and data science tools including a native Spark library that reads directly from the Herd catalog.</p>
-<h2 id="how-does-herd-mdl-work">How does Herd-MDL work?<a class="headerlink" href="#how-does-herd-mdl-work" title="Permanent link">&para;</a></h2>
-<p>This diagram illustrates how the technical components of Herd-MDL fulfull the use cases. For more information, see <a href="tech-overview/">Technical Overview</a> </p>
-<p><img alt="Data Flow Diagram Image" src="./images/DFD.png" /></p>
+                <h3 id="mdl-openldap-organization">MDL OpenLDAP organization<a class="headerlink" href="#mdl-openldap-organization" title="Permanent link">&para;</a></h3>
+<p>MDL uses an OpenLDAP installation to manage User authentication and authorization across all its components.</p>
+<p>There are 2 main Organizational Units (<a href="https://en.wikipedia.org/wiki/LDAP_Data_Interchange_Format">OU</a>s) which are used:</p>
+<ol>
+<li><b>ou=People</b>: Each individual user is a member of this organizational unit. These are what employees, users or service accounts are represented with.</li>
+<li><b>ou=Groups</b>: Users may be part of 'auth-groups' (also known as AD groups) which are members of this organizational unit. This helps grouping users together
+    and applying cross-cutting policies or privileges across users which are members of a given group.</li>
+</ol>
+<h2 id="attributes-on-mdl-ldap-objects">Attributes on MDL LDAP objects<a class="headerlink" href="#attributes-on-mdl-ldap-objects" title="Permanent link">&para;</a></h2>
+<ol>
+<li><b>User attributes</b>: List of attributes with example values which are defined for objects of type User:</li>
+</ol>
+<pre class="codehilite"><code> dn: cn=sec_user,ou=People,dc=mdl,dc=org
+ objectClass: inetOrgPerson
+ objectClass: posixAccount
+ uid: sec_user
+ cn: sec_user
+ sn: null
+ userPassword:: e1NTSEF9WVlaaGJxYmhGbTRwQ1JWaERRdUdVV3gyc3l4OHlPWUU=
+ uidNumber: 10003
+ gidNumber: 1001
+ homeDirectory: /home/sec_user
+ mail: sec_user@mdl.org
+ loginShell: /bin/bash</code></pre>
+
+
+<ol>
+<li><b>Group attributes</b>: List of attributes with example values which are defined for objects of type Group:</li>
+</ol>
+<pre class="codehilite"><code>dn: cn=APP_MDL_ACL_RO_herd_ro,ou=Groups,dc=mdl,dc=org
+cn: APP_MDL_ACL_RO_herd_ro
+objectClass: top
+objectClass: groupOfNames
+member: cn=ro_user,ou=People,dc=mdl,dc=org
+member: cn=basic_user,ou=People,dc=mdl,dc=org</code></pre>
+
+
+<h2 id="memberof-overlay">memberOf Overlay<a class="headerlink" href="#memberof-overlay" title="Permanent link">&para;</a></h2>
+<p>Herd uses <a href="https://www.openldap.org/doc/admin24/overlays.html">'memberOf'</a> information in every requests HTTP header to determine which auth-groups a user is part of that is making the request and 
+subsequently allows/blocks actions which are defined in a <code>role-to-security-function</code> mapping.</p>
+<p>This overlay is installed and enabled in MDL's OpenLDAP installation. Please note that the memberOf attribute is an operational attribute, and it is requested explicitly
+by the Apache webserver which reverse-proxies to the Herd app.</p>
+<h3 id="ldap-directory-tree">LDAP directory tree<a class="headerlink" href="#ldap-directory-tree" title="Permanent link">&para;</a></h3>
+<p>A pictorial representation of MDL's LDAP directory structure:</p>
+<p><img alt="Ldap-dit-image" src="../images/ldap-dit.png" /></p>
                 
                   
                 
@@ -418,14 +474,28 @@ Herd and Herd-MDL are API-first products. Teams at FINRA have integrated custom 
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
+          <a href="../tech-overview/" title="Technical Overview" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Technical Overview
+              </span>
+            </div>
+          </a>
         
-          <a href="basic-install/" title="Basic Install" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+        
+          <a href="../authorizations-overview/" title="Authorizations and Security" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Basic Install
+                Authorizations and Security
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
@@ -440,9 +510,9 @@ Herd and Herd-MDL are API-first products. Teams at FINRA have integrated custom 
       
     </div>
     
-      <script src="./assets/javascripts/application.js"></script>
+      <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.5",url:{base:"."}})</script>
+      <script>app.initialize({version:"0.17.5",url:{base:".."}})</script>
       
     
     

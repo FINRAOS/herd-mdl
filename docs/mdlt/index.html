@@ -1,0 +1,1340 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+        <link rel="canonical" href="https://finraos.github.io/herd-mdl/mdlt/">
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../">
+      <meta name="generator" content="mkdocs-0.17.5, mkdocs-material-2.5.4">
+    
+    
+      
+        <title>MDLT - Herd-MDL</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.css">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.js"></script>
+    
+    
+      
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
+    <label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+    
+      <a href="#herd-mdl-functionality-test-mdlt" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a target="_parent" href="https://finraos.github.io/herd-mdl/" title="Herd-MDL" class="md-header-nav__button md-logo">
+          
+            <img src="../images/herd_logo_large.png" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Herd-MDL
+              </span>
+              <span class="md-header-nav__topic">
+                MDLT
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="drawer">
+    <span class="md-nav__button md-logo">
+      
+        <img src="../images/herd_logo_large.png" width="24" height="24">
+      
+    </span>
+    Herd-MDL
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+      What is Herd-MDL?
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+      Basic Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+      User Guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+      Developer guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+      Administration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+      Technical Overview
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+      Users and Groups
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+      Authorizations and Security
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+      Advanced Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="toc">
+        MDLT
+      </label>
+    
+    <a href="./" title="MDLT" class="md-nav__link md-nav__link--active">
+      MDLT
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" title="Prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simple-mdlt-executionnoauth" title="Simple MDLT Execution(noAuth)" class="md-nav__link">
+    Simple MDLT Execution(noAuth)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-with-auth-stack" title="MDLT with Auth stack" class="md-nav__link">
+    MDLT with Auth stack
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-against-existing-stack" title="MDLT against Existing stack" class="md-nav__link">
+    MDLT against Existing stack
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-cft-specifications" title="MDLT CFT Specifications" class="md-nav__link">
+    MDLT CFT Specifications
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deployment-parameters" title="Deployment Parameters" class="md-nav__link">
+    Deployment Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-parameters" title="Generic Parameters" class="md-nav__link">
+    Generic Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mdl-stack-name-parameters" title="MDL Stack Name Parameters" class="md-nav__link">
+    MDL Stack Name Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional-parameters" title="Conditional Parameters" class="md-nav__link">
+    Conditional Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ec2-instance-parameters" title="EC2 Instance Parameters" class="md-nav__link">
+    EC2 Instance Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vpc-parameters" title="VPC Parameters" class="md-nav__link">
+    VPC Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-domain-and-certificate-parameters" title="Web Domain and Certificate Parameters" class="md-nav__link">
+    Web Domain and Certificate Parameters
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-execution-cloudwatch-logs" title="MDLT Execution CloudWatch logs" class="md-nav__link">
+    MDLT Execution CloudWatch logs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-known-issues" title="MDLT Known Issues" class="md-nav__link">
+    MDLT Known Issues
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-vpc-vpc-xxxxxx-has-dependencies-and-cannot-be-deleted" title="The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted" class="md-nav__link">
+    The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-mdlt-execution-mdlt-wrapper-stack-is-not-deleted-automatically" title="After MDLT execution, mdlt wrapper stack is not deleted automatically." class="md-nav__link">
+    After MDLT execution, mdlt wrapper stack is not deleted automatically.
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="toc">Contents </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" title="Overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" title="Prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simple-mdlt-executionnoauth" title="Simple MDLT Execution(noAuth)" class="md-nav__link">
+    Simple MDLT Execution(noAuth)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-with-auth-stack" title="MDLT with Auth stack" class="md-nav__link">
+    MDLT with Auth stack
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-against-existing-stack" title="MDLT against Existing stack" class="md-nav__link">
+    MDLT against Existing stack
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-cft-specifications" title="MDLT CFT Specifications" class="md-nav__link">
+    MDLT CFT Specifications
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deployment-parameters" title="Deployment Parameters" class="md-nav__link">
+    Deployment Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generic-parameters" title="Generic Parameters" class="md-nav__link">
+    Generic Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mdl-stack-name-parameters" title="MDL Stack Name Parameters" class="md-nav__link">
+    MDL Stack Name Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditional-parameters" title="Conditional Parameters" class="md-nav__link">
+    Conditional Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ec2-instance-parameters" title="EC2 Instance Parameters" class="md-nav__link">
+    EC2 Instance Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vpc-parameters" title="VPC Parameters" class="md-nav__link">
+    VPC Parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-domain-and-certificate-parameters" title="Web Domain and Certificate Parameters" class="md-nav__link">
+    Web Domain and Certificate Parameters
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-execution-cloudwatch-logs" title="MDLT Execution CloudWatch logs" class="md-nav__link">
+    MDLT Execution CloudWatch logs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mdlt-known-issues" title="MDLT Known Issues" class="md-nav__link">
+    MDLT Known Issues
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-vpc-vpc-xxxxxx-has-dependencies-and-cannot-be-deleted" title="The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted" class="md-nav__link">
+    The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-mdlt-execution-mdlt-wrapper-stack-is-not-deleted-automatically" title="After MDLT execution, mdlt wrapper stack is not deleted automatically." class="md-nav__link">
+    After MDLT execution, mdlt wrapper stack is not deleted automatically.
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                
+                <h1 id="herd-mdl-functionality-test-mdlt">Herd-MDL Functionality Test : MDLT<a class="headerlink" href="#herd-mdl-functionality-test-mdlt" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>MDLT refers to an automated test-framework for Herd-MDL, it includes bringing up herd-mdl stack, running tests against herd-mdl stack, shutting down herd-mdl stack. </p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>These are prerequisites that are necessary for installing MDL components for Basic Installation Type</p>
+<ul>
+<li>See <a href="../basic-install/">Herd-MDL Prerequisites</a> for Herd-MDL prerequisites. </li>
+<li>Existing EC2 Key Value Pair</li>
+</ul>
+<h2 id="simple-mdlt-executionnoauth">Simple MDLT Execution(noAuth)<a class="headerlink" href="#simple-mdlt-executionnoauth" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Download the attached <a href="https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.2.0/mdlt.yml">mdlt.yml</a> file to local file system</li>
+<li>Login to AWS console and navigate to <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html">Cloudformation</a></li>
+<li>Create the stack using option "Upload a template to Amazon S3" - Refer <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html">AWS documentation</a> for selecting a local template</li>
+<li>Choose the mdlt.yml file from local file system</li>
+<li>In the next Parameters Edit page, <ul>
+<li>Enter the values for <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html">Stack Name</a>  <ul>
+<li>A stack name can contain only alphanumeric characters (case-sensitive) and hyphens. It must start with an alphabetic character and can't be longer than 128 characters.</li>
+</ul>
+</li>
+<li>Select any existing ec2 key pair from dropdown for parameter: <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html">KeyPairName</a></li>
+<li>Leave all other parameters to their default values, only Herd-MDL stack without auth will be created by default values. </li>
+<li>Please refer to MDLT Stack Parameters Specifications for creating Herd-MDL stack with authentication/authorization.</li>
+</ul>
+</li>
+<li>In the next page, specify the stack options as per <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html">AWS documentation</a></li>
+<li>Review the parameters, and create the stack as per <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html">AWS documentation</a></li>
+<li>Wait for "CREATE_COMPLETE" on the stack and all nested stacks.(approximate wait time here is 2 hours)</li>
+<li>Checkout below cloudwatch documentation to find test execution results</li>
+<li>Wait for the mdlt DeployHost stack to be deleted.(approximate wait time here is 1.5 hour)<ul>
+<li><strong>mdlt DeployHost stack name format</strong>: ${MDLInstanceName}-DeployHostHttpWithoutAuth-${awsUniqueNumber}(eg. mdlt-DeployHostHttpWithoutAuth-A9915FUEU3JI)</li>
+</ul>
+</li>
+<li>if CreateVPC==true while creating mdlt, you need to delete vpc manually, steps see <a href="#mdlt-known-issues">MDLT Known Issues</a> </li>
+<li>Delete mdlt wrapper stack from aws CloudFormation console, step below <a href="#mdlt-known-issues">MDLT Known Issues</a>.(All nested stacks are deleted automatically by mdlt)</li>
+</ul>
+<h2 id="mdlt-with-auth-stack">MDLT with Auth stack<a class="headerlink" href="#mdlt-with-auth-stack" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Same steps as above Simple Installation, but in stack parameters edit page, filling valid values for following parameters.<ul>
+<li><a href="../(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a>:  empty parameter value for MdlNoAuthStackName, and enter auth stack name in parameter MdlAuthStackName</li>
+<li><a href="https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html">CertificateArn</a>:  valid aws certificate ARN, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
+<li><a href="https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html">DomainNameSuffix</a>:  domain name suffix, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
+<li><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html">HostedZoneName</a>:  hosted zone name, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
+</ul>
+</li>
+</ul>
+<h2 id="mdlt-against-existing-stack">MDLT against Existing stack<a class="headerlink" href="#mdlt-against-existing-stack" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Same steps as above Simple Installation, but in stack parameters edit page, filling different values for following parameters<ul>
+<li>If existing stack is noAuth stack, enter existing stack name in parameter <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html">MdlNoAuthStackName</a> ; if existing stack is auth stack, empty parameter value for MdlNoAuthStackName, and enter existing stack name in parameter <a href="../(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a></li>
+<li>set parameter CreateVPC value to false</li>
+<li>set parameter ExistingStack value to true</li>
+<li>Enter correct value for <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">MdlPrivateSubnets</a>, which is the existing stack PrivateSubnets value(can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)</li>
+<li>Enter correct value for <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">MdlPublicSubnets</a>, which is the existing stack PublicSubnets value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)</li>
+<li>Enter correct value for <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">MdlVpcId</a>, which is the existing stack vpc id value (can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)</li>
+</ul>
+</li>
+</ul>
+<h2 id="mdlt-cft-specifications">MDLT CFT Specifications<a class="headerlink" href="#mdlt-cft-specifications" title="Permanent link">&para;</a></h2>
+<h3 id="deployment-parameters">Deployment Parameters<a class="headerlink" href="#deployment-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters are related to which version and components to deploy.</p>
+<p><strong>ReleaseVersion</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>ReleaseVersion</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Release version of MDL application to install</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>1.2.0</td>
+</tr>
+<tr>
+<td><strong>Allowed Value</strong></td>
+<td>1.2.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DeployComponents</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>DeployComponents</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>MDL Component to deploy</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>All</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td><table><tr><td><strong>Parameter Value</strong></td><td><strong>Description</strong></td></tr><tr><td>All</td><td>Install all the available Components</td></tr><tr><td>Prereqs Only</td><td>Install only the pre-requirements without any EC2</td></tr><tr><td>Herd</td><td>Install Prereqs then Herd and its dependencies</td></tr><tr><td>Metastor</td><td>Install Prereqs, Herd, Metastor and all their depencencies</td></tr></table></td>
+</tr>
+</tbody>
+</table>
+<h3 id="generic-parameters">Generic Parameters<a class="headerlink" href="#generic-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters define the basic parameters used across various components</p>
+<p><strong>MDLInstanceName</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MDLInstanceName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Name of the Application being installed</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>mdlt</td>
+</tr>
+<tr>
+<td><strong>Allowed Pattern</strong></td>
+<td>[a-z0-9_]*</td>
+</tr>
+<tr>
+<td><strong>Max Length</strong></td>
+<td>15</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Environment</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>Environment</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Environment name for MDL</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>prod</td>
+</tr>
+<tr>
+<td><strong>Allowed Pattern</strong></td>
+<td>[a-z0-9_]*</td>
+</tr>
+<tr>
+<td><strong>Max Length</strong></td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MdltResultS3BucketName</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdltResultS3BucketName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>existing s3 bucket name to save mdlt test execution results, if this parameter leaves empty, test execution results will be saved to mdlt staging bucket: ${AWS::AccountId}-${MDLInstanceName}-mdlt-${Environment}</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>NO</td>
+</tr>
+</tbody>
+</table>
+<h3 id="mdl-stack-name-parameters">MDL Stack Name Parameters<a class="headerlink" href="#mdl-stack-name-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters define the herd-mdl stack names, either existing stack or stack to be created</p>
+<p><strong>MdlNoAuthStackName</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdlNoAuthStackName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>stack name of existing noAuth herd-mdl stack, or stack name to be used for new herd-mdl noAuth stack creation; when this value leaves empty, mdlt will not create MDL noAuth stack</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>NO</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>mdltNoAuth</td>
+</tr>
+<tr>
+<td><strong>Constraint</strong></td>
+<td>must be a non-existing stack name if wants mdlt to create new herd-mdl stack</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MdlAuthStackName</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdlAuthStackName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>stack name of existing auth herd-mdl stack, or stack name to be used for new herd-mdl auth stack creation; when this value leaves empty, mdlt will not create MDL auth stack</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>NO</td>
+</tr>
+<tr>
+<td><strong>Constraint</strong></td>
+<td>must be a non-existing stack name if wants mdlt to create new herd-mdl stack</td>
+</tr>
+</tbody>
+</table>
+<h3 id="conditional-parameters">Conditional Parameters<a class="headerlink" href="#conditional-parameters" title="Permanent link">&para;</a></h3>
+<p>These are conditional parameters to decide whether MDL creates certain resources or MDL uses existing resources. In each case where a parameter is false, SSM parameters must be present that allow MDL to reference the resources that have been created prior to running the Herd-MDL automated install. </p>
+<p><strong>CreateVPC</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>CreateVPC</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies whether to create new VPC/Subnets or to use existing VPC/Subnets. User needs to fill the SSM parameters as per below information in case of using existing VPC/Subnets.</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>true</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>true, false</td>
+</tr>
+<tr>
+<td><strong>VPC Parameters</strong> (required if false)</td>
+<td>Enter all bellow VPC Parameters with correct value while creating the mdlt stack</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RollbackOnFailure</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>RollbackOnFailure</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies whether to shutdown herd-mdl stack after mdlt execution, this only has effects on herd-mdl stack created by mdlt; when RollBackOnFailure==true, herd-mdl stack will be deleted automatically after test execution; when set to false, herd-mdl stack created by mdlt will not be deleted; mdlt execution will not delete any existing herd-mdl stack whatever the RollBackOnFailure value is</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>true</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>true, false</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ExistingStack</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>ExistingStack</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies whether mdl is an existing stack, set to true when runing mdlt against existing mdl stack</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>false</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>true, false</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ec2-instance-parameters">EC2 Instance Parameters<a class="headerlink" href="#ec2-instance-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters describe the EC2 instance related parameters</p>
+<p><strong>ImageId</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>ImageId</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>AMI id for the EC2 instances. Note that OSS user may use any other AMI which is similar to amzn-ami-hvm-2017.09.1.20180307-x86_64-gp2. However, there could be some issues in terms of package installation/availability, while using a different AMI. So, it is user's responsibility to make sure provided AMI has all the packages like amzn-ami-hvm-2017.09.1.20180307-x86_64-gp2</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>ami-1853ac65</td>
+</tr>
+</tbody>
+</table>
+<p><strong>InstanceType</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>InstanceType</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies the instance type for Mdlt Deploy Host EC2</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td>t2.medium</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://aws.amazon.com/ec2/instance-types/">AWS Documentation</a> for more details</td>
+</tr>
+</tbody>
+</table>
+<p><strong>KeyPairName</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>KeyPairName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies the existing key pair name to be used for Mdlt Deploy Host EC2</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html">AWS Documentation</a> for more details</td>
+</tr>
+</tbody>
+</table>
+<h3 id="vpc-parameters">VPC Parameters<a class="headerlink" href="#vpc-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters are related to AWS VPC id, private subnets and public subnet. These are required only if CreateVPC = false</p>
+<p><strong>MdlVpcId</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdlVpcId</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>existing vpc id to be used for herd-mdl stack creation</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (CreateVPC==false)</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">AWS Documentation</a> for more details</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MdlPrivateSubnets</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdlPrivateSubnets</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>existing private subnets list to be used for herd-mdl stack creation</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (CreateVPC==false)</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">AWS Documentation</a> for more details</td>
+</tr>
+</tbody>
+</table>
+<p><strong>MdlPublicSubnets</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>MdlPublicSubnets</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>existing public subnets to be used for herd-mdl stack creation</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (CreateVPC==false)</td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">AWS Documentation</a> for more details</td>
+</tr>
+</tbody>
+</table>
+<h3 id="web-domain-and-certificate-parameters">Web Domain and Certificate Parameters<a class="headerlink" href="#web-domain-and-certificate-parameters" title="Permanent link">&para;</a></h3>
+<p>These parameters are related to Certificates and Domains. These are required only if MdlAuthStackName has value</p>
+<p><strong>CertificateArn</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>CertificateArn</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies the Arn information from ACM for the Certificate to be used in MDL. Refer <a href="https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html">AWS documentation</a> to create Certificates in ACM.</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (MdltAuthStack is not empty and ExistingStack is false)</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html">AWS documentation</a> for getting the ARN of the Certificate. Note that the certificate is used for three end points: Herd, Shepherd, and Bdsql. So, Certificate should have <a href="https://aws.amazon.com/certificate-manager/faqs/#acm-certificates">Wildcard Domain Name</a>. The Certificate should match any first level subdomain. Format - <strong><em>.domainName</em>* (Example: </strong><em>.example.com<strong>). MD prefixes corresponding first level subdomain (Example: </strong>mdlHerd.example.com<strong>, </strong>mdlShepherd.example.com<strong>, and </strong>mdlBdsql.example.com</em>*).</td>
+</tr>
+</tbody>
+</table>
+<p><strong>DomainNameSuffix</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>DomainNameSuffix</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies the Domain Name Suffix as per the Certificate specified in "CertificateArn"</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (MdltAuthStack is not empty and ExistingStack is false)</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html">AWS documentation</a> for setting up a new Domain. When "EnableSSLAndAuth" option is enabled, MDL uses this DomainNameSuffix for the Route53 configurations. So, user needs to own this specified domain. And, this Domain name must match the certificate specified in "CertificateArn" parameter.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>HostedZoneName</strong> </p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Name</strong></td>
+<td>HostedZoneName</td>
+</tr>
+<tr>
+<td><strong>Description</strong></td>
+<td>Specifies the HostedZoneName for Route53 configuration</td>
+</tr>
+<tr>
+<td><strong>Required</strong></td>
+<td>Only If (MdltAuthStack is not empty and ExistingStack is false)</td>
+</tr>
+<tr>
+<td><strong>Default Value</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Allowed Values</strong></td>
+<td>Refer <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html">AWS Documentation</a> for more details about creating Hosted Zone. When "EnableSSLAndAuth" option is enabled, MDL uses this HostedZoneName for the Route53 configurations. So, user needs to own this specified domain related to the HostedZone. And, this Domain name must match the certificate specified in "CertificateArn" parameter.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="mdlt-execution-cloudwatch-logs">MDLT Execution CloudWatch logs<a class="headerlink" href="#mdlt-execution-cloudwatch-logs" title="Permanent link">&para;</a></h2>
+<p><strong>Steps:</strong></p>
+<ul>
+<li>Login to AWS Console and navigate to CloudWatch</li>
+<li>Click on 'Logs' in the left panel</li>
+<li>Filter Log Groups with stack cloudwatch log group name<ul>
+<li><strong>where to find mdlt log group name?</strong>: find the stack with Description 'MDL - Functional Test Deploy Host' from AWS CloudFormation console, the stack name is the mdlt log group name.(Example: mdlt-DeployHostHttpWithoutAuth-FUPHGEXHSQLX)</li>
+</ul>
+</li>
+<li>Click on above filtered stack log group to open it, inside this stack log group folder, you can find following mdlt logs:<ul>
+<li>mdlt cfn-init log,</li>
+<li>mdlt setup log</li>
+<li>mdlt functionality test execution log</li>
+<li>mdlt junit jupiter log</li>
+<li>mdlt shutdown log</li>
+</ul>
+</li>
+</ul>
+<h2 id="mdlt-known-issues">MDLT Known Issues<a class="headerlink" href="#mdlt-known-issues" title="Permanent link">&para;</a></h2>
+<h3 id="the-vpc-vpc-xxxxxx-has-dependencies-and-cannot-be-deleted">The vpc 'vpc-xxxxxx' has dependencies and cannot be deleted<a class="headerlink" href="#the-vpc-vpc-xxxxxx-has-dependencies-and-cannot-be-deleted" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Steps to delete the vpc manually:<ul>
+<li>find vpc id from createVpc stack output parameter VPC. </li>
+<li>go to aws vpc console and click Your VPCs </li>
+<li>enter the vpc id found in step one. </li>
+<li>select your vpc, click button Actions, Delete Vpc, select the checkbox to delete connect, confirm vpc deletion by clicking the button 'Yes, Delete'</li>
+</ul>
+</li>
+</ul>
+<h3 id="after-mdlt-execution-mdlt-wrapper-stack-is-not-deleted-automatically">After MDLT execution, mdlt wrapper stack is not deleted automatically.<a class="headerlink" href="#after-mdlt-execution-mdlt-wrapper-stack-is-not-deleted-automatically" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Solution steps to delete mdlt wrapper stack maunally:<ul>
+<li>login to aws cloudformation console</li>
+<li>search by mdlt wrapper stack name, choose the mdlt wrapper stack, click Actions, select 'Delete Stack'.( mdlt wrapper stack name is the stackName you used when creating mdlt stack)</li>
+</ul>
+</li>
+</ul>
+                
+                  
+                
+              
+              
+                
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../advanced-install/" title="Advanced Install" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Advanced Install
+              </span>
+            </div>
+          </a>
+        
+        
+      </nav>
+    </div>
+  
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.js"></script>
+      
+      <script>app.initialize({version:"0.17.5",url:{base:".."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>
