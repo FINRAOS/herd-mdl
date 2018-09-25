@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-0.17.5, mkdocs-material-2.5.4">
     
     
       
@@ -329,6 +329,18 @@
 
 
   <li class="md-nav__item">
+    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+      Developer guide
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
     <a href="../admin-guide/" title="Administration" class="md-nav__link">
       Administration
     </a>
@@ -353,8 +365,44 @@
 
 
   <li class="md-nav__item">
+    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+      Users and Groups
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+      Authorizations and Security
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
     <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../mdlt/" title="MDLT" class="md-nav__link">
+      MDLT
     </a>
   </li>
 
@@ -513,7 +561,7 @@
 <li>Locate the Herd-UI URL in output of Herd-MDL wrapper stack and enter that URL into a web browser</li>
 <li>Browse by clicking 'SEC' on the Herd-UI home page.</li>
 <li>Only a single category (SEC) is created in the demo install.</li>
-<li>Herd administrators and/rr data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.</li>
+<li>Herd administrators and/or data publishers can define more categories and tag Data Entities with categories to build a browse-able taxonomy.</li>
 <li>The Category page has a description of the category and a list of Data Entities that have been tagged with this category</li>
 <li>The list shows a short description of each Data Entity along with its display name and physical name.</li>
 <li>Users can filter the list of Data Entities by clicking on checkboxes to the left. This list includes all categories of all Data Entities in the list.</li>
@@ -594,17 +642,19 @@
 <li>The Uploader tool requires a JSON manifest that contains the metadata for registration in the Herd catalog. Here is the manifest file for the 2018-08-10 SecurityData registration:</li>
 </ul>
 <pre class="codehilite"><code>{
-&quot;namespace&quot;: &quot;SEC\_MARKET\_DATA&quot;,
-&quot;businessObjectDefinitionName&quot;: &quot;SecurityData&quot;,
-&quot;businessObjectFormatUsage&quot;: &quot;MDL&quot;,
-&quot;businessObjectFormatFileType&quot;: &quot;TXT&quot;,
-&quot;businessObjectFormatVersion&quot;: &quot;0&quot;,
-&quot;partitionKey&quot;: &quot;TDATE&quot;,
-&quot;partitionValue&quot;: &quot;2017-08-10&quot;,
-&quot;manifestFiles&quot; : \[ {
-&quot;fileName&quot; : &quot;2017-08-10.security-data.txt&quot;,
-&quot;rowCount&quot; : 504
-}\]
+  &quot;namespace&quot;: &quot;SEC_MARKET_DATA&quot;,
+  &quot;businessObjectDefinitionName&quot;: &quot;SecurityData&quot;,
+  &quot;businessObjectFormatUsage&quot;: &quot;MDL&quot;,
+  &quot;businessObjectFormatFileType&quot;: &quot;TXT&quot;,
+  &quot;businessObjectFormatVersion&quot;: &quot;0&quot;,
+  &quot;partitionKey&quot;: &quot;TDATE&quot;,
+  &quot;partitionValue&quot;: &quot;2017-08-10&quot;,
+  &quot;manifestFiles&quot; : [ 
+    {
+      &quot;fileName&quot; : &quot;2017-08-10.security-data.txt&quot;,
+      &quot;rowCount&quot; : 504
+    }
+  ]
 }</code></pre>
 
 
@@ -612,7 +662,7 @@
 <li>Create a manifest file named manifest.json with the contents above in the directory with the jar</li>
 <li>In that same directory, execute the following command (your uploader version will differ)</li>
 </ul>
-<pre class="codehilite"><code>java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD\_LOAD\_BALANCER\_DNS\_NAME}</code></pre>
+<pre class="codehilite"><code>java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD_LOAD_BALANCER_DNS_NAME}</code></pre>
 
 
 <ul>
@@ -692,13 +742,13 @@
           </a>
         
         
-          <a href="../admin-guide/" title="Administration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../dev-guide/" title="Developer guide" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Administration
+                Developer guide
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
@@ -715,7 +765,7 @@
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"0.17.5",url:{base:".."}})</script>
       
     
     
