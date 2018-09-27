@@ -396,19 +396,19 @@ Resources:
                               },
                           ]
                       )
-                      #TODO when non security groups fond, exception will throw
-                      for item in response['SecurityGroups']:
+                      sgs = response['SecurityGroups']
+                      for item in sgs:
                           print('{}:{}'.format(item['GroupName'], item['GroupId']))
                           empty_ingress_egress( item['GroupId'])
 
-                      for item in response['SecurityGroups']:
+                      for item in sgs:
                           client.delete_security_group(
                               GroupId=item['GroupId']
                           )
                   except Exception as e:
                       response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
                       cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
-                  response_data['Message'] = 'Successfully Deleted EMR default SG '
+                  response_data['Message'] = 'Successfully Deleted {} EMR default SGs'.format(len(sgs))
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
               else:
                   response_data['Message'] = 'Nothing to do.'
