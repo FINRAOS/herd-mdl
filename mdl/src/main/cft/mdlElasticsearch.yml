@@ -387,7 +387,7 @@ Resources:
                       response = client.delete_certificate(
                           CertificateArn=certificate_arn
                       )
-                      response_data['Message'] = 'Successfully deleted ACM cert with ARN'.format(certificate_arn)
+                      response_data['Message'] = 'Successfully deleted ACM cert with ARN: {}'.format(certificate_arn)
                   except Exception as e:
                       response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
                       cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)

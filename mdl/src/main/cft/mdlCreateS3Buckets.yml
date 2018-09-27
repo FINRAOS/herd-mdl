@@ -125,7 +125,7 @@ Resources:
                   - s3:List*
                   - s3:DeleteObject
                 Resource: '*'
-  EmptyS3LambdaFunction:
+  S3CleanupLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: 'index.handler'
@@ -153,22 +153,18 @@ Resources:
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
 
           def empty_s3_bucket(bucket_name):
-              client = boto3.client( 's3')
-              paginator = client.get_paginator( 'list_objects' )
-              page_iterator = paginator.paginate(Bucket = bucket_name)
-              for page in page_iterator:
-                  if 'Contents' in page:
-                      for item in page[ 'Contents' ]:
-                          client.delete_object(Bucket=bucket_name, Key=item['Key'])
-                      print('Deleted {} objects'.format(len(page["Contents"])))
+              s3 = boto3.resource( 's3')
+              bucket = s3.Bucket(bucket_name)
+              bucket.objects.all().delete()
+              print('Empty s3 bucket {} successfully'.format(bucket_name))
       Role: !GetAtt 'LambdaExecutionRole.Arn'
       Runtime: 'python3.6'
       Timeout: '300'
-      MemorySize: 2048
-  EmptyS3CustomResource:
-    Type: Custom::EmptyS3CustomResource
+      MemorySize: 256
+  S3CleanupCustomResource:
+    Type: Custom::S3CleanupCustomResource
     Properties:
-      ServiceToken: !GetAtt 'EmptyS3LambdaFunction.Arn'
+      ServiceToken: !GetAtt 'S3CleanupLambdaFunction.Arn'
       BucketList:
         - !Ref MDLStagingBucket
         - !Ref HerdS3Bucket

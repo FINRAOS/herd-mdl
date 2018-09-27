@@ -396,19 +396,19 @@ Resources:
                               },
                           ]
                       )
-                      sgs = response['SecurityGroups']
-                      for item in sgs:
+                      security_groups = response['SecurityGroups']
+                      for item in security_groups:
                           print('{}:{}'.format(item['GroupName'], item['GroupId']))
                           empty_ingress_egress( item['GroupId'])
 
-                      for item in sgs:
+                      for item in security_groups:
                           client.delete_security_group(
                               GroupId=item['GroupId']
                           )
                   except Exception as e:
                       response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
                       cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
-                  response_data['Message'] = 'Successfully Deleted {} EMR default SGs'.format(len(sgs))
+                  response_data['Message'] = 'Successfully Deleted {} EMR default Security Groups'.format(len(security_groups))
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
               else:
                   response_data['Message'] = 'Nothing to do.'
@@ -426,7 +426,7 @@ Resources:
       Role: !GetAtt 'LambdaExecutionRole.Arn'
       Runtime: 'python3.6'
       Timeout: '300'
-      MemorySize: 2048
+      MemorySize: 256
   DeleteSecurityGroupCustomResource:
     Type: Custom::DeleteSecurityGroupCustomResource
     Properties:
