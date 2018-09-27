@@ -82,6 +82,11 @@ public class SsmUtil {
         return getParameter(parameterKey, true);
     }
 
+    /**
+     * Get list of parameters with prefix
+     * @param prefix parameter prefix
+     * @return list of  parameters
+     */
     public static List<Parameter> getParametersWithPrefix(String prefix){
         AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
         AWSSimpleSystemsManagement simpleSystemsManagementClient =
