@@ -58,10 +58,10 @@ export PGDATABASE=$herdDatabaseName
 
 # Execute DB scripts
 herdDatabasePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-if [ "${herdDatabasePassword}" = "" ] ; then
+if [ "${herdDatabasePassword}" = "changeit" ] ; then
     # changing DB password
     herdDatabasePassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --type SecureString --value ${herdDatabasePassword} --region ${region}
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --type SecureString --value ${herdDatabasePassword} --region ${region} --overwrite
     check_error $? "aws ssm put-parameter --name '/app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount' secure string"
 fi
 
@@ -76,11 +76,11 @@ execute_cmd "aws rds wait db-instance-available --db-instance-identifier ${herdD
 # Schema password
 herdDatabaseNonRootUserPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --with-decryption --region ${region} --output text --query Parameter.Value)
 
-if [ "${herdDatabaseNonRootUserPassword}" = "" ] ; then
+if [ "${herdDatabaseNonRootUserPassword}" = "changeit" ] ; then
     # Create a DB non root user password for herd
     herdDatabaseNonRootUserPassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16 )
 
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --type "SecureString" --value ${herdDatabaseNonRootUserPassword} --region ${region}
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --type "SecureString" --value ${herdDatabaseNonRootUserPassword} --region ${region} --overwrite
     check_error $? "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account secure string"
 fi
 

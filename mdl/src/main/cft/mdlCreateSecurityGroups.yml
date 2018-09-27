@@ -330,6 +330,108 @@ Resources:
           FromPort: '3306'
           ToPort: '3306'
           CidrIp: 0.0.0.0/0
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeSecurityGroups
+                  - ec2:RevokeSecurityGroupEgress
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:DeleteSecurityGroup
+                Resource: '*'
+  DeleteSecurityGroupLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          def handler(event, context):
+              vpc_id = event['ResourceProperties']['VpcId']
+              physical_id = "DeleteEmrDefaultSecurityGroupLambdaPhysicalID"
+              response_data = {}
+              if event['RequestType'] == 'Delete':
+                  emr_sg_default = [
+                      'ElasticMapReduce-Master-Private',
+                      'ElasticMapReduce-ServiceAccess',
+                      'ElasticMapReduce-Slave-Private'
+                  ]
+                  client = boto3.client('ec2')
+                  try:
+                      response = client.describe_security_groups(
+                          Filters=[
+                              {
+                                  'Name': 'vpc-id',
+                                  'Values': [
+                                      vpc_id,
+                                  ]
+                              },
+                              {
+                                  'Name': 'group-name',
+                                  'Values': emr_sg_default
+                              },
+                          ]
+                      )
+                      #TODO when non security groups fond, exception will throw
+                      for item in response['SecurityGroups']:
+                          print('{}:{}'.format(item['GroupName'], item['GroupId']))
+                          empty_ingress_egress( item['GroupId'])
+
+                      for item in response['SecurityGroups']:
+                          client.delete_security_group(
+                              GroupId=item['GroupId']
+                          )
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+                  response_data['Message'] = 'Successfully Deleted EMR default SG '
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+              else:
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+          def empty_ingress_egress( group_id):
+              ec2 = boto3.resource('ec2')
+              sg = ec2.SecurityGroup(group_id)
+              if len(sg.ip_permissions) > 0:
+                  print('Empty ingress for SG: {}'.format(group_id))
+                  sg.revoke_ingress(IpPermissions=sg.ip_permissions)
+              if len(sg.ip_permissions_egress) > 0:
+                  print('Empty egress for SG: {}'.format(group_id))
+                  sg.revoke_egress(IpPermissions=sg.ip_permissions_egress)
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  DeleteSecurityGroupCustomResource:
+    Type: Custom::DeleteSecurityGroupCustomResource
+    Properties:
+      ServiceToken: !GetAtt 'DeleteSecurityGroupLambdaFunction.Arn'
+      VpcId: !Ref VpcIdParameterKey
   MetastorRDSSecurityGroupParameter:
     Type: 'AWS::SSM::Parameter'
     Properties:

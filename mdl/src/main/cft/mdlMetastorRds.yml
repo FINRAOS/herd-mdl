@@ -187,6 +187,20 @@ Resources:
         - MetastorMysqlDB
         - Endpoint.Address
       Description: Name of Metastor RDS Host name
+  MetastorRdsPassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/METASTOR/RDS/hiveAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Metastor RDS master account password
+  MetastorHivePassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/METASTOR/HIVE/hiveAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Metastor Hive account password
 Outputs:
   MetastorDBHost:
     Description: Metastor DB host name

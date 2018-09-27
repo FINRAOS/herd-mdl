@@ -47,7 +47,7 @@
             <outputDirectory>${file.separator}ldap</outputDirectory>
         </file>
         <file>
-            <source>${project.build.directory}/herd-mdl-1.2.0-tests.jar</source>
+            <source>${project.build.directory}/herd-mdl-${project.version}-tests.jar</source>
             <outputDirectory>${file.separator}mdlt</outputDirectory>
         </file>
     </files>
