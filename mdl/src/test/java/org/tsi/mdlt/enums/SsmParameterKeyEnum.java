@@ -25,7 +25,10 @@ public enum SsmParameterKeyEnum {
     Herd_ADMIN_PASSWORD("herdAdminPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdAdminPassword"),
 
     HERD_RO_USER("herdRoUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdRoUsername"),
-    Herd_RO_PASSWORD("herdRoPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdRoPassword"),
+    HERD_RO_PASSWORD("herdRoPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdRoPassword"),
+
+    HERD_BASIC_USER("herdRoUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdBasicUsername"),
+    HERD_BASIC_PASSWORD("herdRoPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdBasicUserPassword"),
 
     MDL_APP_USER("ldapAppUser", "/app/MDL/{instanceName}/{environment}/LDAP/User/HerdMdlUsername"),
     MDL_APP_PASSWORD("ldapAppPassword", "/app/MDL/{instanceName}/{environment}/LDAP/Password/HerdMdlPassword"),
@@ -38,7 +41,9 @@ public enum SsmParameterKeyEnum {
     AUTH_GROUP("authGroup", "/app/MDL/{instanceName}/{environment}/LDAP/AuthGroup"),
 
     VPC_ID("vpcId", "/global/{instanceName}/{environment}/VPC/ID"),
-    PRIVATE_SUBNETS("privateSubnets", "/global/{instanceName}/{environment}/VPC/SubnetIDs/private");
+    PRIVATE_SUBNETS("privateSubnets", "/global/{instanceName}/{environment}/VPC/SubnetIDs/private"),
+
+    ACM_ARN("acmArn", "/app/MDL/{instanceName}/{environment}/ACM/Arn");
 
     private String variableName;
     private String parameterKey;

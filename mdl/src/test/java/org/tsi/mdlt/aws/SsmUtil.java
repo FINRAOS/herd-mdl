@@ -15,6 +15,10 @@
 **/
 package org.tsi.mdlt.aws;
 
+import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathRequest;
+import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathResult;
+import com.amazonaws.services.simplesystemsmanagement.model.GetParametersRequest;
+import com.amazonaws.services.simplesystemsmanagement.model.ParameterStringFilter;
 import java.lang.invoke.MethodHandles;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -28,6 +32,7 @@ import com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult;
 import com.amazonaws.services.simplesystemsmanagement.model.Parameter;
 import com.amazonaws.services.simplesystemsmanagement.model.PutParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.PutParameterResult;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.enums.SsmParameterKeyEnum;
@@ -77,6 +82,19 @@ public class SsmUtil {
         return getParameter(parameterKey, true);
     }
 
+    public static List<Parameter> getParametersWithPrefix(String prefix){
+        AWSCredentialsProvider credentials = InstanceProfileCredentialsProvider.getInstance();
+        AWSSimpleSystemsManagement simpleSystemsManagementClient =
+            AWSSimpleSystemsManagementClientBuilder.standard().withCredentials(credentials)
+                .withRegion(Regions.getCurrentRegion().getName()).build();
+
+        GetParametersByPathRequest getParametersByPathRequest = new GetParametersByPathRequest()
+            .withPath(prefix)
+            .withRecursive(true);
+
+        GetParametersByPathResult parameterResult = simpleSystemsManagementClient.getParametersByPath(getParametersByPathRequest);
+        return parameterResult.getParameters();
+    }
 
     private static Parameter getSsmParameter(SsmParameterKeyEnum parameterKey, boolean isEncrypted) {
         return getParameter(parameterKey.getParameterKey(), isEncrypted);
