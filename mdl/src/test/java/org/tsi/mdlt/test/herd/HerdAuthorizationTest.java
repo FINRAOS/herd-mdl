@@ -90,6 +90,16 @@ public class HerdAuthorizationTest extends BaseTest {
     }
 
     @Test
+    public void testHerdBasicUser() {
+        LogVerification("Verify Read non-namespace restricted endpoints using Basic User is allowed");
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.getBuildInfo(HERD_RO_USER).statusCode());
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.getNamespace(HERD_RO_USER, NAMESPACE_MDL).statusCode());
+
+        LogVerification("Verify Read namespace restricted endpoint using Basic User is not allowed");
+        assertEquals(HttpStatus.SC_FORBIDDEN, HerdRestUtil.getBusinessObjectData(SEC_APP_USER, getSecBusinessObjectData()).statusCode());
+    }
+
+    @Test
     public void testHerdAdminUser() {
         LogStep("Call Read endpoints with Admin User");
         assertEquals(HttpStatus.SC_OK, HerdRestUtil.getBuildInfo(HERD_ADMIN_USER).statusCode());
