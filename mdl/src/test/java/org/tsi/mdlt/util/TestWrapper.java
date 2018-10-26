@@ -15,6 +15,7 @@
 **/
 package org.tsi.mdlt.util;
 
+import com.amazonaws.regions.Regions;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
 import org.tsi.mdlt.aws.SsmUtil;
+import org.tsi.mdlt.enums.SsmParameterKeyEnum;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 
@@ -74,6 +76,7 @@ public class TestWrapper {
             else if (SHUTDOWN_CMD.equals(command)) {
                 deleteVpcSsm(instanceName);
                 shutdownStack(stackName);
+                verifyStackSsmAreDeleted();
             }
             else {
                 throw new IllegalArgumentException("Unrecognized command : " + command);
@@ -249,6 +252,12 @@ public class TestWrapper {
                 LOGGER.error("Failed to delete stack, remaining retry times :" + retryTimes);
             }
         }
+    }
+
+    private static void verifyStackSsmAreDeleted(){
+        String stackSsmPrefix = String.format("/app/MDL/%s/%s", TestProperties.get(StackInputParameterKeyEnum.MDL_INSTANCE_NAME),
+            TestProperties.get(StackInputParameterKeyEnum.ENVIRONMENT));
+        assert(SsmUtil.getParametersWithPrefix(stackSsmPrefix).size() == 0);
     }
 
 }

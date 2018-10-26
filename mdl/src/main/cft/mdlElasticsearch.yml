@@ -74,6 +74,10 @@ Parameters:
     Description: 'Retention days for CloudWatch logs'
     Type: Number
     AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+Conditions:
+  EnableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'true'
 Resources:
   MDLElasticsearch:
     Type: 'AWS::CodeDeploy::Application'
@@ -220,6 +224,14 @@ Resources:
                   - !Ref MDLStagingBucketName
                   - |-
 
+                    deploymentBucketName=
+                  - !Ref DeploymentBucketName
+                  - |-
+
+                    releaseVersion=
+                  - !Ref ReleaseVersion
+                  - |-
+
                     environment=
                   - !Ref Environment
                   - |-
@@ -334,6 +346,86 @@ Resources:
     Properties:
       Handle: !Ref EsWaitHandle
       Timeout: '600'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - acm:DeleteCertificate
+                  - ssm:GetParameter
+                Resource: '*'
+  CleanupAcmLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          def handler(event, context):
+              instance_name = event['ResourceProperties']['MDLInstanceName']
+              environment = event['ResourceProperties']['Environment']
+              auth_enabled = event['ResourceProperties']['EnableSSLAndAuth']
+              physical_id = "CleanupAcmCertLambdaPhysicalID"
+              response_data = {}
+              if event['RequestType'] == 'Delete' and auth_enabled == 'true':
+                  try:
+                      client = boto3.client('acm')
+                      print('Deleting acm certificate')
+                      cert_ssm_key = construct_acm_ssm_key(instance_name, environment)
+                      certificate_arn = get_ssm_string(cert_ssm_key)
+                      response = client.delete_certificate(
+                          CertificateArn=certificate_arn
+                      )
+                      response_data['Message'] = 'Successfully deleted ACM cert with ARN: {}'.format(certificate_arn)
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+              else:
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+          def get_ssm_string(key):
+              client = boto3.client('ssm')
+              value = client.get_parameter(Name=key)
+              print('Getting ssm {}={}'.format(key, value['Parameter']['Value']))
+              return value['Parameter']['Value']
+          def construct_acm_ssm_key(instance_name, environment):
+              return '/app/MDL/{}/{}/ACM/Arn'.format(instance_name, environment)
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 2048
+  CleanupAcmCustomResource:
+    Type: Custom::CleanupAcmCustomResource
+    Properties:
+      ServiceToken: !GetAtt 'CleanupAcmLambdaFunction.Arn'
+      Environment: !Ref Environment
+      MDLInstanceName: !Ref MDLInstanceName
+      EnableSSLAndAuth: !Ref EnableSSLAndAuth
+      TriggerBeforeAcmSsmDeletion: !Ref SslAcmArn
 Outputs:
   EsEc2DNS:
     Value: !GetAtt

@@ -35,16 +35,24 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
+echo "Preparing lambda deployment package."
 
-execute_cmd "echo \"From $0\""
-execute_cmd "sudo service elasticsearch stop"
-execute_cmd "sudo service docker stop"
+echo "Installing OS packages and utilities."
+execute_cmd "yum -y install zip gcc-c++ cc1plus python-pip python-devel cyrus-sasl-devel"
+execute_cmd "mkdir -p build && cd build/"
 
-exit 0
+echo "Installing required python packages."
+execute_cmd "pip install thriftpy sqlalchemy -t ."
+execute_cmd "pip install sasl -t ."
+execute_cmd "pip install requests -t ."
+execute_cmd "pip install six -t ."
+execute_cmd "pip install bit_array -t ."
+execute_cmd "pip install thrift_sasl==0.2.1 -t ."
+execute_cmd "pip install pure-sasl -t ."
+execute_cmd "pip install impyla -t ."
+execute_cmd "pip install boto3 -t ."
+execute_cmd "pip install botocore -t ."
+
+echo "Bundling everything into a zip file"
+execute_cmd "zip -r ns_auth_sync_utility.zip ."
+

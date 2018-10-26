@@ -41,6 +41,9 @@ function execute_cmd {
 
 execute_cmd "cd /home/hadoop"
 
+# configure region
+execute_cmd "aws configure set default.region ${region}"
+
 # Register the target instance to the ELB
 targetGroupArn=`aws elbv2 describe-target-groups --region ${region} --names ${mdlInstanceName}-BdsqlTargetGroup | grep TargetGroupArn | cut -d":" -f2- | tr -d '\"' | tr -d ',' | tr -d ' '`
 instanceId=`curl http://169.254.169.254/latest/meta-data/instance-id`
@@ -91,11 +94,22 @@ done
 if [ "${enableSSLAndAuth}" = "true" ] ; then
     # Change the role_map
     export metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e " INSERT INTO ROLE_MAP VALUES (101,UNIX_TIMESTAMP(),1,'hive','USER','ldap_admin_user','USER',1); ;"
+    admin_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --output text --query Parameter.Value)
 
+    mysql -h ${metastorDBHost} -u ${metastorDBUser} -p${metastorDBPassword} -D metastor -e "INSERT INTO ROLE_MAP VALUES (101,UNIX_TIMESTAMP(),1,'hive','USER','${admin_user}','USER',1); ;"
+
+    ### Note: This is no longer needed since we are now driving authorizations off of user-namespace permissions
+    ### To switch back to LDAP-driven Hive authorizations - uncomment the following lines and disable the lambda trigger which follows
     # Execute authorization codebase
-    execute_cmd "sudo scripts/sql_auth.sh"
-    execute_cmd "sudo aws s3 cp scripts/sql_auth.sh s3://${mdlStagingBucketName}/BDSQL/sql_auth.sh"
+    # execute_cmd "sudo scripts/sql_auth.sh"
+    # execute_cmd "sudo aws s3 cp scripts/sql_auth.sh s3://${mdlStagingBucketName}/BDSQL/sql_auth.sh"
+
+    ### Invoke user-namespace authorization lambda
+    # get the user-namespace auth lambda's ARN
+    lambda_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/Lambda/NsAuthSyncArn --region ${region} --output text --query Parameter.Value)
+    # invoke the lambda and pass it a payload which makes it run a full_sync
+    execute_cmd "aws lambda invoke --function-name ${lambda_arn} --invocation-type RequestResponse --log-type None --payload file:///home/hadoop/conf/lambda_payload.json lambda_outfile.txt"
+
 fi
 
 echo "Everything looks good"

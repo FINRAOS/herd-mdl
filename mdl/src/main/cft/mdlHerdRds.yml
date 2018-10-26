@@ -196,6 +196,20 @@ Resources:
         - PostgresDB
         - Endpoint.Address
       Description: Name of Herd RDS Host name
+  HerdRdsMasterAccountPassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/HERD/RDS/masterAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Herd RDS master account password
+  HerdRdsNonRootAccountPassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/HERD/RDS/dmrownerAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Herd RDS non-root account password
 Outputs:
   JDBCConnectionString:
     Description: JDBC connection string for database

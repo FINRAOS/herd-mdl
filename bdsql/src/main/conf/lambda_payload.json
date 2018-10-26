@@ -1,0 +1,9 @@
+{
+  "Records": [
+    {
+      "Sns": {
+        "Message": "{\"action\":\"full_sync\"}"
+      }
+    }
+  ]
+}

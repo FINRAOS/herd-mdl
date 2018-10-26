@@ -23,6 +23,10 @@
             <value>{{BUCKET_NAME}}</value>
         </attribute>
         <attribute>
+            <name>upload.role.arn</name>
+            <value>{{UPLOAD_ARN}}</value>
+        </attribute>
+        <attribute>
             <name>key.prefix.velocity.template</name>
             <value>$namespace/$dataProviderName/$businessObjectFormatUsage/$businessObjectFormatFileType/$businessObjectDefinitionName/schm-v$businessObjectFormatVersion/data-v$businessObjectDataVersion/$businessObjectFormatPartitionKey=$businessObjectDataPartitionValue#if($CollectionUtils.isNotEmpty($businessObjectDataSubPartitions.keySet()))#foreach($subPartitionKey in $businessObjectDataSubPartitions.keySet())/$subPartitionKey=$businessObjectDataSubPartitions.get($subPartitionKey)#end#end</value>
         </attribute>

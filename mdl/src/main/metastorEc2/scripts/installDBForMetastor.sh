@@ -55,11 +55,11 @@ fi
 metastorDBPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
 
 # Change the RDS password if required
-if [ "${metastorDBPassword}" = "" ] ; then
+if [ "${metastorDBPassword}" = "changeit" ] ; then
     # changing DB password
     metastorDBPassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16 )
 
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --type "SecureString" --value ${metastorDBPassword} --region ${region}
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount --type "SecureString" --value ${metastorDBPassword} --region ${region} --overwrite
     check_error $? "aws ssm put-parameter --name '/app/MDL/${mdlInstanceName}/${environment}/METASTOR/RDS/hiveAccount' secure string"
 fi
 
@@ -70,9 +70,9 @@ check_error $? "aws rds modify-db-instance --db-instance-identifier ${metastoreD
 sleep 300
 
 export hivePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-if [ "${hivePassword}" = "" ] ; then
+if [ "${hivePassword}" = "changeit" ] ; then
     hivePassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16 )
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount --type "SecureString" --value ${hivePassword} --region ${region}
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount --type "SecureString" --value ${hivePassword} --region ${region} --overwrite
     check_error $? "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/METASTOR/HIVE/hiveAccount secure string"
 fi
 

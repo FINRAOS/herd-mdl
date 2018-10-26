@@ -72,7 +72,9 @@ Resources:
               - 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+        - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonSNSFullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaRole'
       Policies:
         - PolicyName: root
           PolicyDocument:
@@ -141,6 +143,9 @@ Resources:
                   - 's3:List*'
                   - 's3:Put*'
                   - 's3:DeleteObject'
+                  - 's3:DeleteObjectVersion'
+                  - 's3:DeleteObjectVersionTagging'
+                  - 's3:DeleteObjectTagging'
                   - 'sqs:ChangeMessageVisibility'
                   - 'sqs:GetQueueAttributes'
                   - 'sqs:GetQueueUrl'
@@ -160,6 +165,9 @@ Resources:
                   - 'ssm:PutParameter'
                   - 'ssm:GetParameters'
                   - 'ssm:DeleteParameter'
+                  - 'sts:AssumeRole'
+                  - 'sts:GetFederationToken'
+                  - 'sts:DecodeAuthorizationMessage'
                 Effect: Allow
                 Resource: '*'
   MDLInstanceProfile:
@@ -183,6 +191,8 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaRole'
       Policies:
         - PolicyName: root
           PolicyDocument:

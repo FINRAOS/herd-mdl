@@ -114,7 +114,12 @@ public class User {
 
     public static User getHerdRoUser() {
         return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_RO_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.Herd_RO_PASSWORD).getValue());
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.HERD_RO_PASSWORD).getValue());
+    }
+
+    public static User getHerdBasicUser() {
+        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_BASIC_USER).getValue(),
+            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.HERD_BASIC_PASSWORD).getValue());
     }
 
     public static User getNoAuthValidJdbcUser() {

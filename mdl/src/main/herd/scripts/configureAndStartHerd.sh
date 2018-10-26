@@ -127,9 +127,16 @@ execute_cmd "sudo /etc/init.d/httpd start"
 sleep 30
 
 if [ "${refreshDatabase}" = "true" ] ; then
+
+    sleep 30
+
     # Replace the storage with correct values
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -X DELETE ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages/S3_MANAGED --insecure"
+
+    upload_role_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/IAM/MDLInstanceRole --region ${region} --output text --query Parameter.Value)
     execute_cmd "sed -i \"s/{{BUCKET_NAME}}/${herdS3BucketName}/g\" ${deployLocation}/xml/install/s3ManagedStorage.xml"
+    execute_cmd "sed -i \"s#{{UPLOAD_ARN}}#${upload_role_arn}#g\" ${deployLocation}/xml/install/s3ManagedStorage.xml"
+
     execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/s3ManagedStorage.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages --insecure"
 
     # Run System job

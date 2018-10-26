@@ -32,14 +32,6 @@ import org.finra.herd.model.api.xml.NamespacePermissionEnum;
 @Tag("authTest")
 public class HerdAuthorizationTest extends BaseTest {
 
-    private static final User SEC_APP_USER = User.getLdapSecAppUser();
-    private static final User MDL_APP_USER = User.getLdapMdlAppUser();
-    private static final User HERD_RO_USER = User.getHerdRoUser();
-    private static final User HERD_ADMIN_USER = User.getHerdAdminUser();
-
-    private static final String NAMESPACE_MDL = "MDL";
-    private static final String NAMESPACE_SEC = "SEC_MARKET_DATA";
-
     @Test
     public void readWriteNamespaceWithPermission() {
         String dataProvider = "MDLT_DP1";
@@ -87,6 +79,16 @@ public class HerdAuthorizationTest extends BaseTest {
         Response writeResponse = HerdRestUtil.postDataProvider(HERD_RO_USER, "unAuthorizedDataProvider");
         LogVerification("Verify Readonly user cannot write");
         assertEquals(HttpStatus.SC_FORBIDDEN, writeResponse.statusCode(), "ReadOnly user should not have permission to write");
+    }
+
+    @Test
+    public void testHerdBasicUser() {
+        LogVerification("Verify Read non-namespace restricted endpoints using Basic User is allowed");
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.getBuildInfo(HERD_RO_USER).statusCode());
+        assertEquals(HttpStatus.SC_OK, HerdRestUtil.getNamespace(HERD_RO_USER, NAMESPACE_MDL).statusCode());
+
+        LogVerification("Verify Read namespace restricted endpoint using Basic User is not allowed");
+        assertEquals(HttpStatus.SC_FORBIDDEN, HerdRestUtil.getBusinessObjectData(HERD_BASIC_USER, getSecBusinessObjectData()).statusCode());
     }
 
     @Test
