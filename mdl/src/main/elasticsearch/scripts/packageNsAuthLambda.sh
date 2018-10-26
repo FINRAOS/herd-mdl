@@ -30,46 +30,36 @@ function check_error {
 # Execute the given command and support resume option
 function execute_cmd {
         cmd="${1}"
-        retry="${2}"
         echo $cmd
         eval $cmd
-        returnCode=${PIPESTATUS[0]}
-        if [ ${returnCode} -ne 0 ] ; then
-            if [ "${retry}" = "RETRY" ] ; then
-                sleep 2m
-                eval $cmd
-                check_error ${PIPESTATUS[0]} "$cmd"
-            else
-                check_error ${returnCode} "$cmd"
-            fi
-        fi
+        check_error ${PIPESTATUS[0]} "$cmd"
 }
 
 #MAIN
-deployBucket=$1
-deployBucketKey=$2
-region=$3
-waitHandle=$4
-deployProps=$5
-bdsqlVersion=$6
+configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
+if [ ! -f ${configFile} ] ; then
+    echo "Config file does not exist ${configFile}"
+    exit 1
+fi
+. ${configFile}
 
 execute_cmd "aws configure set default.region ${region}"
 
-# Download deploy properties
-execute_cmd "mkdir -p /home/hadoop/conf"
-execute_cmd "aws s3 cp ${deployProps} /home/hadoop/conf/"
-. /home/hadoop/conf/deploy.props
+# pull the official amazon linux image
+execute_cmd "docker pull amazonlinux"
 
-# Deploy the package
-execute_cmd "cd /home/hadoop"
-execute_cmd "wget --quiet --random-wait https://github.com/FINRAOS/herd-mdl/releases/download/bdsql-v${bdsqlVersion}/bdsql-${bdsqlVersion}-dist.zip -O /home/hadoop/bdsql.zip"
-execute_cmd "unzip bdsql.zip"
-execute_cmd "chmod 755 scripts/*"
+# start a container and copy the script which prepares the deployment package
+execute_cmd "docker run -v ${deployLocation}/scripts/buildNsAuthDeploymentPackage.sh:/build_script.sh --name lambda_build amazonlinux bash build_script.sh"
 
-execute_cmd "scripts/configureBDSQL.sh"
+# copy the deployment bundle from docker container to local filesystem
+execute_cmd "docker cp lambda_build:/build/ns_auth_sync_utility.zip ."
 
-# Signal cloudformation that the stack is ready
-execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Bdsql Creation Complete' \"${waitHandle}\""
+# add the actual lambda script to the deployment bundle
+execute_cmd "cp ${deployLocation}/scripts/ns_auth_sync_utility.py ."
+execute_cmd "zip -ur ns_auth_sync_utility.zip ns_auth_sync_utility.py"
 
+# set read permissions on the file
+execute_cmd "chmod 444 ns_auth_sync_utility.zip"
 
-exit 0
+# upload lambda deployment package to S3
+execute_cmd "aws s3 cp ns_auth_sync_utility.zip s3://${deploymentBucketName}/${releaseVersion}/lambda/"

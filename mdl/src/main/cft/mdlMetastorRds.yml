@@ -37,11 +37,11 @@ Parameters:
     Description: Mysql RDS database Engine
     Type: String
   MetastorDBEngineVersion:
-    Default: 5.6.29
+    Default: 5.6.40
     Description: Mysql database version
     Type: String
     AllowedValues:
-      - 5.6.29
+      - 5.6.40
     ConstraintDescription: Must select a valid MetastorDB Engine Version.
   MetastorDBSize:
     Default: '10'

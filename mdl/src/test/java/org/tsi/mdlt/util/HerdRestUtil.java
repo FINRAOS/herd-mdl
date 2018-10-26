@@ -247,6 +247,7 @@ public class HerdRestUtil {
             .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
             .pathParam("partitionValue", businessObjectData.getPartitionValue())
             .pathParam("businessObjectDataVersion", businessObjectData.getVersion())
+            .queryParam("deleteFiles", "true")
             .delete(DELETE_BUSINESS_OBJECT_DATA_URL);
         LOGGER.debug(prettyJsonResponse(response));
         return response;
@@ -477,7 +478,7 @@ public class HerdRestUtil {
         return requestSpecBuilder.build().redirects().follow(true);
     }
 
-    private static RequestSpecification getHerdBaseRequestSpecification(User user) {
+    protected static RequestSpecification getHerdBaseRequestSpecification(User user) {
         return getBaseRequestSpecification(user).baseUri(HERD_BASE_URL);
     }
 
@@ -494,7 +495,7 @@ public class HerdRestUtil {
         return businessObjectDefinitionCreateRequest;
     }
 
-    private static String prettyJsonResponse(Response response){
+    protected static String prettyJsonResponse(Response response){
         String s = response.asString();
         ObjectMapper mapper = new ObjectMapper();
         try {

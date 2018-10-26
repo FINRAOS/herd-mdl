@@ -77,11 +77,6 @@ E'<?xml version="1.0" encoding="UTF-8" ?>
           <AppenderRef ref="RollingFile"/>
       </Logger>
 
-      <!-- Enable debug level for AWS request id information. -->
-      <Logger name="com.amazonaws.requestId" level="debug" additivity="false">
-          <AppenderRef ref="RollingFile"/>
-      </Logger>
-
       <!-- Explicitly turn off logging in certain Activiti "timer" classes so background tasks don\'t provide unnecessary error logging for "normal" situations
            such as user configured Activiti workflows with invalid classes specified, etc. We will handle the logging ourselves in our custom herd Activiti
            classes wired into the Activiti process engine configuration. -->

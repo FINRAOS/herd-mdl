@@ -52,4 +52,8 @@ execute_cmd "yum install -y mod_ssl"
 execute_cmd "yum install -y openssl"
 execute_cmd "yum install -y jq"
 
+# Install docker
+execute_cmd "sudo yum install -y docker"
+execute_cmd "sudo service docker start"
+
 exit 0
