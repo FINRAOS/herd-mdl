@@ -20,7 +20,7 @@ set -ex
 TAG=$1
 DOCKERFILE_PATH=$2
 
-NAMESPACE="FINRAOSS"
+NAMESPACE="finraos"
 REPOSITORY="herd-mdl"
 
 ## Publish herd-mdl's 'build-and-deploy' image to docker-hub.

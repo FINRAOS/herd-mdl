@@ -85,7 +85,7 @@ deploy:
     body: Automated herd-mdl (metastor) build from $TRAVIS_BRANCH ($TRAVIS_COMMIT) built by Travis CI on $(date +'%F %T %Z').
 
   - provider: script
-    script: bash scripts/publish_docker.sh
+    script: bash $TRAVIS_BUILD_DIR/scripts/publish_docker.sh ${component_version} $TRAVIS_BUILD_DIR/mdl/build/
     on:
       repo: FINRAOS/herd-mdl
       branch: master

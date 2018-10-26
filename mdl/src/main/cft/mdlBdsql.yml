@@ -38,7 +38,7 @@ Parameters:
   BdsqlVersion:
     Description: Bdsql version to use.
     Type: String
-    Default: '1.1.0'
+    Default: '1.2.0'
   ReleaseVersion:
     Description: Release version
     Type: String
@@ -357,6 +357,13 @@ Resources:
       Type: String
       Value: !Ref BdsqlEMRPrestoCluster
       Description: Bdsql Cluster Id
+  BdsqlMasterInstanceParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Bdsql/MasterIp'
+      Type: String
+      Value: 'FilledLater'
+      Description: Master instance's ip
 Outputs:
   BdsqlLoadBalancerURL:
     Value: !Join

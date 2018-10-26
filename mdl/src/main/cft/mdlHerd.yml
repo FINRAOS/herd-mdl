@@ -435,8 +435,12 @@ Resources:
                   - !Ref HerdDBHostName
                   - |-
 
-                    mdlStagingBucketName=
-                  - !Ref MDLStagingBucketName
+                    releaseVersion=
+                  - !Ref ReleaseVersion
+                  - |-
+
+                    deploymentBucketName=
+                  - !Ref DeploymentBucketName
                   - |-
 
                     refreshDatabase=

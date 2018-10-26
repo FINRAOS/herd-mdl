@@ -36,7 +36,7 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   HerdVersion:
-    Default: '0.74.0'
+    Default: '0.80.0'
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
@@ -266,6 +266,20 @@ Resources:
           Value: !Ref CustomTagValue
         - Key: Environment
           Value: !Ref Environment
+  NsAuthSyncUtil:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployBDSQLWithAuth
+    DependsOn: ElasticSearchEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlCreateNsAuthSyncUtil.yml]]
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        ReleaseVersion: !Ref ReleaseVersion
+        DeploymentBucketName: !Ref DeploymentBucketName
+        EnableSSLAndAuth: !Ref EnableSSLAndAuth
+        PrivateSubnetsParameter: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
+        NsAuthSyncUtilitySecurityGroupParameter: !Join ['/', ['/app/MDL', !Ref MDLInstanceName, !Ref Environment, 'SecurityGroup/NsAuthSyncUtility']]
   HerdEC2Stack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployHerd

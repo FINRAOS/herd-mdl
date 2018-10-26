@@ -5,8 +5,8 @@
 		"type": "jdbc",
 		"connectionProperties" : {
 			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
-			"user": "${herdAdminUser}",
-			"password": "${herdAdminPassword}",
+			"user": "${ldapSecUser}",
+			"password": "${ldapSecUserPassword}",
 			"jdbcURL": "${BdsqlURL}/sec_market_data"
 		},
 		"query": [
@@ -26,8 +26,8 @@
 		"type": "jdbc",
 		"connectionProperties" : {
 			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
-            "user": "${herdAdminUser}",
-            "password": "${herdAdminPassword}",
+            "user": "${ldapSecUser}",
+            "password": "${ldapSecUserPassword}",
 			"jdbcURL": "${BdsqlURL}/sec_market_data"
 		},
 		"query": [
@@ -47,8 +47,8 @@
 		"type": "jdbc",
 		"connectionProperties" : {
 			"jdbcDriver" : "com.facebook.presto.jdbc.PrestoDriver",
-            "user": "${herdAdminUser}",
-            "password": "${herdAdminPassword}",
+            "user": "${ldapSecUser}",
+            "password": "${ldapSecUserPassword}",
 			"jdbcURL": "${BdsqlURL}/sec_market_data"
 		},
 		"query": [

@@ -71,6 +71,11 @@ function prestoBootstrapHelper() {
     # Update the password
     sudo sed -i "s/{{HIVE_PASSWORD}}/${hiveAccountPassword}/g" /etc/hive/conf/hive-site.xml
 
+    # Update ssm parameter with master instance's ip
+    instanceId=`curl http://169.254.169.254/latest/meta-data/local-ipv4`
+    echo "Updating SSM parameter for BDSql master ip with value: ${instanceId}"
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Bdsql/MasterIp --type "String" --value ${instanceId} --region ${regionName} --overwrite
+
     # Restart the services
     sudo stop hive-server2
     sudo stop hive-hcatalog-server

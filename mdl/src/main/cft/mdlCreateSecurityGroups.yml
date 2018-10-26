@@ -119,6 +119,10 @@ Resources:
           FromPort: '443'
           ToPort: '443'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '10000'
+          ToPort: '10000'
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: '-1'
@@ -330,6 +334,15 @@ Resources:
           FromPort: '3306'
           ToPort: '3306'
           CidrIp: 0.0.0.0/0
+  NsAuthSyncUtilitySecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Sub '${MDLInstanceName}-${Environment}-NsAuthSyncSecurityGroup'
+      GroupDescription: 'Allows thrift connection to Hive on EMR cluster'
+      VpcId: !Ref VpcIdParameterKey
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: '-1'
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -631,3 +644,18 @@ Resources:
         - MetastorEMRSecurityGroup
         - GroupId
       Description: Security Group ID for metastor EMR Group
+  NsAuthSyncUtilitySecurityGroupParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /SecurityGroup/NsAuthSyncUtility
+      Type: String
+      Value: !GetAtt
+        - NsAuthSyncUtilitySecurityGroup
+        - GroupId
+      Description: Security Group ID for ns-auth-sync utility
