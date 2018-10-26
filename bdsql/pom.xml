@@ -21,7 +21,7 @@
 
   <groupId>org.finra.herd-mdl</groupId>
   <artifactId>bdsql</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
 
   <licenses>
     <license>
