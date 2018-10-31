@@ -1,4 +1,4 @@
-# herd-mdl [![build_status](https://travis-ci.org/FINRAOS/herd-mdl.svg?branch=master)](https://travis-ci.org/FINRAOS/herd-mdl) [![Join the chat at https://gitter.im/FINRAOS/herd-mdl](https://badges.gitter.im/FINRAOS/herd-mdl.svg)](https://gitter.im/FINRAOS/herd-mdl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# herd-mdl [![build_status](https://travis-ci.org/FINRAOS/herd-mdl.svg?branch=master)](https://travis-ci.org/FINRAOS/herd-mdl) [![Join the chat at https://gitter.im/FINRAOS/herd-mdl](https://badges.gitter.im/FINRAOS/herd-mdl.svg)](https://gitter.im/FINRAOS/herd-mdl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Black Duck Security Risk](https://copilot.blackducksoftware.com/github/repos/FINRAOS/herd-mdl/branches/master/badge-risk.svg)](https://copilot.blackducksoftware.com/github/repos/FINRAOS/herd-mdl/branches/master)
 
 
 

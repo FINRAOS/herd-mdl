@@ -36,6 +36,9 @@ branches:
 after_script:
   - git tag
 
+after_success:
+  - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
+
 before_deploy:
   - export GIT_TAG="${RELEASE_COMPONENT}-v${component_version}"
   - git tag $GIT_TAG -a -m "Tagging from TravisCI for build $TRAVIS_BUILD_NUMBER"
