@@ -63,22 +63,28 @@ function execute_curl_cmd {
 
 execute_cmd "echo \"From $0\""
 
-if [ "${refreshDatabase}" = "true" ] ; then
+# Only insert the demo data during a regular install
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+if [ "${herdRollingDeployment}" = "false" ] ; then
 
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/dataProvider.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/dataProviders --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
+    if [ "${refreshDatabase}" = "true" ] ; then
 
-    # Money Market Data - Registering objects
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/moneyMarketDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/moneyMarketDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/dataProvider.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/dataProviders --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
 
-    # Security Data - Registering objects
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
+        # Money Market Data - Registering objects
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/moneyMarketDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/moneyMarketDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
 
-    # Trade Data - Registering objects
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tradeDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tradeDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
+        # Security Data - Registering objects
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
+
+        # Trade Data - Registering objects
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tradeDataObjectRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitions --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tradeDataFormatRegistration.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectFormats --insecure"
+
+    fi
 
 fi
 

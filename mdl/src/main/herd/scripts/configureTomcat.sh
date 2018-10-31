@@ -46,6 +46,15 @@ fi
 execute_cmd "cd /home/mdladmin"
 herdDatabaseNonRootUserPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --with-decryption --region ${region} --output text --query Parameter.Value)
 
+herdVersion=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/CurrentVersion --region ${region} --output text --query Parameter.Value)
+requestedVersion=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RequestedVersion --region ${region} --output text --query Parameter.Value)
+
+# determine if this is a rolling-deployment and use the reuested version if needed
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+if [ "${herdRollingDeployment}" = "true" ] ; then
+    herdVersion=${requestedVersion}
+fi
+
 # Deploy tomcat files
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-war/${herdVersion}/herd-war-${herdVersion}.war -O /usr/share/tomcat8/webapps/herd-app.war"
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/postgresql/postgresql/9.4-1201-jdbc41/postgresql-9.4-1201-jdbc41.jar --directory-prefix=/usr/share/tomcat8/lib/"

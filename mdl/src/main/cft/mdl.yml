@@ -332,6 +332,16 @@ Resources:
           Value: !Ref CustomTagValue
         - Key: Environment
           Value: !Ref Environment
+  UpgradeHerdUtil:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployHerd
+    DependsOn:
+      - HerdEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlUpgradeHerd.yml]]
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
   MetastorStack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployMetastor

@@ -1,0 +1,72 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description:
+Parameters:
+  MDLInstanceName:
+    Description: 'MDL Instance name'
+    Type: String
+  Environment:
+    Description: 'Environment/SDLC (eg DEV, QA, PROD)'
+    Type: String
+  LambdaRuntime:
+    Description: The Lambda runtime to use
+    Type: String
+    Default: python3.6
+  HandlerName:
+    Description: The name of the lambda handler
+    Type: String
+    Default: index.handler
+Resources:
+  UpgradeHerdUtilityLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${MDLInstanceName}-Herd-${Environment}-UPGRADE-HERD-LAMBDA-FUNCTION'
+      Handler: !Ref HandlerName
+      Code:
+        ZipFile: |
+
+
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: !Ref 'LambdaRuntime'
+      Timeout: '900'
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaRole'
+        - 'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess'
+  UpgradeHerdUtilityArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Resources/Lambda/UpgradeHerdArn'
+      Type: String
+      Value: !GetAtt 'UpgradeHerdUtilityLambdaFunction.Arn'
+      Description: Herd B/G deployment upgrade utility lambda function's ARN
+Outputs:
+  Description: Herd B/G deployment utility Lambda function's ARN
+  Value: !GetAtt 'UpgradeHerdUtilityLambdaFunction.Arn'
+

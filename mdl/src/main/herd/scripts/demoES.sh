@@ -61,26 +61,33 @@ function execute_curl_cmd {
 
 execute_cmd "echo \"From $0\""
 
-if [ "${refreshDatabase}" = "true" ] ; then
-    # Business object descriptive information
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectDescriptiveInformation.xml -X PUT ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionDescriptiveInformation/namespaces/SEC_MARKET_DATA/businessObjectDefinitionNames/SecurityData --insecure"
+# only insert the demo data during a regular install
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+if [ "${herdRollingDeployment}" = "false" ] ; then
 
-    # Business object definition columns
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnDate.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnOpen.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnHigh.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnLow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnClose.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnVolume.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnSymbol.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+    if [ "${refreshDatabase}" = "true" ] ; then
+        # Business object descriptive information
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectDescriptiveInformation.xml -X PUT ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionDescriptiveInformation/namespaces/SEC_MARKET_DATA/businessObjectDefinitionNames/SecurityData --insecure"
 
-    # Tag Types
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tagTypeSource.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/tagTypes --insecure"
+        # Business object definition columns
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnDate.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnOpen.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnHigh.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnLow.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnClose.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnVolume.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectColumnSymbol.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionColumns --insecure"
 
-    # Tag Values
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tagValueSource.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/tags --insecure"
+        # Tag Types
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tagTypeSource.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/tagTypes --insecure"
 
-    # Business object tags
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectTag.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionTags --insecure"
+        # Tag Values
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/tagValueSource.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/tags --insecure"
+
+        # Business object tags
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/demo/securityDataObjectTag.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/businessObjectDefinitionTags --insecure"
+    fi
+
 fi
+
 exit 0

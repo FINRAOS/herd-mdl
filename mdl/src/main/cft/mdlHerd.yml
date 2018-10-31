@@ -149,6 +149,73 @@ Conditions:
     - !Ref EnableSSLAndAuth
     - 'false'
 Resources:
+  CurrentHerdVersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/CurrentVersion
+      Type: String
+      Value: !Ref HerdVersion
+      Description: Currently deployed Herd-version.
+  NewHerdVersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/RequestedVersion
+      Type: String
+      Value: 'FilledLater'
+      Description: Desired Herd-version for a rolling-deployment upgrade.
+  HerdDeploymentInvoked:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/DeploymentInvoked
+      Type: String
+      Value: 'false'
+      Description: Herd rolling-deployment condition reference.
+  HerdTargetGroupSSLArnParameter:
+    Condition: EnableSSLAndAuth
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/TargetGroupSSLArn
+      Type: String
+      Value: !Ref HerdTargetGroupSSL
+      Description: Herd Target Group Arn.
+  HerdTargetGroupPlainTextArnParameter:
+    Condition: DisableSSLAndAuth
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/TargetGroupPlainTextArn
+      Type: String
+      Value: !Ref HerdTargetGroupPlainTXT
+      Description: Herd Target Group Arn.
   HerdWaitHandle:
     Type: 'AWS::CloudFormation::WaitConditionHandle'
     Properties: {}
@@ -435,12 +502,8 @@ Resources:
                   - !Ref HerdDBHostName
                   - |-
 
-                    releaseVersion=
-                  - !Ref ReleaseVersion
-                  - |-
-
-                    deploymentBucketName=
-                  - !Ref DeploymentBucketName
+                    mdlStagingBucketName=
+                  - !Ref MDLStagingBucketName
                   - |-
 
                     refreshDatabase=

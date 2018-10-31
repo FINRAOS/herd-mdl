@@ -111,8 +111,14 @@ if [ "${CreateSQS}" == 'true' ] ; then
     addStackTagsToSqs
 fi
 
-# Register the target instance to the ELB
-targetGroupArn=` aws elbv2 describe-target-groups --region ${region} --names ${mdlInstanceName}-HerdTargetGroup | grep TargetGroupArn | cut -d":" -f2- | tr -d '\"' | tr -d ',' | tr -d ' '`
+# Get the target group Arn
+targetGroupArn=''
+if [ "${enableSSLAndAuth}" = "true" ] ; then
+    ${targetGroupArn}=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/TargetGroupSSLArn --region ${region} --output text --query Parameter.Value)
+else
+    ${targetGroupArn}=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/TargetGroupPlainTextArn --region ${region} --output text --query Parameter.Value)
+fi
+
 instanceId=`curl http://169.254.169.254/latest/meta-data/instance-id`
 execute_cmd "aws elbv2 register-targets --target-group-arn ${targetGroupArn} --targets Id=${instanceId} --region ${region}"
 
@@ -126,74 +132,73 @@ execute_cmd "sudo ${deployLocation}/scripts/configureApache.sh"
 execute_cmd "sudo /etc/init.d/httpd start"
 sleep 30
 
-if [ "${refreshDatabase}" = "true" ] ; then
+# Only perform the following actions during a regular deployment
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+if [ "${herdRollingDeployment}" = "false" ] ; then
 
-    sleep 30
+    if [ "${refreshDatabase}" = "true" ] ; then
+        # Replace the storage with correct values
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -X DELETE ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages/S3_MANAGED --insecure"
+        execute_cmd "sed -i \"s/{{BUCKET_NAME}}/${herdS3BucketName}/g\" ${deployLocation}/xml/install/s3ManagedStorage.xml"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/s3ManagedStorage.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages --insecure"
 
-    # Replace the storage with correct values
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -X DELETE ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages/S3_MANAGED --insecure"
+        # Run System job
+        execute_curl_cmd "curl ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/buildInfo --insecure"
+        #OutOfMemory issue in Herd
+        #execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
 
-    upload_role_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/IAM/MDLInstanceRole --region ${region} --output text --query Parameter.Value)
-    execute_cmd "sed -i \"s/{{BUCKET_NAME}}/${herdS3BucketName}/g\" ${deployLocation}/xml/install/s3ManagedStorage.xml"
-    execute_cmd "sed -i \"s#{{UPLOAD_ARN}}#${upload_role_arn}#g\" ${deployLocation}/xml/install/s3ManagedStorage.xml"
+        # Create namespaces
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
 
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/s3ManagedStorage.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/storages --insecure"
+        # Create bdef and tag indices in elasticsearch and activate them
+        #create and activate bdef index
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"bdef\"},\"searchIndexType\":\"BUS_OBJCT_DFNTN\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
+        indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
+        echo "Business object definition index -> ${indexName}"
+        waitIndexToBeReady "${indexName}"
+        execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
+        execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
 
-    # Run System job
-    execute_curl_cmd "curl ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/buildInfo --insecure"
-    #OutOfMemory issue in Herd
-    #execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/systemJob.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/systemJobs --insecure"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @${deployLocation}/xml/install/partitionKeyGroup.xml -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/partitionKeyGroups --insecure"
+        #create and activate tag index
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"tag\"},\"searchIndexType\":\"TAG\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
+        indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
+        echo "Tag index -> ${indexName}"
+        waitIndexToBeReady "${indexName}"
+        execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
+        execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
+        execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
+    fi
 
-    # Create namespaces
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"SEC_MARKET_DATA\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"namespaceCode\": \"MDL\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/namespaces --insecure"
+    if [ "${enableSSLAndAuth}" = "true" ] ; then
 
-    # Create bdef and tag indices in elasticsearch and activate them
-    #create and activate bdef index
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"bdef\"},\"searchIndexType\":\"BUS_OBJCT_DFNTN\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
-    indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
-    echo "Business object definition index -> ${indexName}"
-    waitIndexToBeReady "${indexName}"
-    execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
-    execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
+        # Get app users from the parameter store
+        mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+        sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
+        read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
 
-    #create and activate tag index
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"searchIndexKey\":{\"searchIndexName\":\"tag\"},\"searchIndexType\":\"TAG\"}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexes --insecure"
-    indexName=`cat /tmp/curlCmdOutput | grep 'searchIndex' | xmllint --xpath 'string(/searchIndex/searchIndexKey/searchIndexName)' -`
-    echo "Tag index -> ${indexName}"
-    waitIndexToBeReady "${indexName}"
-    execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
-    execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
-    execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
+        # Add READ/WRITE permissions for the MDL user on the MDL namespace
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+        # Add READ/WRITE permissions for the SEC user on the SEC namespace
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+
+        # Add READ permissions for the RO user on the SEC, MDL namespaces
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+        execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
+    fi
+
+    # Execute the demo script if asked
+    if [ "${createDemoObjects}" = "true" ] ; then
+        execute_cmd "${deployLocation}/scripts/demoHerd.sh"
+        execute_cmd "${deployLocation}/scripts/demoES.sh"
+    fi
+
 fi
 
-if [ "${enableSSLAndAuth}" = "true" ] ; then
-
-    # Get app users from the parameter store
-    mdl_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdMdlUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    sec_read_write_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdSecUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-    read_only_user=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdRoUsername --with-decryption --region ${region} --output text --query Parameter.Value)
-
-    # Add READ/WRITE permissions for the MDL user on the MDL namespace
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${mdl_read_write_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ/WRITE permissions for the SEC user on the SEC namespace
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${sec_read_write_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\",\"WRITE\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-
-    # Add READ permissions for the RO user on the SEC, MDL namespaces
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"MDL\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-    execute_curl_cmd "curl --request POST --header 'Content-Type: application/json' --data '{\"userNamespaceAuthorizationKey\":{\"userId\":\"${read_only_user}\",\"namespace\":\"SEC_MARKET_DATA\"},\"namespacePermissions\":[\"READ\"]}' ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/userNamespaceAuthorizations --insecure"
-fi
-
-# Execute the demo script if asked
-if [ "${createDemoObjects}" = "true" ] ; then
-    execute_cmd "${deployLocation}/scripts/demoHerd.sh"
-    execute_cmd "${deployLocation}/scripts/demoES.sh"
-fi
-
-# Signal to Cloud Stack
+# Signal CloudFormation that the stack is ready
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Herd Creation Complete' \"${waitHandleForHerd}\""
 
 echo "Everything looks good"
