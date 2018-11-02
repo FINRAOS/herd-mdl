@@ -2,52 +2,52 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
      <loc>https://finraos.github.io/herd-mdl/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/basic-install/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/user-guide/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/dev-guide/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/admin-guide/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/tech-overview/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/ldap-tree/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/authorizations-overview/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/advanced-install/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
     <url>
      <loc>https://finraos.github.io/herd-mdl/mdlt/</loc>
-     <lastmod>2018-09-25</lastmod>
+     <lastmod>2018-11-02</lastmod>
      <changefreq>daily</changefreq>
     </url>
 </urlset>
