@@ -58,9 +58,6 @@ Installation is automated through Cloudformation templates in AWS. The stack cre
 *   In the next page, 
     *   Enter the values for [Stack Name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  
         *   A stack name can contain only alphanumeric characters (case-sensitive) and hyphens. It must start with an alphabetic character and can't be longer than 128 characters.
-    *   Enter the following parameter  
-        *   ReleaseVersion
-            *   1.0.0
     *   Refer to [MDL CFT Specifications](#conditional-parameters) and change the required parameters for the chosen installation type  
         
 *   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
@@ -81,8 +78,8 @@ These parameters are related to which version and components to deploy.
 | **Name** | ReleaseVersion |
 | **Description** | Release version of MDL application to install |
 | **Required** | Yes |
-| **Default Value** | 1.0.0 |
-| **Allowed Value** | 1.0.0 |
+| **Default Value** | 1.3.0 (latest release) |
+| **Allowed Values** | 1.0.0, 1.1.0, 1.2.0, 1.3.0 |
 
 **DeployComponents**
 

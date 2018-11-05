@@ -17,21 +17,21 @@ These are prerequisites that are necessary for installing MDL components for Bas
 
 ## Steps
 
-Installation is automated through Cloudformation templates in AWS. The stack creates all the resources required by MDL application. This takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html) for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.
+Installation is automated through CloudFormation templates in AWS. The stack creates all the resources required by MDL application. This takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html) for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.
 
-*   Download the attached [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.3.0/installMDL.yml) file to local file system
-*   Login to AWS console and navigate to [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html)
-*   Create the stack using option "Upload a template to Amazon S3" - Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) for selecting a local template
-*   Choose the installMDL.yml file from local file system
-*   In the next page, 
-    *   Enter the values for [Stack Name](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)  
-        *   A stack name can contain only alphanumeric characters (case-sensitive) and hyphens. It must start with an alphabetic character and can't be longer than 128 characters.
-    *   Enter the following parameter  
-        *   ReleaseVersion
-            *   1.3.0
-    *   Leave all other parameters to their default values          
-*   In the next page, specify the stack options as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
-*   Review the parameters, and create the stack as per [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-review.html)
-*   Wait for "CREATE_COMPLETE" on the stack and all nested stacks.
-*   Proceed to the [User Guide](user-guide.md) to explore Herd-MDL
+1.  Download release artefact: [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.3.0/installMDL.yml) to your local file system, this will install version `1.3.0`.
+2.  Login to AWS console and navigate to the [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html) service.
+3.  Create a new stack using the option: "Upload a template to Amazon S3" - Refer to [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) on how to select a local template.
+4.  Select the same `installMDL.yml` file from your local file system (which was downloaded in step 1).
+5.  On the next page
+    *   Enter a unique value for the 'stack name' parameter. 
+    
+        > Note: A stack name can contain only alphanumeric characters (case-sensitive) and hyphens. It must start with an alphabetic character and can't be longer than 128 characters. Further reading: [Specifying Stack Name and Parameters](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)
+    
+    *   Leave all other parameters to their default values and click 'Next'.
+      
+6.  On the next page, specify any additional stack options, viz., tags, termination protection etc. for your stack and click 'Next'. Further reading on tags: [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html)
+7.  Review the information on the next page and click on the 'Create' button, this will initiate stack creation.
+8.  Wait for 'CREATE_COMPLETE' on the stack and all its nested stacks.
+9.  Proceed to the [User Guide](user-guide.md) to explore Herd-MDL.
 
