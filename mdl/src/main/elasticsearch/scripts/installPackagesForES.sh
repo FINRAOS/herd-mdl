@@ -47,7 +47,6 @@ fi
 execute_cmd "yum update -y aws-cfn-bootstrap"
 execute_cmd "yum install -y lynx"
 execute_cmd "yum install -y httpd"
-#execute_cmd "yum install -y httpd-devel.x86_64"
 execute_cmd "yum install -y mod_ssl"
 execute_cmd "yum install -y openssl"
 execute_cmd "yum install -y jq"

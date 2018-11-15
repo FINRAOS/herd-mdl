@@ -64,6 +64,23 @@ requestedVersion=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${en
 
 # determine if this is a rolling-deployment
 herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+
+# Execute DB scripts
+herdDatabasePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --with-decryption --region ${region} --output text --query Parameter.Value)
+
+echo "Deployment invoked: ${herdRollingDeployment}"
+
+if [ "${herdRollingDeployment}" = "false" ] ; then
+
+    if [ "${herdDatabasePassword}" = "changeit" ] ; then
+        # change DB password
+        herdDatabasePassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
+        aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --type SecureString --value ${herdDatabasePassword} --region ${region} --overwrite
+        check_error $? "aws ssm put-parameter --name '/app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount' secure string"
+    fi
+
+fi
+
 if [ "${herdRollingDeployment}" = "false" ] ; then
     # Change RDS password to the value in parameter store (only do this if not a rolling deployment)
     aws rds modify-db-instance --db-instance-identifier ${herdDBInstance} --master-user-password ${herdDatabasePassword} --apply-immediately --region ${region}
@@ -74,23 +91,14 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
     execute_cmd "aws rds wait db-instance-available --db-instance-identifier ${herdDBInstance} --region ${region}"
 fi
 
-# Execute DB scripts
-herdDatabasePassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --with-decryption --region ${region} --output text --query Parameter.Value)
-if [ "${herdDatabasePassword}" = "" ] ; then
-    # change DB password
-    herdDatabasePassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount --type SecureString --value ${herdDatabasePassword} --region ${region}
-    check_error $? "aws ssm put-parameter --name '/app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/masterAccount' secure string"
-fi
-
 # Schema password
 herdDatabaseNonRootUserPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --with-decryption --region ${region} --output text --query Parameter.Value)
 
-if [ "${herdDatabaseNonRootUserPassword}" = "" ] ; then
+if [ "${herdDatabaseNonRootUserPassword}" = "changeit" ] ; then
     # Create a DB non root user password for herd
     herdDatabaseNonRootUserPassword=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16 )
 
-    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --type "SecureString" --value ${herdDatabaseNonRootUserPassword} --region ${region}
+    aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --type "SecureString" --value ${herdDatabaseNonRootUserPassword} --region ${region} --overwrite
     check_error $? "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account secure string"
 fi
 
@@ -127,7 +135,7 @@ fi
 export PGPASSWORD=$herdDatabasePassword
 export PGUSER=$herdDatabaseUser
 
-# Do no perform DB schema creation during a rolling-deployment
+# Do not perform DB schema creation during a rolling-deployment
 if [ "${herdRollingDeployment}" = "false" ] ; then
 
     execute_cmd "sed -i \"s/{{HERD_DB_USER}}/${herdDatabaseNonRootUser}/g\" ${deployLocation}/sql/herdSchema.sql"
@@ -141,9 +149,17 @@ fi
 export PGUSER=$herdDatabaseNonRootUser
 export PGPASSWORD=$herdDatabaseNonRootUserPassword
 
-# Fetch the Herd DB scripts package and inflate to staging location
-execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-scripts-sql/${herdVersion}/herd-scripts-sql-${herdVersion}.jar --directory-prefix=${deployLocation}/sql"
-execute_cmd "unzip ${deployLocation}/sql/herd-scripts-sql-${herdVersion}.jar -d ${deployLocation}/sql/"
+# fetch the correct version of incremental sql scripts
+if [ "${herdRollingDeployment}" = "true" ] ; then
+    echo "Fetching latest sql scripts for rolling deployment, version: ${requestedVersion}"
+    # Fetch the Herd DB scripts package and inflate to staging location
+    execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-scripts-sql/${requestedVersion}/herd-scripts-sql-${requestedVersion}.jar --directory-prefix=${deployLocation}/sql"
+    execute_cmd "unzip ${deployLocation}/sql/herd-scripts-sql-${requestedVersion}.jar -d ${deployLocation}/sql/"
+else
+    echo "Fetching sql scripts for first-time deployment, version: ${herdVersion}"
+    execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-scripts-sql/${herdVersion}/herd-scripts-sql-${herdVersion}.jar --directory-prefix=${deployLocation}/sql"
+    execute_cmd "unzip ${deployLocation}/sql/herd-scripts-sql-${herdVersion}.jar -d ${deployLocation}/sql/"
+fi
 
 # Execute initial DB scripts only if it's not a rolling-deployment
 if [ "${herdRollingDeployment}" = "false" ] ; then
@@ -176,8 +192,8 @@ initialVersion=1
 newVersion=$(echo ${herdVersion} | cut -d. -f2)
 
 if [ "${herdRollingDeployment}" = "true" ] ; then
-  ${initialVersion}=$(echo ${herdVersion} | cut -d. -f2)
-  ${newVersion}=$(echo ${requestedVersion} | cut -d. -f2)
+  initialVersion=$(echo ${herdVersion} | cut -d. -f2)
+  newVersion=$(echo ${requestedVersion} | cut -d. -f2)
 fi
 
 while [ ${initialVersion} -lt ${newVersion} ]

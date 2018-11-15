@@ -112,12 +112,7 @@ if [ "${CreateSQS}" == 'true' ] ; then
 fi
 
 # Get the target group Arn
-targetGroupArn=''
-if [ "${enableSSLAndAuth}" = "true" ] ; then
-    ${targetGroupArn}=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/TargetGroupSSLArn --region ${region} --output text --query Parameter.Value)
-else
-    ${targetGroupArn}=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/TargetGroupPlainTextArn --region ${region} --output text --query Parameter.Value)
-fi
+targetGroupArn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/TargetGroupArn --region ${region} --output text --query Parameter.Value)
 
 instanceId=`curl http://169.254.169.254/latest/meta-data/instance-id`
 execute_cmd "aws elbv2 register-targets --target-group-arn ${targetGroupArn} --targets Id=${instanceId} --region ${region}"
@@ -198,8 +193,11 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
 
 fi
 
-# Signal CloudFormation that the stack is ready
-execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Herd Creation Complete' \"${waitHandleForHerd}\""
+# Signal CloudFormation that the stack is ready if performing a first-time install
+
+if [ "${herdRollingDeployment}" = "false" ] ; then
+    execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Herd Creation Complete' \"${waitHandleForHerd}\""
+fi
 
 echo "Everything looks good"
 

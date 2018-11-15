@@ -20,7 +20,7 @@ Parameters:
     Description: >
       MDL release version to use. [REQUIRED]
     Type: String
-    Default: '1.3.0'
+    Default: '1.4.0'
   DeployComponents:
     Type: String
     Default: All
@@ -150,6 +150,7 @@ Parameters:
   Environment:
     Description: Application environment
     Type: String
+    Default: prod
   CustomTagName:
     Description: Custom tag name to be applied to all the resources
     Type: String
@@ -159,9 +160,9 @@ Parameters:
     Type: String
     Default: 'herd-mdl'
   EsInstanceType:
-    Description: Elasticsearch EC2 node instance type
+    Description: Elasticsearch domain instance type.
     Type: String
-    Default: m4.large
+    Default: m4.large.elasticsearch
   HerdInstanceType:
     Description: Herd Application EC2 instance type
     Type: String

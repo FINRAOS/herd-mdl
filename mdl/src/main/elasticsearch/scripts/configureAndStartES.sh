@@ -76,17 +76,15 @@ execute_cmd "sleep 15"
 # Configure elasticsearch
 execute_cmd "sudo ${deployLocation}/scripts/configureES.sh"
 
-# Start elasticsearch
-execute_cmd "echo \"From $0\""
-execute_cmd "sudo service elasticsearch start"
-execute_cmd "sleep 15"
-
-# Health check command
-execute_cmd "/usr/bin/curl http://localhost:8888/_cluster/health"
-
 # Signal to Cloud Stack
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Elasticsearch Creation Complete' \"${waitHandleForEs}\""
 
 echo "Everything looks good"
+
+# Terminate this instance since we are now using AWS' Elasticsearch service, this will be cleaned up in
+# a future release
+echo "Terminating instance"
+instanceId=`curl http://169.254.169.254/latest/meta-data/instance-id`
+execute_cmd "aws ec2 terminate-instances --instance-ids ${instanceId}"
 
 exit 0

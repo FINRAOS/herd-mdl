@@ -48,6 +48,10 @@ hooks:
     - location: scripts/configureAndStartHerd.sh
       timeout: 300
       runas: mdladmin
+  ValidateService:
+    - location: scripts/smokeTestHerd.sh
+      timeout: 600
+      runas: mdladmin
   ApplicationStop:
     - location: scripts/stopHerd.sh
       timeout: 300

@@ -490,7 +490,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>zip-component-lambda</id>
+            <id>zip-component-keypair-lambda</id>
             <goals>
               <goal>single</goal>
             </goals>
@@ -499,9 +499,24 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/lambda-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/keypair-lambda-assembly-descriptor.xml</descriptor>
               </descriptors>
               <finalName>keypair_generator_lambda</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>zip-component-herd-upgrade-lambda</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>${project.basedir}/assembly/herd-upgrade-lambda-assembly-descriptor.xml</descriptor>
+              </descriptors>
+              <finalName>herd_upgrade_utility_lambda</finalName>
             </configuration>
           </execution>
           <execution>

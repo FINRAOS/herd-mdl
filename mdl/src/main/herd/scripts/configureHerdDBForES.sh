@@ -54,15 +54,17 @@ echo "PASSWORD: ${PGPASSWORD:0:4}"
 herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
 if [ "${herdRollingDeployment}" = "false" ] ; then
 
+    elasticsearchDomainEndpoint=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/ELASTICSEARCH/DomainEndpoint --region ${region} --output text --query Parameter.Value)
+
     # Following configurations are only for DB updates
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.rest.client.hostname';\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.rest.client.hostname','${elasticsearchHostname}', NULL);\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.domain.rest.client.hostname';\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.domain.rest.client.hostname','${elasticsearchDomainEndpoint}', NULL);\""
 
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.rest.client.scheme';\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.rest.client.scheme','http', NULL);\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.domain.rest.client.scheme';\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.domain.rest.client.scheme','https', NULL);\""
 
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.rest.client.port';\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.rest.client.port','8888', NULL);\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.domain.rest.client.port';\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.domain.rest.client.port','443', NULL);\""
 
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'elasticsearch.search.guard.enabled';\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('elasticsearch.search.guard.enabled','false', NULL);\""

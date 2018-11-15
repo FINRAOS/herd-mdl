@@ -22,6 +22,9 @@ Parameters:
   EsSecurityGroup:
     Description: Elasticsearch security group Name
     Type: AWS::SSM::Parameter::Value<String>
+  MDLInstanceRole:
+    Description: MDL server instance role name.
+    Type: AWS::SSM::Parameter::Value<String>
   MDLInstanceProfile:
     Description: Elasticsearch Instance Profile Name
     Type: AWS::SSM::Parameter::Value<String>
@@ -48,7 +51,6 @@ Parameters:
   EsInstanceType:
     Description: Elasticsearch EC2 node instance type
     Type: String
-    Default: t2.medium
   KeypairName:
     Description: The name of the keypair in parameter store.
     Type: AWS::SSM::Parameter::Value<String>
@@ -79,6 +81,57 @@ Conditions:
     - !Ref EnableSSLAndAuth
     - 'true'
 Resources:
+  ElasticsearchDomain:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      DomainName: !Join
+        - '-'
+        - - !Ref MDLInstanceName
+          - 'es'
+          - 'domain'
+      ElasticsearchVersion: '5.1'
+      ElasticsearchClusterConfig:
+        DedicatedMasterEnabled: false
+        InstanceCount: '2'
+        InstanceType: !Ref EsInstanceType
+        ZoneAwarenessEnabled: true
+      EBSOptions:
+        EBSEnabled: 'true'
+        Iops: 0
+        VolumeSize: 10
+        VolumeType: gp2
+      EncryptionAtRestOptions:
+        Enabled: true
+      SnapshotOptions:
+        AutomatedSnapshotStartHour: '0'
+      AccessPolicies:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: 'es:*'
+            Resource: '*'
+      AdvancedOptions:
+        rest.action.multi.allow_explicit_index: 'true'
+      VPCOptions:
+        SubnetIds: !Split [',', !Ref PrivateSubnetsParameterKey]
+        SecurityGroupIds: !Split [',', !Ref EsSecurityGroup]
+  ElasticSearchDomainParameter:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /ELASTICSEARCH/DomainEndpoint
+      Type: String
+      Value: !GetAtt
+        - ElasticsearchDomain
+        - DomainEndpoint
+      Description: Elasticsearch domain endpoint.
   MDLElasticsearch:
     Type: 'AWS::CodeDeploy::Application'
     Properties:
@@ -313,7 +366,7 @@ Resources:
     Properties:
       ImageId: !Ref ImageId
       KeyName: !Ref KeypairName
-      InstanceType: !Ref EsInstanceType
+      InstanceType: m4.large
       SecurityGroupIds:
         - !Ref EsSecurityGroup
       SubnetId: !Select
@@ -427,13 +480,7 @@ Resources:
       EnableSSLAndAuth: !Ref EnableSSLAndAuth
       TriggerBeforeAcmSsmDeletion: !Ref SslAcmArn
 Outputs:
-  EsEc2DNS:
-    Value: !GetAtt
-      - EsEc2Instance
-      - PrivateDnsName
-    Description: Elasticsearch EC2 instance private DNS
-  EsEc2Ip:
-    Value: !GetAtt
-      - EsEc2Instance
-      - PrivateIp
-    Description: Elasticsearch EC2 instance private IP address
+  DomainArn:
+    Value: !GetAtt ElasticsearchDomain.DomainArn
+  DomainEndpoint:
+    Value: !GetAtt ElasticsearchDomain.DomainEndpoint

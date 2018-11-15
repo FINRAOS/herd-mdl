@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 AWSTemplateFormatVersion: "2010-09-09"
-Description:
+Description: MDL - Utility to perform a rolling upgrade on the Herd Ec2 stack.
 Parameters:
   MDLInstanceName:
     Description: 'MDL Instance name'
@@ -22,28 +22,34 @@ Parameters:
   Environment:
     Description: 'Environment/SDLC (eg DEV, QA, PROD)'
     Type: String
-  LambdaRuntime:
-    Description: The Lambda runtime to use
+  DeploymentBucketName:
+    Description: Deployment bucket name
     Type: String
-    Default: python3.6
-  HandlerName:
-    Description: The name of the lambda handler
+  ReleaseVersion:
+    Description: Release version
     Type: String
-    Default: index.handler
 Resources:
   UpgradeHerdUtilityLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub '${MDLInstanceName}-Herd-${Environment}-UPGRADE-HERD-LAMBDA-FUNCTION'
-      Handler: !Ref HandlerName
+      Handler: 'herd_upgrade_utility_lambda.handler'
       Code:
-        ZipFile: |
-
-
-      Role: !GetAtt 'LambdaExecutionRole.Arn'
-      Runtime: !Ref 'LambdaRuntime'
+        S3Bucket: !Ref DeploymentBucketName
+        S3Key: !Join
+          - ''
+          - - !Ref ReleaseVersion
+            - /lambda/herd_upgrade_utility_lambda.zip
+      Role: !GetAtt 'UpgradeUtilityExecutionRole.Arn'
+      Runtime: 'python3.6'
       Timeout: '900'
-  LambdaExecutionRole:
+      Environment:
+        Variables:
+          INSTANCE_NAME: !Ref MDLInstanceName
+          ENVIRONMENT: !Ref Environment
+          STAGING_BUCKET: !Sub '${AWS::AccountId}-${MDLInstanceName}-staging-${Environment}'
+          RELEASE_VERSION: !Ref ReleaseVersion
+  UpgradeUtilityExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -57,8 +63,9 @@ Resources:
               - sts:AssumeRole
       Path: /
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaRole'
-        - 'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/AmazonSSMFullAccess'
+        - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
+        - 'arn:aws:iam::aws:policy/AWSCodeDeployFullAccess'
   UpgradeHerdUtilityArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -67,6 +74,7 @@ Resources:
       Value: !GetAtt 'UpgradeHerdUtilityLambdaFunction.Arn'
       Description: Herd B/G deployment upgrade utility lambda function's ARN
 Outputs:
-  Description: Herd B/G deployment utility Lambda function's ARN
-  Value: !GetAtt 'UpgradeHerdUtilityLambdaFunction.Arn'
+  HerdUpgradeUtilityArn:
+    Description: Herd B/G deployment utility Lambda function's ARN
+    Value: !GetAtt 'UpgradeHerdUtilityLambdaFunction.Arn'
 
