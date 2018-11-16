@@ -160,6 +160,7 @@ Resources:
       Value: !Ref HerdVersion
       Description: Currently deployed Herd-version.
   NewHerdVersionParameter:
+    DependsOn: CurrentHerdVersionParameter
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -173,6 +174,7 @@ Resources:
       Value: 'FilledLater'
       Description: Desired Herd-version for a rolling-deployment upgrade.
   HerdDeploymentInvoked:
+    DependsOn: NewHerdVersionParameter
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join
@@ -185,6 +187,20 @@ Resources:
       Type: String
       Value: 'false'
       Description: Herd rolling-deployment condition reference.
+  HerdMostRecentDeploymentId:
+    DependsOn: HerdDeploymentInvoked
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/MostRecentDeploymentId
+      Type: String
+      Value: 'FilledLater'
+      Description: Herd rolling-deployment most recent (upgrade utility lambda triggered) deployment id.
   HerdTargetGroupSSLArnParameter:
     Condition: EnableSSLAndAuth
     Type: AWS::SSM::Parameter

@@ -214,6 +214,7 @@ do
     ((initialVersion++))
 
 # Apply incremental upgrade scripts to the Herd DB
+echo "Running incremental DB script: ${deployLocation}/sql/herd.postgres.0.${pre}.0-to-0.${post}.0.upgrade.sql"
 execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/herd.postgres.0.${pre}.0-to-0.${post}.0.upgrade.sql"
 
 done

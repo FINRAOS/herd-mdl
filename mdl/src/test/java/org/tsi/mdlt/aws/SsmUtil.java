@@ -74,7 +74,7 @@ public class SsmUtil {
         return getSsmParameter(parameterKey, true);
     }
 
-    public static Parameter getPlainParameter(String parameterKey) {
+    public static Parameter getPlainTextParameter(String parameterKey) {
         return getParameter(parameterKey, false);
     }
 

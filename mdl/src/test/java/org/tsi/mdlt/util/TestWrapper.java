@@ -15,7 +15,6 @@
 **/
 package org.tsi.mdlt.util;
 
-import com.amazonaws.regions.Regions;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -29,12 +28,10 @@ import java.util.Properties;
 
 import com.amazonaws.services.cloudformation.model.AlreadyExistsException;
 import com.amazonaws.services.cloudformation.model.Parameter;
-import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
 import org.tsi.mdlt.aws.SsmUtil;
-import org.tsi.mdlt.enums.SsmParameterKeyEnum;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 
@@ -131,9 +128,9 @@ public class TestWrapper {
 
             //mdltWrapperInstanceName ssm has all valid vpc values, which can be found in mdlt.yml
             String mdltWrapperInstanceName = TEST_PROPERTIES.getProperty("MDLTWrapperInstanceName");
-            SsmUtil.putParameter(vpcKey, SsmUtil.getPlainParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue());
-            SsmUtil.putParameter(privateSubnetsKey, SsmUtil.getPlainParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
-            SsmUtil.putParameter(publicSubnetsKey, SsmUtil.getPlainParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(vpcKey, SsmUtil.getPlainTextParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(privateSubnetsKey, SsmUtil.getPlainTextParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(publicSubnetsKey, SsmUtil.getPlainTextParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
         }
     }
 

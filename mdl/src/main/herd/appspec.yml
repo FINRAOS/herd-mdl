@@ -37,6 +37,7 @@ hooks:
   BeforeInstall:
     - location: scripts/installPackagesForHerd.sh
       timeout: 300
+      runas: root
   AfterInstall:
     - location: scripts/installDBForHerd.sh
       timeout: 600

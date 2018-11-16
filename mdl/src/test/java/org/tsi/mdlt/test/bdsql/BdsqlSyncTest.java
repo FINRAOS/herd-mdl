@@ -42,7 +42,7 @@ import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.util.HerdRestUtil;
 import org.tsi.mdlt.util.LdapUtil;
 import org.tsi.mdlt.util.TestProperties;
-import org.tsi.mdlt.util.aws.LambdaUtil;
+import org.tsi.mdlt.aws.LambdaUtils;
 
 public class BdsqlSyncTest extends BdsqlBaseTest {
 
@@ -80,7 +80,7 @@ public class BdsqlSyncTest extends BdsqlBaseTest {
 
         String lambdaFunctionName = String.format("%s-Herd-%s-NS-AUTH-LAMBDA-FUNCTION", instanceName, environment);
 
-        LambdaUtil.invokeLambdaWithPayload(lambdaFunctionName, LAMBDA_PAYLOAD);
+        LambdaUtils.invokeLambdaWithPayload(lambdaFunctionName, LAMBDA_PAYLOAD);
     }
 
     public static void cleanupLdapUsers()

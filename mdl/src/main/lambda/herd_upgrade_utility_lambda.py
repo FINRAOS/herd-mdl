@@ -229,6 +229,27 @@ def _create_deployment():
 
         if status == 200:
             _print_info('CodeDeploy Blue/Green upgrade initiated.')
+
+            deployment_id = response['deploymentId']
+            _print_info('Deployment id is: \'{}\'.'.format(deployment_id))
+
+            ssm_client = _get_ssm_client()
+
+            _print_info('Updating rolling-deployment most recent deployment id parameter: \'MostRecentDeploymentId\'')
+            response = ssm_client.put_parameter(
+                Name='/app/MDL/{}/{}/HERD/MostRecentDeploymentId'.format(INSTANCE_NAME, ENVIRONMENT),
+                Description='Herd rolling-deployment most recent (upgrade utility lambda triggered) deployment id.',
+                Value=deployment_id,
+                Type='String',
+                Overwrite=True,
+            )
+            status = response.get('ResponseMetadata', {}).get('HTTPStatusCode')
+
+            if status == 200:
+                _print_info('SSM parameter updated.')
+            else:
+                _print_error('SSM returned an error code. status={}'.format(status))
+                raise Exception('Unknown error. Response: {}'.format(response))
         else:
             _print_error('CodeDeploy returned an error code. status={}'.format(status))
             raise Exception('CodeDeploy \'create-deployment\' error. Response: {}'.format(response))

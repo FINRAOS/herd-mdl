@@ -37,10 +37,6 @@ function execute_cmd {
 
 #MAIN
 configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
 . ${configFile}
 
 # Install packages
