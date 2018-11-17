@@ -194,6 +194,10 @@ newVersion=$(echo ${herdVersion} | cut -d. -f2)
 if [ "${herdRollingDeployment}" = "true" ] ; then
   initialVersion=$(echo ${herdVersion} | cut -d. -f2)
   newVersion=$(echo ${requestedVersion} | cut -d. -f2)
+
+  echo "Rolling deployment detected."
+  echo "Initial version: ${initialVersion}"
+  echo "Requested version: ${newVersion}"
 fi
 
 while [ ${initialVersion} -lt ${newVersion} ]

@@ -119,7 +119,9 @@ fi
 
 verify_namespaces_get
 
-## Reset the deployment 'state' after validating Herd deployment
-execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RequestedVersion --type String --value FilledLater --region ${region} --overwrite"
-execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/CurrentVersion --type String --value ${requestedHerdVersion} --region ${region} --overwrite"
-execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --type String --value false --region ${region} --overwrite"
+if [ "${rollingDeployment}" = "true" ]; then
+    ## Reset the deployment 'state' after validating Herd deployment
+    execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RequestedVersion --type String --value FilledLater --region ${region} --overwrite"
+    execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/CurrentVersion --type String --value ${requestedHerdVersion} --region ${region} --overwrite"
+    execute_cmd "aws ssm put-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --type String --value false --region ${region} --overwrite"
+fi
