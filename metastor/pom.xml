@@ -172,27 +172,6 @@
 					<target>${maven.compiler.target}</target>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven.source.plugin.version}</version>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${maven.javadoc.plugin.version}</version>
-				<configuration>
-					<minmemory>128m</minmemory>
-					<maxmemory>768m</maxmemory>
-					<header>Metastore API</header>
-					<footer>Metastore API</footer>
-					<doctitle>Metastore ${project.version} API</doctitle>
-					<notimestamp>true</notimestamp>
-					<quiet>true</quiet>
-					<!-- This is needed in Java 8 to ensure strict Javadoc checking isn't enforced. -->
-					<additionalparam>-Xdoclint:none</additionalparam>
-				</configuration>
-			</plugin>
 		</plugins>
 	</build>
 </project>
