@@ -65,6 +65,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 	@Override
 	public boolean process( JobDefinition od, String clusterID, String workerID ) {
 		log.info( "Back Load Process called with: {}", od );
+        errorBuffer.setLength( 0 );
 		try {
 			BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
 			JobSubmitterInfo jsi = JobSubmitterInfo.builder()
@@ -85,6 +86,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in Back loading processor: {}", e.getMessage(), e );
+			errorBuffer.append( e.getMessage() );
 			return false;
 		}
 
@@ -197,22 +199,17 @@ public class BackLoadObjectProcessor extends JobProcessor {
 	}
 
 	private int getBusinessObjectData( final JobDefinition jd, Map<String, Set<String>> partitionsAsMap, int pageNum ) {
-		try {
-			List<BusinessObjectData> businessObjectDataElements = dataMgmtSvc.searchBOData( jd, pageNum, pageSize, filterOnValidLatestVersions ).getBusinessObjectDataElements();
-			log.info( "BO Data Search Result: \n{}", businessObjectDataElements.size() );
-			businessObjectDataElements.stream()
-					.forEach( as ->
-						partitionsAsMap.merge( as.getPartitionValue()
-								, (Objects.isNull( as.getSubPartitionValues() )) ? Sets.newHashSet() : Sets.newHashSet( as.getSubPartitionValues() )
-								, ( s1, s2 ) -> Stream.of( s1, s2 ).flatMap( Collection::stream ).collect( Collectors.toSet() ) )
-					);
+        List<BusinessObjectData> businessObjectDataElements = dataMgmtSvc.searchBOData( jd, pageNum, pageSize, filterOnValidLatestVersions ).getBusinessObjectDataElements();
+        log.info( "BO Data Search Result: \n{}", businessObjectDataElements.size() );
+        businessObjectDataElements.stream()
+                .forEach( as ->
+                    partitionsAsMap.merge( as.getPartitionValue()
+                            , (Objects.isNull( as.getSubPartitionValues() )) ? Sets.newHashSet() : Sets.newHashSet( as.getSubPartitionValues() )
+                            , ( s1, s2 ) -> Stream.of( s1, s2 ).flatMap( Collection::stream ).collect( Collectors.toSet() ) )
+                );
 
-			return businessObjectDataElements.size();
-		} catch ( ApiException e ) {
-			log.warn( "Error encountered while search data: {}", e.getMessage(), e );
-			return 0;
-		}
-	}
+        return businessObjectDataElements.size();
+}
 
 	/**
 	 * This method will add request to add partition
