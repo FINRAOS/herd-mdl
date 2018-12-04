@@ -192,7 +192,13 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		Map<String, Set<String>> partitionsAsMap = Maps.newTreeMap();
 
 		IntStream.iterate( 1, i -> i + 1 )
-				.mapToObj( pageNum -> getBusinessObjectData( jd, partitionsAsMap, pageNum ) )
+				.mapToObj( pageNum -> {
+				    try{
+				        return getBusinessObjectData( jd, partitionsAsMap, pageNum );
+                    } catch ( ApiException apiex){
+				        throw new RuntimeException( "Backload partition failed to get available partitions due to: " + apiex.getMessage(), apiex );
+                    }
+				})
 				.anyMatch( l -> l == 0 );
 
 		return partitionsAsMap;
