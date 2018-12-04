@@ -198,7 +198,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		return partitionsAsMap;
 	}
 
-	private int getBusinessObjectData( final JobDefinition jd, Map<String, Set<String>> partitionsAsMap, int pageNum ) {
+	private int getBusinessObjectData( final JobDefinition jd, Map<String, Set<String>> partitionsAsMap, int pageNum ) throws ApiException {
         List<BusinessObjectData> businessObjectDataElements = dataMgmtSvc.searchBOData( jd, pageNum, pageSize, filterOnValidLatestVersions ).getBusinessObjectDataElements();
         log.info( "BO Data Search Result: \n{}", businessObjectDataElements.size() );
         businessObjectDataElements.stream()
