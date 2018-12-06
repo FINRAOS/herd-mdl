@@ -53,6 +53,10 @@ public class JobSubmitterInfo {
 	}
 
 	public boolean isPartitionDateType() {
-		return this.getTableSchema().getPartitions().stream().filter( p -> p.getName().equalsIgnoreCase( this.getPartitionKey() ) ).anyMatch( p -> "DATE".equalsIgnoreCase( p.getType() ) );
+	    try {
+            return this.getTableSchema().getPartitions().stream().filter( p -> p.getName().equalsIgnoreCase( this.getPartitionKey() ) ).anyMatch( p -> "DATE".equalsIgnoreCase( p.getType() ) );
+        }catch ( Exception ex ) {
+	        throw new RuntimeException( "Could not identify if partition key is date type due to: " + ex.getMessage(), ex );
+        }
 	}
 }
