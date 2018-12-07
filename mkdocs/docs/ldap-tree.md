@@ -43,8 +43,8 @@ member: cn=basic_user,ou=People,dc=mdl,dc=org
 
 ## memberOf Overlay
 
-Herd uses ['memberOf'](https://www.openldap.org/doc/admin24/overlays.html) information in every requests HTTP header to determine which auth-groups a user is part of that is making the request and 
-subsequently allows/blocks actions which are defined in a `role-to-security-function` mapping.
+Herd uses ['memberOf'](https://www.openldap.org/doc/admin24/overlays.html) information contained in each request's HTTP headers to determine the auth-groups a user is part of and 
+subsequently allows/blocks actions which are pre-defined in a `role-to-security-function` mapping.
 
 This overlay is installed and enabled in MDL's OpenLDAP installation. Please note that the memberOf attribute is an operational attribute, and it is requested explicitly
 by the Apache webserver which reverse-proxies to the Herd app.

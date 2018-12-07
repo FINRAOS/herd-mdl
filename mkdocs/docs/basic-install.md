@@ -2,9 +2,12 @@
 Herd-MDL Basic Install
 ======================
 
-The Basic Install is an easy, turnkey installation of Herd-MDL. This install is fully automated. It uses CloudFormation templates to create AWS resources then deploys Herd-MDL product, integrates the components, and creates sample data
+The Basic Install is an easy, turnkey installation of Herd-MDL. This install is fully automated. It uses CloudFormation templates to create AWS resources then deploys Herd-MDL product, 
+integrates the components, and creates sample data.
 
-See [Advanced Install](advanced-install.md) for other options. For example if your organization requires that certain AWS resources such as IAM Roles, Security Groups, etc. are created outside Herd-MDL automated install. The Advanced Install allows for optional creation of AWS resources through other mechanisms and provides detailed specifications on what to create and how to provide references to Herd-MDL automated install
+See [Advanced Install](advanced-install.md) for other options. For example if your organization requires that certain AWS resources such as IAM Roles, 
+Security Groups, etc. are created outside Herd-MDL automated install. The Advanced Install allows for optional creation of AWS resources through other 
+mechanisms and provides detailed specifications on what to create and how to provide references to Herd-MDL automated install.
 
 ## Prerequisites
 
@@ -19,7 +22,7 @@ These are prerequisites that are necessary for installing MDL components for Bas
 
 Installation is automated through CloudFormation templates in AWS. The stack creates all the resources required by MDL application. This takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html) for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.
 
-1.  Download release artefact: [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.3.0/installMDL.yml) to your local file system, this will install version `1.3.0`.
+1.  Download release artefact: [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.4.0/installMDL.yml) to your local file system, this will install version `1.4.0`.
 2.  Login to AWS console and navigate to the [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html) service.
 3.  Create a new stack using the option: "Upload a template to Amazon S3" - Refer to [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) on how to select a local template.
 4.  Select the same `installMDL.yml` file from your local file system (which was downloaded in step 1).

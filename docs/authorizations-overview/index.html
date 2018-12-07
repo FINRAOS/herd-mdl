@@ -293,6 +293,33 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#herd-a-unified-access-control-provider" title="HERD - a unified access-control provider" class="md-nav__link">
+    HERD - a unified access-control provider
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#namespace-level-permissions-in-herd" title="Namespace level permissions in HERD" class="md-nav__link">
+    Namespace level permissions in HERD
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#namespace-level-permissions-in-bdsql" title="Namespace level permissions in BDSQL" class="md-nav__link">
+    Namespace level permissions in BDSQL
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
       
       
     </ul>
@@ -320,8 +347,20 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLT" class="md-nav__link">
-      MDLT
+    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+      MDLTests (MDLT)
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+      Tutorials
     </a>
   </li>
 
@@ -357,6 +396,33 @@
   <a href="#users-and-authorizations" title="Users and authorizations" class="md-nav__link">
     Users and authorizations
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-a-unified-access-control-provider" title="HERD - a unified access-control provider" class="md-nav__link">
+    HERD - a unified access-control provider
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#namespace-level-permissions-in-herd" title="Namespace level permissions in HERD" class="md-nav__link">
+    Namespace level permissions in HERD
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#namespace-level-permissions-in-bdsql" title="Namespace level permissions in BDSQL" class="md-nav__link">
+    Namespace level permissions in BDSQL
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -467,6 +533,30 @@ Please note that Users can be added/deleted/modified by using the <em>manageLdap
 </tbody>
 </table>
 <p><sup>*replace <code>{ssm-prefix}</code> in the password param-names with <code>/app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password</code> </sup></p>
+<h3 id="herd-a-unified-access-control-provider">HERD - a unified access-control provider<a class="headerlink" href="#herd-a-unified-access-control-provider" title="Permanent link">&para;</a></h3>
+<p>HERD provides centralized access-control on data at the namespace level across the MDL ecosystem. All access to data in Herd is controlled by the calling user's authorization to data in that Namespace, 
+this applies to all access points across MDL: HERD REST APIs, HERD-UI and BDSQL. </p>
+<h4 id="namespace-level-permissions-in-herd">Namespace level permissions in HERD<a class="headerlink" href="#namespace-level-permissions-in-herd" title="Permanent link">&para;</a></h4>
+<ul>
+<li>A user may be granted permissions to READ, WRITE, EXECUTE, or GRANT data in a set of Namespaces. </li>
+<li>These authorizations restrict access to all operations including:
+      Meta-data services like reading and writing Business Object Definitions, Business Object Formats, and Business Object Data in a given Namespace
+      Other services such as Clusters, Jobs, and Notifications owned by a given Namespace.</li>
+<li>If not authorized, the services will return an appropriate HTTP error response such as 403 Forbidden.</li>
+</ul>
+<h4 id="namespace-level-permissions-in-bdsql">Namespace level permissions in BDSQL<a class="headerlink" href="#namespace-level-permissions-in-bdsql" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p>Any user which has READ permissions to a Namespace in HERD translates to them having SELECT privileges on <em>all</em> tables under the corresponding schema for that Namespace in BDSQL.</p>
+<blockquote>
+<p>Note: Users <em>must</em> have READ permissions to a Namespace to be granted SELECT privilege in BDSQL, there is no implicit permission-mapping.</p>
+</blockquote>
+</li>
+<li>
+<p>SELECT privileges are granted/revoked automatically in BDSQL when the corresponding namespace-permission is modified in HERD, this normally takes only a couple of minutes.</p>
+</li>
+<li>Any namespace which has <em>global-read</em> in HERD results in <em>all</em> users having SELECT privilege to its corresponding schema (and all tables) in BDSQL. </li>
+</ul>
                 
                   
                 

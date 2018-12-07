@@ -336,8 +336,20 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLT" class="md-nav__link">
-      MDLT
+    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+      MDLTests (MDLT)
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+      Tutorials
     </a>
   </li>
 
@@ -449,8 +461,8 @@ member: cn=basic_user,ou=People,dc=mdl,dc=org</code></pre>
 
 
 <h2 id="memberof-overlay">memberOf Overlay<a class="headerlink" href="#memberof-overlay" title="Permanent link">&para;</a></h2>
-<p>Herd uses <a href="https://www.openldap.org/doc/admin24/overlays.html">'memberOf'</a> information in every requests HTTP header to determine which auth-groups a user is part of that is making the request and 
-subsequently allows/blocks actions which are defined in a <code>role-to-security-function</code> mapping.</p>
+<p>Herd uses <a href="https://www.openldap.org/doc/admin24/overlays.html">'memberOf'</a> information contained in each request's HTTP headers to determine the auth-groups a user is part of and 
+subsequently allows/blocks actions which are pre-defined in a <code>role-to-security-function</code> mapping.</p>
 <p>This overlay is installed and enabled in MDL's OpenLDAP installation. Please note that the memberOf attribute is an operational attribute, and it is requested explicitly
 by the Apache webserver which reverse-proxies to the Herd app.</p>
 <h3 id="ldap-directory-tree">LDAP directory tree<a class="headerlink" href="#ldap-directory-tree" title="Permanent link">&para;</a></h3>

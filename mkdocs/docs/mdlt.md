@@ -66,8 +66,8 @@ These parameters are related to which version and components to deploy.
 | **Name** | ReleaseVersion |
 | **Description** | Release version of MDL application to install |
 | **Required** | Yes |
-| **Default Value** | 1.2.0 |
-| **Allowed Value** | 1.2.0 |
+| **Default Value** | 1.4.0 |
+| **Allowed Value** | 1.4.0 |
 
 **DeployComponents**
 
