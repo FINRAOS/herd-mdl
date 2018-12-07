@@ -86,10 +86,10 @@ function verify_namespaces_get {
   num_namespaces=`echo ${RESPONSE_HOLDER} | jq -r '.namespaceKeys | length'`
   echo "number: ${num_namespaces}"
 
-  if [ "${num_namespaces}" = "2" ]; then
+  if [ "${num_namespaces}" -ge "2" ]; then
       echo "Verified number of namespaces."
   else
-      echo "Actual number of namespaces found: ${num_namespaces} doesn't match expected: 2"
+      echo "Actual number of namespaces found: ${num_namespaces}, was expecting at least 2."
       exit 1
   fi
 

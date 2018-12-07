@@ -229,6 +229,10 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"alter table ec2_od_prcng_lk alter column rgn_nm type character varying(250);\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"alter table ec2_od_prcng_lk alter column instc_type type character varying(250);\""
 
+    # ensure region is set for the aws client to work properly
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'aws.region.name';\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('aws.region.name', '${region}', NULL);\""
+
     # Enable LDAP if specified
     if [ "${enableSSLAndAuth}" = "true" ] ; then
         # Enable Herd namespace authorization
@@ -256,6 +260,23 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
 
         # Add namespace authorization admin permissions for the app-admin user
         execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user_url}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
+
+
+        # Add Herd namespace-auth SNS topic configuration
+        sns_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/SNS/UserNamespaceChgTopicArn --region ${region} --output text --query Parameter.Value)
+        echo "Inserting SNS config for user-namespace authorization status changes. SNS Arn: ${sns_arn}"
+        execute_cmd "sed -i \"s/{{SNS_TOPIC_ARN}}/${sns_arn}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
+        execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
+        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/nsAuthSnsConfig.sql"
+
+        # ensure that jms publishing is enabled
+        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'jms.listener.enabled';\""
+        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('jms.listener.enabled','true', NULL);\""
+
+        # ensure sqs/sns publishing is enabled
+        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'herd.notification.sqs.enabled';\""
+        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO cnfgn VALUES ('herd.notification.sqs.enabled','true', NULL);\""
+
     fi
 
     # Configuration for Elasticsearch
@@ -275,10 +296,10 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
 
     log4j_config_value=$(<${deployLocation}/xml/install/log4j-override-config.xml)
     ##insert rows to ec2_price_table;
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5878, 'us-east-1', 'm4.large', 0.10000, now(), 'SYSTEM', now(), 'SYSTEM');\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5879, 'us-east-1', 'm4.xlarge', 0.20000, now(), 'SYSTEM', now(), 'SYSTEM');\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5282, 'us-east-1', 'm4.4xlarge', 0.80000, now(), 'SYSTEM', now(), 'SYSTEM');\""
-    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5895, 'us-east-1', 'm4.2xlarge', 0.40000, now(), 'SYSTEM', now(), 'SYSTEM');\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5878, '${region}', 'm4.large', 0.10000, now(), 'SYSTEM', now(), 'SYSTEM');\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5879, '${region}', 'm4.xlarge', 0.20000, now(), 'SYSTEM', now(), 'SYSTEM');\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5282, '${region}', 'm4.4xlarge', 0.80000, now(), 'SYSTEM', now(), 'SYSTEM');\""
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5895, '${region}', 'm4.2xlarge', 0.40000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 
 fi
 

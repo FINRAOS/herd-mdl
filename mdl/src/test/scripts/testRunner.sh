@@ -71,7 +71,7 @@ execute_cmd "aws s3 cp ${wrapperStackYml} s3://${MdltBucketName}/cft/InstallMDL.
 execute_cmd "aws s3 cp --recursive mdlt/scripts/cft s3://${MdltBucketName}/cft"
 
 testPropsFile="/home/ec2-user/mdlt/conf/test.props"
-#execute test steps, copy logs and test results
+# execute test steps, copy logs and test results
 execute_cmd "./mdlt/scripts/sh/testSetup.sh $deployPropertiesFile $testPropsFile &> /var/log/mdl-setup.log" "true"
 execute_cmd "aws s3 cp /var/log/mdl-setup.log s3://${MdltResultS3BucketName}/test-results/${MDLStackName}_${timestamp}/"
 
@@ -82,13 +82,13 @@ execute_cmd "aws s3 cp --recursive /tmp/sam s3://${MdltResultS3BucketName}/test-
 #signal mdlt deploy host success
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r \"MDLT deploy and execution succeeded \" \"${DeployHostWaitHandle}\" "
 
-# Empty mdlt s3 bucket
+# Clean-up mdlt s3 bucket
 execute_cmd "aws s3 rm s3://${MdltBucketName} --recursive"
 
 #shutdown the deploy host after test execution
 if [ "${RollbackOnFailure}" = "true" ] ; then
-    # echo "Sleep for 60 minutes before cleaning up the stack"
-    execute_cmd "sleep 60m"
+    # echo "Sleep for 120 minutes before cleaning up the stack"
+    execute_cmd "sleep 120m"
 
     . ${testPropsFile}
     if [ "${existingStack}" = "false" ] ; then
