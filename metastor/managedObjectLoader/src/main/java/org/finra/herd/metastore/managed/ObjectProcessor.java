@@ -81,6 +81,8 @@ public class ObjectProcessor {
 
 	public static final String UPDATE_PROCESS_SQL = "UPDATE METASTOR_PROCESSING_LOG SET END_TIME = now(), SUCCESS=? where ID=?";
 
+    private static final String PURGE_PROCESSED_NOTIFICAITON = "DELETE FROM DM_NOTIFICATION WHERE ID=?";
+
 	public void setTemplate( JdbcTemplate template ) {
 		this.template = template;
 	}
@@ -185,14 +187,26 @@ public class ObjectProcessor {
 			error = "Cannot find job processor";
 		}
 
-		if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) ) {
-			logger.warning( "Retry maxed out, send email" );
+        if ( success ) {
+            deleteProcessedNotificaiton( jobDefinition );
+        } else if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) ) {
+            logger.warning( "Retry maxed out, send email" );
 			int numRetry = jobDefinition.numOfRetry + 1;
 
+			deleteProcessedNotificaiton( jobDefinition );
 			sendFailureEmail( jobDefinition, error, numRetry, clusterManager.getClusterID());
 
 		}
 	}
+
+	protected void deleteProcessedNotificaiton(final JobDefinition jd){
+        try {
+            template.update( PURGE_PROCESSED_NOTIFICAITON, jd.getId() );
+        } catch ( Exception ex ) {
+            logger.warning("Error encountered while purge processed Notification: "+ ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
 
 	protected void sendFailureEmail( JobDefinition jobDefinition, String error, int numRetry, String clusterID ) {
 		notificationSender.sendFailureEmail( jobDefinition, numRetry, error, clusterID );

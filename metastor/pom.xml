@@ -29,7 +29,7 @@
 
 	<artifactId>metastore</artifactId>
 	<groupId>org.finra.herd-mdl.metastore</groupId>
-	<version>1.1.0</version>
+	<version>1.2.2</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -41,6 +41,10 @@
 		<glassfish.version>1.1</glassfish.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
+		<nexus.staging.maven.plugin.version>1.6.8</nexus.staging.maven.plugin.version>
+		<maven.source.plugin.version>3.0.1</maven.source.plugin.version>
+		<maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 	</properties>
 
 	<modules>
@@ -54,21 +58,6 @@
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
-
-	<developers>
-		<developer>
-			<id>VekasS</id>
-			<name>Vekas Singh</name>
-			<email>vekassingh@gmail.com</email>
-			<url>https://github.com/VekasS</url>
-			<organization>FINRA</organization>
-			<organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
-			<roles>
-				<role>developer</role>
-				<role>tester</role>
-			</roles>
-		</developer>
-	</developers>
 
 	<dependencies>
 		<dependency>
@@ -98,6 +87,79 @@
 			<version>${glassfish.version}</version>
 		</dependency>
 	</dependencies>
+
+	<developers>
+		<developer>
+			<id>VekasS</id>
+			<name>Vekas Singh</name>
+			<email>vekassingh@gmail.com</email>
+			<url>https://github.com/VekasS</url>
+			<organization>FINRA</organization>
+			<organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
+			<roles>
+				<role>developer</role>
+				<role>tester</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:https://github.com/FINRAOS/herd-mdl</connection>
+		<developerConnection>scm:git:https://github.com/FINRAOS/herd-mdl</developerConnection>
+		<url>https://github.com/FINRAOS/herd-mdl</url>
+	</scm>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven.gpg.plugin.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<configuration>
+									<passphraseServerId>gpg.passphrase</passphraseServerId>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<version>${nexus.staging.maven.plugin.version}</version>
+						<extensions>true</extensions>
+						<configuration>
+							<serverId>finra-ossrh</serverId>
+							<nexusUrl>https://oss.sonatype.org</nexusUrl>
+							<autoReleaseAfterClose>true</autoReleaseAfterClose>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<distributionManagement>
+		<repository>
+			<id>finra-ossrh</id>
+			<name>Nexus Staging Repository</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+
+		<snapshotRepository>
+			<id>finra-ossrh</id>
+			<name>Nexus Snapshot Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<build>
 		<plugins>
