@@ -123,9 +123,6 @@ Parameters:
     Default: 'CN=finra.org,OU=ID,O=FINRA,L=WASHINGTON,S=DC,C=US'
     Description: Self Signed Certificate Information
     Type: String
-  ElastisearchHostname:
-    Description: Host where elasticsearch is running
-    Type: String
   MDLInstanceName:
     Description: MDLInstanceName name
     Type: String
@@ -149,6 +146,102 @@ Conditions:
     - !Ref EnableSSLAndAuth
     - 'false'
 Resources:
+  CurrentHerdVersionParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/CurrentVersion
+      Type: String
+      Value: !Ref HerdVersion
+      Description: Currently deployed Herd-version.
+  NewHerdVersionParameter:
+    DependsOn: CurrentHerdVersionParameter
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/RequestedVersion
+      Type: String
+      Value: 'FilledLater'
+      Description: Desired Herd-version for a rolling-deployment upgrade.
+  HerdDeploymentInvoked:
+    DependsOn: NewHerdVersionParameter
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/DeploymentInvoked
+      Type: String
+      Value: 'false'
+      Description: Herd rolling-deployment condition reference.
+  HerdMostRecentDeploymentId:
+    DependsOn: HerdDeploymentInvoked
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/MostRecentDeploymentId
+      Type: String
+      Value: 'FilledLater'
+      Description: Herd rolling-deployment most recent (upgrade utility lambda triggered) deployment id.
+  HerdTargetGroupSSLArnParameter:
+    Condition: EnableSSLAndAuth
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/TargetGroupArn
+      Type: String
+      Value: !Ref HerdTargetGroupSSL
+      Description: Herd Target Group Arn.
+  HerdTargetGroupPlainTextArnParameter:
+    Condition: DisableSSLAndAuth
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/TargetGroupArn
+      Type: String
+      Value: !Ref HerdTargetGroupPlainTXT
+      Description: Herd Target Group Arn.
+  HerdScalingGroupParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Join
+        - ''
+        - - /app/MDL/
+          - !Ref MDLInstanceName
+          - /
+          - !Ref Environment
+          - /HERD/AutoScalingGroup
+      Type: String
+      Value: !Ref HerdScalingGroup
+      Description: Herd ASG name.
   HerdWaitHandle:
     Type: 'AWS::CloudFormation::WaitConditionHandle'
     Properties: {}
@@ -163,6 +256,7 @@ Resources:
     Condition: DisableSSLAndAuth
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
+      HealthCheckPath: '/herd-app/displayBuildInfo'
       HealthCheckIntervalSeconds: 30
       HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 10
@@ -181,6 +275,7 @@ Resources:
     Condition: EnableSSLAndAuth
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
+      HealthCheckPath: '/herd-app/displayBuildInfo'
       HealthCheckIntervalSeconds: 30
       HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 10
@@ -435,12 +530,8 @@ Resources:
                   - !Ref HerdDBHostName
                   - |-
 
-                    releaseVersion=
-                  - !Ref ReleaseVersion
-                  - |-
-
-                    deploymentBucketName=
-                  - !Ref DeploymentBucketName
+                    mdlStagingBucketName=
+                  - !Ref MDLStagingBucketName
                   - |-
 
                     refreshDatabase=
@@ -463,10 +554,6 @@ Resources:
                   - !GetAtt
                     - HerdLoadBalancer
                     - DNSName
-                  - |-
-
-                    elasticsearchHostname=
-                  - !Ref ElastisearchHostname
                   - |-
 
                     domainNameSuffix=

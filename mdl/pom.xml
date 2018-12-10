@@ -22,7 +22,7 @@
 
   <artifactId>herd-mdl</artifactId>
   <groupId>org.finra.herd-mdl</groupId>
-  <version>1.3.0</version>
+  <version>1.4.0</version>
 
   <properties>
 
@@ -51,6 +51,7 @@
     <presto-jdbc.version>0.203</presto-jdbc.version>
     <rest-assured.version>3.1.0</rest-assured.version>
     <herd.version>0.80.0</herd.version>
+    <jackson.databind.version>2.7.9.5</jackson.databind.version>
 
     <!-- Compiler Information -->
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -178,6 +179,17 @@
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
       <version>${aws-sdk.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.databind.version}</version>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
@@ -222,6 +234,11 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-sts</artifactId>
+      <version>${aws-sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-codedeploy</artifactId>
       <version>${aws-sdk.version}</version>
     </dependency>
     <dependency>
@@ -490,7 +507,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>zip-component-lambda</id>
+            <id>zip-component-keypair-lambda</id>
             <goals>
               <goal>single</goal>
             </goals>
@@ -499,9 +516,24 @@
               <appendAssemblyId>false</appendAssemblyId>
               <attach>false</attach>
               <descriptors>
-                <descriptor>${project.basedir}/assembly/lambda-assembly-descriptor.xml</descriptor>
+                <descriptor>${project.basedir}/assembly/keypair-lambda-assembly-descriptor.xml</descriptor>
               </descriptors>
               <finalName>keypair_generator_lambda</finalName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>zip-component-herd-upgrade-lambda</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
+              <attach>false</attach>
+              <descriptors>
+                <descriptor>${project.basedir}/assembly/herd-upgrade-lambda-assembly-descriptor.xml</descriptor>
+              </descriptors>
+              <finalName>herd_upgrade_utility_lambda</finalName>
             </configuration>
           </execution>
           <execution>

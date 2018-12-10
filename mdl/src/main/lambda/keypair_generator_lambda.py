@@ -65,7 +65,7 @@ def handler(event, context):
             logger.warning('SSM parameter for key pair name already exists, will not create a new one.')
 
         if not keypair_exists(keypair_name, event, context, physical_resource_id):
-            logger.info('Attempting to create a new keypair: \{}\''.format(keypair_name))
+            logger.info('Attempting to create a new keypair: \'{}\''.format(keypair_name))
             keypair_material = create_key_pair(keypair_name, event, context,
                                                physical_resource_id)
             description = 'private key material'

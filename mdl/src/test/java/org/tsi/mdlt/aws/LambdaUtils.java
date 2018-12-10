@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 **/
-package org.tsi.mdlt.util.aws;
+package org.tsi.mdlt.aws;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.regions.Regions;
@@ -30,13 +30,13 @@ import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class LambdaUtil {
+public final class LambdaUtils {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private LambdaUtil() {
+  private LambdaUtils() {
     //utility class
   }
 

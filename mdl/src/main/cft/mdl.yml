@@ -36,7 +36,7 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   HerdVersion:
-    Default: '0.80.0'
+    Default: '0.81.0'
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
@@ -249,6 +249,7 @@ Resources:
         KeypairName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /KEYS/KeypairName]]
         EsSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/ElasticSearch]]
         MDLInstanceProfile: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceProfile]]
+        MDLInstanceRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLInstanceRole]]
         MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
         MDLStagingBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/MDL]]
         DomainNameSuffix: !Ref DomainNameSuffix
@@ -318,9 +319,6 @@ Resources:
         CreateDemoObjects: !Ref CreateDemoObjects
         DomainNameSuffix: !Ref DomainNameSuffix
         HostedZoneName: !Ref HostedZoneName
-        ElastisearchHostname: !GetAtt
-          - ElasticSearchEC2Stack
-          - Outputs.EsEc2DNS
         MDLInstanceName: !Ref MDLInstanceName
         Environment: !Ref Environment
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
@@ -332,6 +330,18 @@ Resources:
           Value: !Ref CustomTagValue
         - Key: Environment
           Value: !Ref Environment
+  UpgradeHerdUtil:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployHerd
+    DependsOn:
+      - HerdEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlUpgradeHerd.yml]]
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        DeploymentBucketName: !Ref DeploymentBucketName
+        ReleaseVersion: !Ref ReleaseVersion
   MetastorStack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployMetastor

@@ -29,7 +29,7 @@ Parameters:
     Type: String
     AllowedPattern: '[a-z0-9]*'
   ReleaseVersion:
-    Default: 1.3.0
+    Default: 1.4.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
   KeyPairName:

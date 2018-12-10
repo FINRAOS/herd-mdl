@@ -17,13 +17,11 @@ package org.tsi.mdlt.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.tsi.mdlt.aws.CloudFormationClient;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 
 //TODO this deployHost.property and test.properties need to managed/merged together

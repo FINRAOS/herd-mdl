@@ -31,6 +31,10 @@
             <outputDirectory>${file.separator}lambda</outputDirectory>
         </file>
         <file>
+            <source>${project.build.directory}/herd_upgrade_utility_lambda.zip</source>
+            <outputDirectory>${file.separator}lambda</outputDirectory>
+        </file>
+        <file>
             <source>${project.build.directory}/elasticsearch.zip</source>
             <outputDirectory>${file.separator}elasticsearch</outputDirectory>
         </file>

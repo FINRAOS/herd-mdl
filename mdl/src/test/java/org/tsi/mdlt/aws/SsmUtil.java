@@ -15,12 +15,6 @@
 **/
 package org.tsi.mdlt.aws;
 
-import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathRequest;
-import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathResult;
-import com.amazonaws.services.simplesystemsmanagement.model.GetParametersRequest;
-import com.amazonaws.services.simplesystemsmanagement.model.ParameterStringFilter;
-import java.lang.invoke.MethodHandles;
-
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -29,9 +23,11 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import com.amazonaws.services.simplesystemsmanagement.model.DeleteParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterRequest;
 import com.amazonaws.services.simplesystemsmanagement.model.GetParameterResult;
+import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathRequest;
+import com.amazonaws.services.simplesystemsmanagement.model.GetParametersByPathResult;
 import com.amazonaws.services.simplesystemsmanagement.model.Parameter;
 import com.amazonaws.services.simplesystemsmanagement.model.PutParameterRequest;
-import com.amazonaws.services.simplesystemsmanagement.model.PutParameterResult;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +70,7 @@ public class SsmUtil {
         return getSsmParameter(parameterKey, true);
     }
 
-    public static Parameter getPlainParameter(String parameterKey) {
+    public static Parameter getPlainTextParameter(String parameterKey) {
         return getParameter(parameterKey, false);
     }
 

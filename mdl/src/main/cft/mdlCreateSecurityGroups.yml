@@ -141,6 +141,10 @@ Resources:
           FromPort: '8888'
           ToPort: '8888'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: '-1'
@@ -236,7 +240,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupName: !Sub '${MDLInstanceName}-${Environment}-HerdSecurityGroup'
-      GroupDescription: Allow https & postgress to client host
+      GroupDescription: Allow https & postgres to client host
       VpcId: !Ref VpcIdParameterKey
       SecurityGroupIngress:
         - IpProtocol: tcp

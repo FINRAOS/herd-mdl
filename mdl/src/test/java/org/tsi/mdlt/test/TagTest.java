@@ -30,10 +30,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.cloudformation.model.Tag;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.Filter;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancing;
 import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClientBuilder;
@@ -64,9 +60,7 @@ public class TagTest extends BaseTest {
 
     private static final String INSTANCE_NAME = StackOutputPropertyReader.get(StackOutputKeyEnum.MDL_INSTANCE_NAME);
     private static final String APP_STACK_NAME = StackOutputPropertyReader.get(StackOutputKeyEnum.APP_STACK_NAME);
-    private static final String ES_EC2_IP = StackOutputPropertyReader.get(StackOutputKeyEnum.ES_EC2_IP);
 
-    private static final String EC_2_FILTER_PRIVATE_IP = "private-ip-address";
     private static final String DEPLOY_HOST_SG_SUFFIX = "DeployHostSecurityGroup";
 
     @Test
@@ -127,13 +121,6 @@ public class TagTest extends BaseTest {
                 && rdsTag.getValue().equals(tag.getValue())));
         }
 
-        LogVerification("Verify wrapper stack tags are copied to EC2");
-        List<com.amazonaws.services.ec2.model.Tag> ec2Tags = getEc2Tags(ES_EC2_IP);
-        for (Tag tag : wrapperStackTags) {
-            assertTrue(ec2Tags.stream().anyMatch(ec2Tag -> ec2Tag.getKey().equals(tag.getKey())
-                && ec2Tag.getValue().equals(tag.getValue())));
-        }
-
         LogVerification("Verify wrapper stack tags are copied to Security Group");
         List<com.amazonaws.services.ec2.model.Tag> securityGroupTags = getSecurityGroupTagsWithPrefix(INSTANCE_NAME);
         for (Tag tag : wrapperStackTags) {
@@ -165,21 +152,6 @@ public class TagTest extends BaseTest {
 
         ListTagsForResourceRequest rdsRequest = new ListTagsForResourceRequest().withResourceName(herdRdsARN);
         return rds.listTagsForResource(rdsRequest).getTagList();
-    }
-
-    private List<com.amazonaws.services.ec2.model.Tag> getEc2Tags(String privateEc2Ip) {
-        assertNotNull(privateEc2Ip);
-
-        AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.getCurrentRegion().getName())
-            .withCredentials(new InstanceProfileCredentialsProvider(true)).build();
-        DescribeInstancesRequest ec2Request = new DescribeInstancesRequest().withFilters(new Filter(EC_2_FILTER_PRIVATE_IP).withValues(privateEc2Ip));
-        List<Reservation> reservations = ec2.describeInstances(ec2Request).getReservations();
-        assert reservations != null && reservations.size() > 0;
-        List<Instance> instances = ec2.describeInstances(ec2Request).getReservations().get(0).getInstances();
-        assert instances != null && instances.size() > 0;
-
-        LOGGER.info("Getting EC2: " + instances.get(0).getInstanceId());
-        return instances.get(0).getTags();
     }
 
     private List<com.amazonaws.services.ec2.model.Tag> getSecurityGroupTagsWithPrefix(String sgNamePrefix) {
