@@ -265,8 +265,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-propogate-an-object-from-herd-to-metastor" title="How to propogate an 'Object' from Herd to Metastor" class="md-nav__link">
-    How to propogate an 'Object' from Herd to Metastor
+  <a href="#how-to-propagate-an-object-from-herd-to-metastor" title="How to propagate an 'Object' from Herd to Metastor" class="md-nav__link">
+    How to propagate an 'Object' from Herd to Metastor
   </a>
   
 </li>
@@ -309,6 +309,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-zero-downtime-upgrade" title="HERD zero-downtime upgrade" class="md-nav__link">
+    HERD zero-downtime upgrade
+  </a>
   
 </li>
       
@@ -389,8 +396,20 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLT" class="md-nav__link">
-      MDLT
+    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+      MDLTests (MDLT)
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+      Tutorials
     </a>
   </li>
 
@@ -437,8 +456,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-propogate-an-object-from-herd-to-metastor" title="How to propogate an 'Object' from Herd to Metastor" class="md-nav__link">
-    How to propogate an 'Object' from Herd to Metastor
+  <a href="#how-to-propagate-an-object-from-herd-to-metastor" title="How to propagate an 'Object' from Herd to Metastor" class="md-nav__link">
+    How to propagate an 'Object' from Herd to Metastor
   </a>
   
 </li>
@@ -481,6 +500,13 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#herd-zero-downtime-upgrade" title="HERD zero-downtime upgrade" class="md-nav__link">
+    HERD zero-downtime upgrade
+  </a>
   
 </li>
       
@@ -599,16 +625,16 @@
 <em>  Create New Business Object in Herd
 </em>  Create New Format in Herd
 *  Register Data in Herd</p>
-<h2 id="how-to-propogate-an-object-from-herd-to-metastor">How to propogate an 'Object' from Herd to Metastor<a class="headerlink" href="#how-to-propogate-an-object-from-herd-to-metastor" title="Permanent link">&para;</a></h2>
-<p>Once Business Object is created in Herd, there is an additional step to include the Objet in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.</p>
+<h2 id="how-to-propagate-an-object-from-herd-to-metastor">How to propagate an 'Object' from Herd to Metastor<a class="headerlink" href="#how-to-propagate-an-object-from-herd-to-metastor" title="Permanent link">&para;</a></h2>
+<p>Once Business Object is created in Herd, there is an additional step to include the Object in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.</p>
 <p>Here is the XML to add the Notification in Herd</p>
 <p><strong>objectNotification.xml</strong></p>
 <pre class="codehilite"><code>&lt;businessObjectDataNotificationRegistrationCreateRequest&gt;
     &lt;businessObjectDataNotificationRegistrationKey&gt;
         &lt;namespace&gt;MDL&lt;/namespace&gt;
-        &lt;notificationName&gt;METASTOR_{{NAMESPACE}}_{{USAGE}}_{{OBJECT\_NAME}}\_{{FILE_FORMAT}}&lt;/notificationName&gt;
+        &lt;notificationName&gt;METASTOR_{{NAMESPACE}}_{{USAGE}}_{{OBJECT_NAME}}_{{FILE_FORMAT}}&lt;/notificationName&gt;
     &lt;/businessObjectDataNotificationRegistrationKey&gt;
-    &lt;businessObjectDataEventType&gt;BUS\_OBJCT\_DATA\_STTS\_CHG&lt;/businessObjectDataEventType&gt;
+    &lt;businessObjectDataEventType&gt;BUS_OBJCT_DATA_STTS_CHG&lt;/businessObjectDataEventType&gt;
     &lt;businessObjectDataNotificationFilter&gt;
         &lt;namespace&gt;{{NAMESPACE}}&lt;/namespace&gt;
         &lt;businessObjectDefinitionName&gt;{{OBJECT_NAME}}&lt;/businessObjectDefinitionName&gt;
@@ -634,7 +660,7 @@ Replace {{OBJECT_NAME}} with the actual Object Name
 Replace {{FILE_FORMAT}} with the actual File Type for the Object</p>
 <p>Here is the cURL syntax to add the Notification for the Object:</p>
 <p><strong>cURL Command</strong></p>
-<pre class="codehilite"><code>cat objectNotification.xml | curl -H &quot;Content-Type: application/xml&quot; -d @- -X POST http://HERD\_DNS\_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -</code></pre>
+<pre class="codehilite"><code>cat objectNotification.xml | curl -H &quot;Content-Type: application/xml&quot; -d @- -X POST http://HERD_DNS_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -</code></pre>
 
 
 <h2 id="how-to-query-the-data-in-bdsql">How To Query the Data in BDSQL<a class="headerlink" href="#how-to-query-the-data-in-bdsql" title="Permanent link">&para;</a></h2>
@@ -665,15 +691,15 @@ Replace {{FILE_FORMAT}} with the actual File Type for the Object</p>
 <li>If (EnableSSLAndAuth == true)<ul>
 <li>Navigate to SSM Parameter section (Refer <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html">AWS Documentation</a>) for Username and Password</li>
 <li>User Name<ul>
-<li>Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername</li>
-<li>Example :  /app/MDL/mdl/dev/LDAP/MdlAppUsername</li>
+<li>Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername</li>
+<li>Example : /app/MDL/mdl/dev/LDAP/User/HerdAdminUsername</li>
 <li>Get the Value for the above parameter. That value specifies the user name for Herd/Bdsql/Shepherd</li>
-<li>Example: ldap_mdl_app_user</li>
+<li>Example: herd_admin</li>
 </ul>
 </li>
 <li>Password  <ul>
-<li>Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword</li>
-<li>Example :  /app/MDL/mdl/dev/LDAP/MDLAppPassword</li>
+<li>Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdAdminPassword</li>
+<li>Example : /app/MDL/mdl/dev/LDAP/Password/HerdAdminPassword</li>
 <li>Get the Value for the above parameter. That value specifies the password for Herd/Bdsql/Shepherd, and this parameter is a Secure String</li>
 <li>Example: ODMyOTdmZmE5</li>
 </ul>
@@ -1057,8 +1083,51 @@ result: 0 Success
 </tr>
 </tbody>
 </table>
+<h2 id="herd-zero-downtime-upgrade">HERD zero-downtime upgrade<a class="headerlink" href="#herd-zero-downtime-upgrade" title="Permanent link">&para;</a></h2>
+<p>MDL offers a Blue/Green style rolling upgrade mechanism for HERD and guarantees the following:</p>
+<ul>
+<li>New Herd version (App, DB) is active with one click</li>
+<li>All Herd data is unchanged including metadata catalog and Herd configuration</li>
+<li>Works with zero downtime</li>
+<li>Upgrade is a blue/green style deployment and the relacement stack is smoke-tested before traffic is rerouted.</li>
+<li></li>
+</ul>
+<blockquote>
+<p>Note: Rolling upgrades currently support forward-compatibility only, this means that Herd can only be upgraded to a <em>newer</em> version. </p>
+</blockquote>
+<p><em>How to perform a rolling upgrade</em></p>
+<p>MDL includes a <a href="https://aws.amazon.com/lambda/">Lambda function</a> which takes care of managing configurations and invoking a zero-downtime upgrade to Herd, 
+below are steps on how to use the aforementioned Lambda function to perform a rolling upgrade:</p>
+<ol>
+<li>
+<p>Login to the AWS console and find the Upgrade-utility lambda function, it is named in the following format: 
+   <br> <em>${MDLInstanceName}-Herd-${Environment}-UPGRADE-HERD-LAMBDA-FUNCTION</em>
+   <br> eg. <code>MDL-Herd-dev-UPGRADE-HERD-LAMBDA-FUNCTION</code></p>
+</li>
+<li>
+<p>Invoke the lambda function with the following event (payload):</p>
+</li>
+</ol>
+<pre class="codehilite"><code class="language-json">    {
+      &quot;RequestedVersion&quot;: &quot;&lt;desired-herd-version&gt;&quot;
+    }</code></pre>
+
+
+<p>The lambda function can be invoked in the following ways:</p>
+<ul>
+<li>Using the AWS CLI's <a href="https://docs.aws.amazon.com/cli/latest/reference/lambda/invoke.html">invoke-lambda</a> command.</li>
+<li>From the AWS Lambda console, <a href="https://docs.aws.amazon.com/lambda/latest/dg/getting-started-create-function.html#get-started-invoke-manually">manually invoke the Lambda function</a> using a test-event.</li>
+<li>Using the <a href="https://aws.amazon.com/tools/">AWS-SDK</a>. </li>
+</ul>
+<p><div class="admonition important">
+  <p class="admonition-title">Try it out!</p>
+  <p>
+  <b> 
+  To try out a zero-downtime deployment, check out our <a href="../tutorials/#performing-a-zero-downtime-upgrade-on-herd">walk-through</a> tutorial which will guide you through a sample deployment using the AWS Lambda console.
+  </b>
+  <p><br />
+  </div></p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<hr />
 <p><em>Problem</em></p>
 <p>Cloud formation fails with error "The maximum number of addresses has been reached". This happens while creating VPC.</p>
 <p><em>Cause</em></p>

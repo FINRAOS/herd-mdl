@@ -11,7 +11,8 @@ pages:
   - Users and Groups: ldap-tree.md
   - Authorizations and Security: authorizations-overview.md
   - Advanced Install: advanced-install.md
-  - MDLT: mdlt.md
+  - MDLTests (MDLT): mdlt.md
+  - Tutorials: tutorials.md
 
 # Configuration
 theme:
@@ -40,7 +41,7 @@ theme:
 
 # Extensions
 markdown_extensions:
-  - markdown.extensions.admonition
+  - admonition
   - markdown.extensions.codehilite:
       guess_lang: false
   - markdown.extensions.def_list

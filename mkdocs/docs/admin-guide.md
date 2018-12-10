@@ -63,9 +63,9 @@ Refer to [Herd Documentation](https://github.com/FINRAOS/herd/wiki/quick-start-t
 *  Create New Format in Herd
 *  Register Data in Herd
 
-## How to propogate an 'Object' from Herd to Metastor
+## How to propagate an 'Object' from Herd to Metastor
 
-Once Business Object is created in Herd, there is an additional step to include the Objet in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.
+Once Business Object is created in Herd, there is an additional step to include the Object in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.
 
 Here is the XML to add the Notification in Herd
 
@@ -74,9 +74,9 @@ Here is the XML to add the Notification in Herd
 <businessObjectDataNotificationRegistrationCreateRequest>
     <businessObjectDataNotificationRegistrationKey>
         <namespace>MDL</namespace>
-        <notificationName>METASTOR_{{NAMESPACE}}_{{USAGE}}_{{OBJECT\_NAME}}\_{{FILE_FORMAT}}</notificationName>
+        <notificationName>METASTOR_{{NAMESPACE}}_{{USAGE}}_{{OBJECT_NAME}}_{{FILE_FORMAT}}</notificationName>
     </businessObjectDataNotificationRegistrationKey>
-    <businessObjectDataEventType>BUS\_OBJCT\_DATA\_STTS\_CHG</businessObjectDataEventType>
+    <businessObjectDataEventType>BUS_OBJCT_DATA_STTS_CHG</businessObjectDataEventType>
     <businessObjectDataNotificationFilter>
         <namespace>{{NAMESPACE}}</namespace>
         <businessObjectDefinitionName>{{OBJECT_NAME}}</businessObjectDefinitionName>
@@ -104,7 +104,7 @@ Replace {{FILE_FORMAT}} with the actual File Type for the Object
 
 **cURL Command**
 ```
-cat objectNotification.xml | curl -H "Content-Type: application/xml" -d @- -X POST http://HERD\_DNS\_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -
+cat objectNotification.xml | curl -H "Content-Type: application/xml" -d @- -X POST http://HERD_DNS_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -
 ```
   
 ## How To Query the Data in BDSQL
@@ -128,13 +128,13 @@ cat objectNotification.xml | curl -H "Content-Type: application/xml" -d @- -X PO
 *   If (EnableSSLAndAuth == true)
     *   Navigate to SSM Parameter section (Refer [AWS Documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html)) for Username and Password
     *   User Name
-        *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MdlAppUsername
-        *   Example :  /app/MDL/mdl/dev/LDAP/MdlAppUsername
+        *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername
+        *   Example : /app/MDL/mdl/dev/LDAP/User/HerdAdminUsername
         *   Get the Value for the above parameter. That value specifies the user name for Herd/Bdsql/Shepherd
-        *   Example: ldap\_mdl\_app_user
+        *   Example: herd_admin
     *   Password  
-        *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/MDLAppPassword
-        *   Example :  /app/MDL/mdl/dev/LDAP/MDLAppPassword
+        *   Open Parameter /app/MDL/${MDLInstanceName}/${Environment}/LDAP/Password/HerdAdminPassword
+        *   Example : /app/MDL/mdl/dev/LDAP/Password/HerdAdminPassword
         *   Get the Value for the above parameter. That value specifies the password for Herd/Bdsql/Shepherd, and this parameter is a Secure String
         *   Example: ODMyOTdmZmE5
     *   Use the above URL, User name, and Password to login to Bdsql using the SQL Client that supports Presto JDBC Driver
@@ -443,9 +443,51 @@ Note: Logs are created in cloudwatch only when the log content is NOT empty; the
 | **Lambda Log** | /aws/lambda/{{lambda_function_name}}	| /aws/lambda/maggietest-ArtifactCopyLambdaFunction-IT8KBCH3IFQ4 |
 
 
+## HERD zero-downtime upgrade
+
+MDL offers a Blue/Green style rolling upgrade mechanism for HERD and guarantees the following:
+
+  * New Herd version (App, DB) is active with one click
+  * All Herd data is unchanged including metadata catalog and Herd configuration
+  * Works with zero downtime
+  * Upgrade is a blue/green style deployment and the relacement stack is smoke-tested before traffic is rerouted.
+  * 
+
+> Note: Rolling upgrades currently support forward-compatibility only, this means that Herd can only be upgraded to a *newer* version. 
+
+*How to perform a rolling upgrade*
+
+MDL includes a [Lambda function](https://aws.amazon.com/lambda/) which takes care of managing configurations and invoking a zero-downtime upgrade to Herd, 
+below are steps on how to use the aforementioned Lambda function to perform a rolling upgrade:
+
+1. Login to the AWS console and find the Upgrade-utility lambda function, it is named in the following format: 
+   <br> _${MDLInstanceName}-Herd-${Environment}-UPGRADE-HERD-LAMBDA-FUNCTION_
+   <br> eg. `MDL-Herd-dev-UPGRADE-HERD-LAMBDA-FUNCTION`
+
+2. Invoke the lambda function with the following event (payload):
+```json
+    {
+      "RequestedVersion": "<desired-herd-version>"
+    }
+```
+
+The lambda function can be invoked in the following ways:
+
+  * Using the AWS CLI's [invoke-lambda](https://docs.aws.amazon.com/cli/latest/reference/lambda/invoke.html) command.
+  * From the AWS Lambda console, [manually invoke the Lambda function](https://docs.aws.amazon.com/lambda/latest/dg/getting-started-create-function.html#get-started-invoke-manually) using a test-event.
+  * Using the [AWS-SDK](https://aws.amazon.com/tools/). 
+  
+  <div class="admonition important">
+  <p class="admonition-title">Try it out!</p>
+  <p>
+  <b> 
+  To try out a zero-downtime deployment, check out our [walk-through](/tutorials/#performing-a-zero-downtime-upgrade-on-herd) tutorial which will guide you through a sample deployment using the AWS Lambda console.
+  </b>
+  <p>  
+  </div>
+  
 ## Troubleshooting
 
-----
 
 *Problem*
 
