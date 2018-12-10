@@ -85,7 +85,7 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
     # Change RDS password to the value in parameter store (only do this if not a rolling deployment)
     aws rds modify-db-instance --db-instance-identifier ${herdDBInstance} --master-user-password ${herdDatabasePassword} --apply-immediately --region ${region}
     check_error $? "aws rds modify-db-instance --db-instance-identifier ${herdDBInstance} modify password"
-    #sleep 2 minutes to wait for the rds status to change to resetting-master-password
+    #sleep 3 minutes to wait for the rds status to change to resetting-master-password
     sleep 180
     # Waiting for the new password to take effect, which is waiting until rds is available again
     execute_cmd "aws rds wait db-instance-available --db-instance-identifier ${herdDBInstance} --region ${region}"
