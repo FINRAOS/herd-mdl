@@ -81,7 +81,112 @@ Conditions:
     - !Ref EnableSSLAndAuth
     - 'true'
 Resources:
+  ManageESLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      RoleName: !Join
+        - '-'
+        - - !Ref MDLInstanceName
+          - !Ref ReleaseVersion
+          - 'es-lambda-role'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:*
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+  ManageServiceLinkedRoleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt ManageESLambdaExecutionRole.Arn
+      Code:
+        ZipFile: !Sub |
+          from time import sleep
+
+          import boto3
+          import cfnresponse
+          from botocore.exceptions import ClientError
+
+
+          def handler(event, context):
+              """
+              Lambda (part of a lambda-backed custom function) to create a service-linked role for VPC Elasticsearch domains.
+              Checks if the aforementioned IAM role exists upon creation of the custom-resource and creates it if the role does
+              not exist. Update/Delete events on the custom-function are ignored.
+              :param event: entry-point event.
+              :param context: incoming context.
+              :return: None
+              """
+              if event['RequestType'] == 'Create':
+                  try:
+                      iam_client = boto3.client('iam')
+                      response = iam_client.get_role(
+                          RoleName='AWSServiceRoleForAmazonElasticsearchService'
+                      )
+                      arn = response.get('Role', {}).get('Arn')
+                      print('INFO: Role exists, nothing to do. ARN: {}'.format(arn))
+                      response_data = {'Message': 'Role exists, nothing to do. Service response: {}.'.format(response)}
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, 'ServiceLinkedRoleFunction')
+                  except ClientError as e:
+                      if e.response['Error']['Code'] == 'NoSuchEntity':
+                          __create_service_linked_role(event, context)
+                      else:
+                          print('ERROR: IAM service returned an Error. Exception: {}'.format(e))
+                          response_data = {'Message': 'IAM service returned an Error. Exception: {}'.format(e)}
+                          cfnresponse.send(event, context, cfnresponse.FAILED, response_data, 'ServiceLinkedRoleFunction')
+
+              elif event['RequestType'] == 'Delete':
+                  response_data = {'Message': 'Deleting custom resource.'}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, 'ServiceLinkedRoleFunction')
+
+
+          def __create_service_linked_role(event, context):
+              try:
+                  iam_client = boto3.client('iam')
+                  print('INFO: Creating service-linked role for VPC Elasticsearch domain.')
+                  response = iam_client.create_service_linked_role(
+                      AWSServiceName='es.amazonaws.com',
+                      Description='Service-linked role for VPC Elasticsearch domain.'
+                  )
+                  print('INFO: Role created. Service response: {}'.format(response))
+                  # wait for the IAM role to 'show-up' before attempting to use it
+                  sleep(180)
+                  print('INFO: Signaling success to cloudformation...')
+                  response_data = {'Message': 'Role created. Service response: {}.'.format(response)}
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, 'ServiceLinkedRoleFunction')
+              except ClientError as e:
+                  print('ERROR: Role creation failed. Exception: {}'.format(e))
+                  response_data = {'Message': 'IAM service returned an Error. Exception: {}'.format(e)}
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data, 'ServiceLinkedRoleFunction')
+
+      Runtime: python3.6
+      MemorySize: 248
+  ManageServiceLinkedRoleResource:
+    Type: Custom::ManageServiceLinkedRoleResource
+    Properties:
+      ServiceToken: !GetAtt 'ManageServiceLinkedRoleFunction.Arn'
   ElasticsearchDomain:
+    DependsOn: ManageServiceLinkedRoleResource
     Type: AWS::Elasticsearch::Domain
     Properties:
       DomainName: !Join
