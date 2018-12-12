@@ -121,12 +121,22 @@ Resources:
       Role: !GetAtt ManageESLambdaExecutionRole.Arn
       Code:
         ZipFile: !Sub |
-          import boto3
-          from botocore.exceptions import ClientError
-          import cfnresponse
           from time import sleep
 
+          import boto3
+          import cfnresponse
+          from botocore.exceptions import ClientError
+
+
           def handler(event, context):
+              """
+              Lambda (part of a lambda-backed custom function) to create a service-linked role for VPC Elasticsearch domains.
+              Checks if the aforementioned IAM role exists upon creation of the custom-resource and creates it if the role does
+              not exist. Update/Delete events on the custom-function are ignored.
+              :param event: entry-point event.
+              :param context: incoming context.
+              :return: None
+              """
               if event['RequestType'] == 'Create':
                   try:
                       iam_client = boto3.client('iam')
@@ -149,15 +159,17 @@ Resources:
                   response_data = {'Message': 'Deleting custom resource.'}
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, 'ServiceLinkedRoleFunction')
 
+
           def __create_service_linked_role(event, context):
               try:
                   iam_client = boto3.client('iam')
-                  print('INFO: Creating service-linked role for VPC Elasticsearch.')
+                  print('INFO: Creating service-linked role for VPC Elasticsearch domain.')
                   response = iam_client.create_service_linked_role(
                       AWSServiceName='es.amazonaws.com',
-                      Description='service-linked role for VPC Elasticsearch domain.'
+                      Description='Service-linked role for VPC Elasticsearch domain.'
                   )
                   print('INFO: Role created. Service response: {}'.format(response))
+                  # wait for the IAM role to 'show-up' before attempting to use it
                   sleep(180)
                   print('INFO: Signaling success to cloudformation...')
                   response_data = {'Message': 'Role created. Service response: {}.'.format(response)}
@@ -166,7 +178,7 @@ Resources:
                   print('ERROR: Role creation failed. Exception: {}'.format(e))
                   response_data = {'Message': 'IAM service returned an Error. Exception: {}'.format(e)}
                   cfnresponse.send(event, context, cfnresponse.FAILED, response_data, 'ServiceLinkedRoleFunction')
-      Timeout: 900
+
       Runtime: python3.6
       MemorySize: 248
   ManageServiceLinkedRoleResource:
