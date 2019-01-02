@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.5, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
     
     
       
@@ -308,6 +308,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-to-find-mdl-user-credentials-to-login-to-herdshepherdbdsql" title="How to find MDL User Credentials to login to Herd/Shepherd/Bdsql" class="md-nav__link">
+    How to find MDL User Credentials to login to Herd/Shepherd/Bdsql
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#herd-mdl-additional-use-cases" title="Herd-MDL additional use cases" class="md-nav__link">
     Herd-MDL additional use cases
   </a>
@@ -528,6 +535,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-to-find-mdl-user-credentials-to-login-to-herdshepherdbdsql" title="How to find MDL User Credentials to login to Herd/Shepherd/Bdsql" class="md-nav__link">
+    How to find MDL User Credentials to login to Herd/Shepherd/Bdsql
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#herd-mdl-additional-use-cases" title="Herd-MDL additional use cases" class="md-nav__link">
     Herd-MDL additional use cases
   </a>
@@ -633,7 +647,7 @@
 <p><em>Users can query anything in the data lake in seconds. The example above has one object – but Herd-MDL achieves interactive query performance even if you have thousands of Data entities, millions of Data Objects and partitions, and cases where each Data Object has tens of billions of rows that make up a Data Entity with trillions of rows.</em></p>
 <p><em>BDSQL exposes all the data in your data lake to any user who can perform SQL queries. It looks like one gigantic database accessible to anyone with a SQL client – but it's actually based on more scalable and cost-effective technology than even the most expensive proprietary big data appliances.</em></p>
 <h2 id="ingesting-data-into-herd-mdl">Ingesting data into Herd-MDL<a class="headerlink" href="#ingesting-data-into-herd-mdl" title="Permanent link">&para;</a></h2>
-<p><strong>Purpose - demonstrate two methods of loading and registering data into Herd-MDL</strong></p>
+<p><strong>Purpose - provide an overview and simplified example of how to register data in Herd</strong></p>
 <p>Terminology</p>
 <ul>
 <li>Data Entity (also known as a Business Object Definition in Herd APIs) - represents a set of data with a specific business meaning e.g. Trade Details. Includes descriptive information and details of data format.</li>
@@ -643,63 +657,121 @@
 <p>Pre-requisites</p>
 <ul>
 <li>Herd-MDL is installed and validated; User has machine with access to S3 endpoints to upload the data and Herd endpoints to register the data</li>
+<li>Download <a href="../../img/herd_reg_demo.zip">herd_reg_demo.zip</a> and unzip in a directory</li>
+<li>Install Postman REST client</li>
 <li>Obtain the Herd Uploader jar - use the link for "HerdUploaderJarURL" in the output of your Herd-MDL CloudFormation stack</li>
-<li>Obtain the data files for <a href="https://github.com/FINRAOS/herd-mdl/blob/master/mdl/src/main/metastorEc2/data/2017-08-10/2017-08-10.security-data.txt">2017-08-10</a> and <a href="https://github.com/FINRAOS/herd-mdl/blob/master/mdl/src/main/metastorEc2/data/2017-08-11/2017-08-11.security-data.txt">2017-08-11</a></li>
 </ul>
-<p>View the currently registered Data Objects for the 'Security Test Object' at <your Herd-UI hostame>/data-objects/SEC_MARKET_DATA/SecurityData. The Data Object List shows date-partitioned data from 2018-08-01 through 2018-08-09</p>
-<p>Load data using the Uploader Tool, an ingestion utility created by the Herd team.</p>
-<ul>
-<li>The Uploader populates your data lake by putting data in S3 and registering the data with the Herd catalog.</li>
-<li>Place the uploader jar in a directory and the data file in a subdirectory called 'data'</li>
-<li>The Uploader tool requires a JSON manifest that contains the metadata for registration in the Herd catalog. Here is the manifest file for the 2018-08-10 SecurityData registration:</li>
-</ul>
-<pre class="codehilite"><code>{
-  &quot;namespace&quot;: &quot;SEC_MARKET_DATA&quot;,
-  &quot;businessObjectDefinitionName&quot;: &quot;SecurityData&quot;,
-  &quot;businessObjectFormatUsage&quot;: &quot;MDL&quot;,
-  &quot;businessObjectFormatFileType&quot;: &quot;TXT&quot;,
-  &quot;businessObjectFormatVersion&quot;: &quot;0&quot;,
-  &quot;partitionKey&quot;: &quot;TDATE&quot;,
-  &quot;partitionValue&quot;: &quot;2017-08-10&quot;,
-  &quot;manifestFiles&quot; : [ 
-    {
-      &quot;fileName&quot; : &quot;2017-08-10.security-data.txt&quot;,
-      &quot;rowCount&quot; : 504
-    }
-  ]
-}</code></pre>
-
-
-<ul>
-<li>Create a manifest file named manifest.json with the contents above in the directory with the jar</li>
-<li>In that same directory, execute the following command (your uploader version will differ)</li>
-</ul>
-<pre class="codehilite"><code>java -jar herd-uploader-0.71.0.jar -l ./data -m ./manifest.json -V -H {HERD_LOAD_BALANCER_DNS_NAME}</code></pre>
-
-
-<ul>
-<li>The uploader tool performs the following steps:<ul>
-<li>Pre-registers a BData in the Herd catalog with 'Uploading' status and obtains a Herd-configured S3 prefix</li>
-<li>Obtains temporary credentials to upload to that S3 prefix. If Herd is configured for Namespace-level authorization, only users with write permissions to the SEC_MARKET_DATA namespace can obtain credentials.</li>
-<li>Uploads the file from the local filesystem to the S3 prefix obtained in the previous step. The S3 upload AWS multipart uploader with up to 10 parallel threads for performance and with automatic retry for reliability.</li>
-<li>Registers the BData as 'VALID' once the S3 upload completes</li>
-</ul>
+<p>Perform one-time steps to register a new object (Business Object Definition with Format) in the Herd metadata catalog</p>
+<ol>
+<li>Import all 3 json files from herd_reg_demo/register_one_time into Postman. These files contain import the following:<ol>
+<li>Collection called 'MDL Demo' that contains all requests that we will execute in sequence to perform the registration.</li>
+<li>Postman Environment called 'MDL Demo' that contains the Herd hostname. This is referenced
+from each request in the collection. To edit, click the gear icon in the upper-right that says 'Manage Environment'. Then click on 'MDL Demo' from the list to view the variable. Replace the domain value with the domain from the 'HerdURL' entry in the output of your Herd-MDL CloudFormation stack.</li>
+<li>Postman Global Variables for Namespace and BO Definition Name. These are referenced from request and can be changed to
+run this demo multiple times without colliding with previously created objects.</li>
+</ol>
 </li>
-</ul>
-<p>Load the data using S3 APIs and Herd REST APIs</p>
-<ul>
-<li>Coming soon, detailed, steps as follows including sample request JSON for Herd</li>
-<li>Call Herd Pre-Registration API to obtain S3 Prefix</li>
-<li>Use S3 API to upload file(s) to prefix</li>
-<li>Call Herd Registration API to validate data and update status</li>
-</ul>
+<li>Select 'MDL Demo' environment from the environment drop-down in the upper-right hand corner of Postman.</li>
+<li>To test connectivity, run the 'Current User' request in the collection. For demo installations without authentication should receive results for TRUSTED_USER. </li>
+<li>Now, run the following requests in sequence to register a new object in the catalog:<ol>
+<li>Create Namespace - creates a new Namespace for your object. The value of the Namespace comes from the Postman Global
+Variable you imported which by default is 'reg_demo'</li>
+<li>Create BO Definition - creates a new Business Object Definition for your object. The value of the BO Definition Name comes
+from the Postman Global Variable you imported which by default is 'demo_data'</li>
+<li>Create BO Format - creates a Format for your object. The Format is simple - it has only two columns and is partitioned by
+'Transaction Date'</li>
+<li>Descriptive PUT - adds a friendly display name and definition</li>
+<li>Register for Metastore-BDSQL - this registers the new object for inclusion in the Metastore used by the BDSQL interative query
+cluster.</li>
+</ol>
+</li>
+<li>Go to Herd UI and search for 'demo_data' (or whatever you might have named your BO Definition). You will see a result for the object
+you just created. Click to see the Data Entity page for your object.</li>
+<li>Drill down using the 'Data Object List' link and you will see that there are not yet any BData partitions registered</li>
+</ol>
+<p>Register a new partition (Business Object Data) in the Herd metadata catalog. This step is generally performed in an ongoing fashion with new
+partitions/BData as they arrive.</p>
+<ol>
+<li>Get to a command line and navigate to the herd_reg_demo/register_bdata_ongoing directory</li>
+<li>Open command.bat and replace the hostname value in the '-H' argument with the he domain from the 'HerdURL' entry in the output of your Herd-MDL CloudFormation stack</li>
+<li>Place the Herd Uploader jar in the herd_reg_demo/register_bdata_ongoing directory</li>
+<li>Run command.bat - it performs the following:<ol>
+<li>command.bat triggers the Herd uploader tool with command line arguments referring to the Herd API host, the data file
+associated with this BData, and a manifest file that contains metadata about this BData</li>
+<li>command.bat also contains additional command line arguments as documented in Uploader Users Guide</li>
+<li>Note that you can configure a proxy if needed to access Herd and/or S3 using arguments documented in the Users Guide</li>
+</ol>
+</li>
+<li>Uploader tool performs the following:<ol>
+<li>Read manifest file and confirm it references a valid BO Definition, Format, and Partition value for the BData being updated</li>
+<li>NOTE – unlike the Postman Collection that has variables for Namespace and BO Definition Name, the manifest.json has these
+values hard-coded. If you've changed either of those variables when registering with Postman, you must alter these values in the manifest.
+json as well.</li>
+<li>Call Herd API to pre-register the partition based on metadata from the manifest file and obtain S3 location for data upload</li>
+<li>Call Herd API to get temporary credentials to upload data file to S3. This step requires the user has WRITE permissions to the
+Namespace</li>
+<li>Upload the file to S3 using the temporary credentials</li>
+<li>Call Herd API to confirm the data is in place and mark the new BData Partition VALID. This designates it is ready for consumers
+to access the data.</li>
+</ol>
+</li>
+<li>Return to Herd UI and refresh the Data Object List page. The newly-registered BData will now appear. Drill down to see details such as
+S3 location, audit information.</li>
+<li>After a delay (30-minutes if Metastore cluster is idle, &lt;10 minutes if Metastore cluster was running), the new data will be available to
+select in BDSQL interactive query</li>
+</ol>
 <p>More information</p>
 <ul>
-<li>The examples above are for loading new Data Objects to an existing Data Entity that was created by the Herd-MDL install automation. Creating a new Data Entity is described in detail in the Herd tutorial <a href="https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data">Quick Start to Registering Data</a></li>
 <li>Learn more about the Herd catalog in the <a href="https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data">Herd Wiki</a> and about Herd REST APIs by browsing the <a href="https://finraos.github.io/herd/docs/latest/rest/index.html">Herd Swagger API documentation</a></li>
 </ul>
 <h3 id="take-aways_1">Take-aways<a class="headerlink" href="#take-aways_1" title="Permanent link">&para;</a></h3>
-<p><em>The Uploader tool is a quick, easy way to ingest Data Objects into the Herd-MDL. This tool has been used extensively at FINRA. Many teams script the generation of manifest files and the uploader CLI. Petabytes of data have been uploaded using this tool..</em></p>
+<p><em>There is a learning curve but after that, registering data is fairly straightforward. The registration process at FINRA is highly automated.
+Some use cases automate use of the Uploader tool. Other use cases perform some variation of the steps the the Uploader tool performs
+but they all ultimately place data in S3 and call Herd APIs to register the data. Other use cases include:  integration between Herd and FINRA's ETL framework; integrations with custom apps of different varieties</em></p>
+<p><em>This example shows registration of columnar data consumed through BDSQL but a similar approach is used to register document-based
+data for consumption by other tools.</em></p>
+<p><em>The Uploader tool is a quick, easy way to ingest Data Objects into the Herd-MDL. This tool has been used extensively at FINRA. Many teams script the generation of manifest files and the uploader CLI. Petabytes of data have been uploaded using this tool.</em></p>
+<h2 id="how-to-find-mdl-user-credentials-to-login-to-herdshepherdbdsql">How to find MDL User Credentials to login to Herd/Shepherd/Bdsql<a class="headerlink" href="#how-to-find-mdl-user-credentials-to-login-to-herdshepherdbdsql" title="Permanent link">&para;</a></h2>
+<p>This section describes how to locate credentials required for endpoints when you have installed with EnableSSLAndAuth=true.</p>
+<blockquote>
+<p>Note: A detailed description and a list of all default users and auth groups created for your stack can be found in the <a href="#managing-openldap-users-and-groups">manage OpenLdap section</a></p>
+</blockquote>
+<p><strong>Prerequisites</strong></p>
+<ul>
+<li>AWS Console Access of the AWS Account, where MDL is created</li>
+<li>MDL Instance Name of the MDL stack<ul>
+<li>This is the parameter to the MDL Cloudformation Stack</li>
+</ul>
+</li>
+<li>EnableSSLAndAuth must be set to true while creating the stack</li>
+</ul>
+<p><strong>Steps</strong></p>
+<ul>
+<li>Login to AWS Console and navigate to SSM Parameter section (Refer <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-console.html">AWS Documentation</a>)</li>
+<li>User Name<ul>
+<li>Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/LDAP/User/HerdAdminUsername on the console<ul>
+<li>Example :  <code>/app/MDL/mdlstack/dev/LDAP/User/HerdAdminUsername</code></li>
+</ul>
+</li>
+<li>Get the Value for the above parameter. That value specifies the user name for Herd/Bdsql/Shepherd<ul>
+<li>Example: <code>herd_admin_user</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Password  <ul>
+<li>Find the parameter: /app/MDL/${MDLInstanceName}/${Environment}/Password/HerdAdminPassword on the console<ul>
+<li>Example :  <code>/app/MDL/mdlstack/dev/LDAP/Password/HerdAdminPassword</code></li>
+</ul>
+</li>
+<li>Get the Value for the above parameter, it is a 12-letter AlphaNumeric String which specifies the password for Herd/Bdsql/Shepherd, and it is a Secure String<ul>
+<li>Example: <code>ODMyOTdmZmE5</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Use the above User name, and Password to login to Herd/Shepherd/Bdsql  </li>
+</ul>
 <h2 id="herd-mdl-additional-use-cases">Herd-MDL additional use cases<a class="headerlink" href="#herd-mdl-additional-use-cases" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Scale!<ul>
@@ -777,7 +849,7 @@
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.5",url:{base:".."}})</script>
+      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
       
     
     
