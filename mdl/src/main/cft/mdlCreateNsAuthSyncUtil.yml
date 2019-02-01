@@ -180,7 +180,7 @@ Resources:
               });
             };
         Timeout: 300
-        Runtime: nodejs4.3
+        Runtime: nodejs8.10
   VPCDestroyENI:
     Type: Custom::VPCDestroyENI
     Properties:

@@ -281,11 +281,20 @@ Resources:
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         PrivateSubnetsParameter: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         NsAuthSyncUtilitySecurityGroupParameter: !Join ['/', ['/app/MDL', !Ref MDLInstanceName, !Ref Environment, 'SecurityGroup/NsAuthSyncUtility']]
+  HerdGlueLambdaStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: DeployHerd
+    DependsOn: ElasticSearchEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlCreateGlueLambda.yml]]
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
   HerdEC2Stack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployHerd
     DependsOn:
-      - ElasticSearchEC2Stack
+      - HerdGlueLambdaStack
     Properties:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlHerd.yml]]
       Parameters:

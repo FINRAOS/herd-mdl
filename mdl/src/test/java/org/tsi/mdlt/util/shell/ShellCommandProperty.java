@@ -54,7 +54,7 @@ public class ShellCommandProperty {
     private static void addSsmParameterToMap(SsmParameterKeyEnum ssmParameterKeyEnum,
             Map<String, String> propertiesMap) {
         boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        String value = isAuthEnabled ? SsmUtil.getDecryptedLdapParameter(ssmParameterKeyEnum).getValue() : "randomusername";
+        String value = isAuthEnabled ? SsmUtil.getDecryptedParameter(ssmParameterKeyEnum).getValue() : "randomusername";
         propertiesMap.put(ssmParameterKeyEnum.getVariableName(), value);
     }
 
@@ -62,7 +62,7 @@ public class ShellCommandProperty {
     private static void addDecryptedSsmParameterToMap(SsmParameterKeyEnum ssmParameterKeyEnum,
             Map<String, String> propertiesMap) {
         boolean isAuthEnabled = Boolean.valueOf(TestProperties.get(StackInputParameterKeyEnum.ENABLE_SSL_AUTH));
-        String value = isAuthEnabled ? SsmUtil.getDecryptedLdapParameter(ssmParameterKeyEnum).getValue() : "";
+        String value = isAuthEnabled ? SsmUtil.getDecryptedParameter(ssmParameterKeyEnum).getValue() : "";
         propertiesMap.put(ssmParameterKeyEnum.getVariableName(), value);
     }
 }

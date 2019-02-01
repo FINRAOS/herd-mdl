@@ -169,6 +169,16 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
         execute_cmd "cp ${deployLocation}/xml/demo/searchIndexActivate.xml /tmp/searchIndexActivate.xml.subst"
         execute_cmd "sed -i \"s/{{INDEX_NAME}}/${indexName}/g\" /tmp/searchIndexActivate.xml.subst"
         execute_curl_cmd "curl -H 'Content-Type: application/xml' -d @/tmp/searchIndexActivate.xml.subst -X POST ${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest/searchIndexActivations --insecure"
+
+        #update glue migration lambda environments
+        herdBaseUrl="${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest"
+        glueSnsLambdaArn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Lambda/GlueSnsLambdaArn --region ${region} --output text --query Parameter.Value)
+        execute_cmd "aws lambda update-function-configuration --function-name ${glueSnsLambdaArn} \
+        --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
+
+        glueSchemaLambdaArn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Lambda/GlueSchemaLambdaArn --region ${region} --output text --query Parameter.Value)
+        execute_cmd "aws lambda update-function-configuration --function-name ${glueSchemaLambdaArn} \
+        --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
     fi
 
     if [ "${enableSSLAndAuth}" = "true" ] ; then

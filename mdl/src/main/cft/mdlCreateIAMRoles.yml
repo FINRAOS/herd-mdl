@@ -103,6 +103,7 @@ Resources:
                   - 'sts:AssumeRole'
                   - 'sts:GetFederationToken'
                   - 'sts:DecodeAuthorizationMessage'
+                  - 'lambda:UpdateFunctionConfiguration'
                 Effect: Allow
                 Resource: '*'
   MDLInstanceProfile:

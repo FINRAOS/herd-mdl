@@ -25,9 +25,10 @@ Parameters:
     Description: Whether shutdown herd-mdl stack after test execution
   MDLInstanceName:
     Default: mdlt
-    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created
+    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created, max length is 6
     Type: String
     AllowedPattern: '[a-z0-9]*'
+    MaxLength: 6
   ReleaseVersion:
     Default: 1.4.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
@@ -190,7 +191,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
-              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/herd-mdlt-1.4.0-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -326,7 +327,7 @@ Resources:
         Environment: !Ref Environment
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
@@ -351,4 +352,4 @@ Resources:
         Environment: !Ref Environment
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/installMDL.yml'

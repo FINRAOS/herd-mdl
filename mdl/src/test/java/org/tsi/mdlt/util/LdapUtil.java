@@ -43,8 +43,8 @@ import org.tsi.mdlt.pojos.User;
 public class LdapUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private static final String BASE_DN = SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.LDAP_DN).getValue();
-    private static final String HOSTNAME = SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.LDAP_HOSTNAME).getValue() + ".ec2.internal";
+    private static final String BASE_DN = SsmUtil.getPlainParameter(SsmParameterKeyEnum.LDAP_DN).getValue();
+    private static final String HOSTNAME = SsmUtil.getPlainParameter(SsmParameterKeyEnum.LDAP_HOSTNAME).getValue() + ".ec2.internal";
 
     private static final String OU_PEOPLE = "People";
     private static final String OU_GROUPS = "Groups";

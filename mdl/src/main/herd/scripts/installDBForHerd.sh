@@ -263,6 +263,7 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
 
 
         # Add Herd namespace-auth SNS topic configuration
+        #todo only execute when bdsql auth is deployed
         sns_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/SNS/UserNamespaceChgTopicArn --region ${region} --output text --query Parameter.Value)
         echo "Inserting SNS config for user-namespace authorization status changes. SNS Arn: ${sns_arn}"
         execute_cmd "sed -i \"s/{{SNS_TOPIC_ARN}}/${sns_arn}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
@@ -301,6 +302,13 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5282, '${region}', 'm4.4xlarge', 0.80000, now(), 'SYSTEM', now(), 'SYSTEM');\""
     execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.ec2_od_prcng_lk VALUES (5895, '${region}', 'm4.2xlarge', 0.40000, now(), 'SYSTEM', now(), 'SYSTEM');\""
 
+    # Add Herd business object data change SNS topic configuration
+    sns_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/SNS/BusinessObjectDataChgTopicArn --region ${region} --output text --query Parameter.Value)
+    echo "Inserting SNS config for business object data status changes. SNS Arn: ${sns_arn}"
+    execute_cmd "sed -i \"s/{{SNS_TOPIC_ARN}}/${sns_arn}/g\" ${deployLocation}/sql/bzObjChgSnsConfig.sql"
+    execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/sql/bzObjChgSnsConfig.sql"
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/bzObjChgSnsConfig.sql"
+    execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"UPDATE cnfgn set cnfgn_value_ds = 'true' where cnfgn_key_nm='herd.notification.sqs.enabled';\""
 fi
 
 
