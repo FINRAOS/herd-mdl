@@ -191,7 +191,7 @@ Resources:
           def handler(event, context):
               release_version = event['ResourceProperties']['ReleaseVersion']
               deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
-              release_artifact_location = 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/herd-mdlt-1.4.0-dist.zip'.replace('{releaseVersion}', release_version)
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
 
               s3 = boto3.client('s3')
               physical_id = "CopyArtifactsLambdaPhysicalID"
@@ -327,7 +327,7 @@ Resources:
         Environment: !Ref Environment
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
   DeployHostHttpWithoutAuth:
     Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
@@ -352,4 +352,4 @@ Resources:
         Environment: !Ref Environment
         WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
         MDLTWrapperInstanceName: !Ref MDLInstanceName
-        InstallMdlYmlUrl: !Sub 'https://s3.amazonaws.com/herd-mdl-deploy-bucket/maggieglue/installMDL.yml'
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
