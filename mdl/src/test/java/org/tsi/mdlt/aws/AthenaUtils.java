@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
+import org.tsi.mdlt.util.TestProperties;
 
 public class AthenaUtils {
 
@@ -94,7 +95,7 @@ public class AthenaUtils {
         QueryExecutionContext queryExecutionContext = new QueryExecutionContext()
             .withDatabase(databaseName);
         ResultConfiguration resultConfiguration = new ResultConfiguration()
-            .withOutputLocation(MDLT_BUCKET_NAME);
+            .withOutputLocation("s3://" + MDLT_BUCKET_NAME);
         StartQueryExecutionRequest queryExecutionRequest = new StartQueryExecutionRequest()
             .withQueryExecutionContext(queryExecutionContext)
             .withQueryString(query)

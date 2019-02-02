@@ -122,7 +122,7 @@ Resources:
       Action: 'lambda:InvokeFunction'
       Principal: sns.amazonaws.com
       SourceArn: !Ref HerdObjectChangeNotificationSnsTopic
-      FunctionName: !GetAtt 'GlueSchemaLambdaFunction.Arn'
+      FunctionName: !GetAtt 'GlueSnsLambdaFunction.Arn'
   GlueSnsLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
