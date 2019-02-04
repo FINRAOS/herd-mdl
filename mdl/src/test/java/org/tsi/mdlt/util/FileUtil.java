@@ -16,9 +16,15 @@
 package org.tsi.mdlt.util;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.stream.Collectors;
+import org.tsi.mdlt.exception.TaskException;
 
 public class FileUtil {
 
@@ -31,5 +37,14 @@ public class FileUtil {
         InputStream in = FileUtil.class.getResourceAsStream(filePath);
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
         return reader.lines().collect(Collectors.joining());
+    }
+
+    /**
+     * Get file stream from jar
+     * @param filePath file path
+     * @return
+     */
+    public static InputStream getFileInputStream(String filePath){
+        return FileUtil.class.getResourceAsStream(filePath);
     }
 }

@@ -1,0 +1,169 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: 2010-09-09
+Description: MDL - Create Herd Glue Lambda
+Parameters:
+  MDLInstanceName:
+    Description: 'MDL Instance name'
+    Type: String
+  Environment:
+    Description: Release environment
+    Type: String
+  S3BucketName:
+    Default: 'YourS3BucketNameForgGlueLambda'
+    Description: Glue Lambda jar s3 bucketname
+    Type: String
+  S3Key:
+    Default: 'glue-poc-1.0-SNAPSHOT.jar'
+    Description: Glue Lambda jar s3 key
+    Type: String
+Resources:
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - glue:*
+              - s3:GetBucketLocation
+              - s3:ListBucket
+              - s3:ListAllMyBuckets
+              - s3:GetBucketAcl
+              - ec2:DescribeVpcEndpoints
+              - ec2:DescribeRouteTables
+              - ec2:CreateNetworkInterface
+              - ec2:DeleteNetworkInterface
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcAttribute
+              - iam:ListRolePolicies
+              - iam:GetRole
+              - iam:GetRolePolicy
+              - cloudwatch:PutMetricData
+              Resource:
+              - "*"
+            - Effect: Allow
+              Action:
+              - s3:CreateBucket
+              Resource:
+              - arn:aws:s3:::aws-glue-*
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              Resource:
+              - arn:aws:s3:::aws-glue-*/*
+              - arn:aws:s3:::*/*aws-glue-*/*
+            - Effect: Allow
+              Action:
+              - s3:GetObject
+              Resource:
+              - arn:aws:s3:::crawler-public*
+              - arn:aws:s3:::aws-glue-*
+            - Effect: Allow
+              Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:AssociateKmsKey
+              Resource:
+              - arn:aws:logs:*:*:*
+            - Effect: Allow
+              Action:
+              - ec2:CreateTags
+              - ec2:DeleteTags
+              Condition:
+                ForAllValues:StringEquals:
+                  aws:TagKeys:
+                  - aws-glue-service-resource
+              Resource:
+              - arn:aws:ec2:*:*:network-interface/*
+              - arn:aws:ec2:*:*:security-group/*
+              - arn:aws:ec2:*:*:instance/*
+  HerdObjectChangeNotificationSnsTopicArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Resources/SNS/BusinessObjectDataChgTopicArn'
+      Type: String
+      Value: !Ref HerdObjectChangeNotificationSnsTopic
+      Description: business object data status changes SNS topic's ARN
+  HerdObjectChangeNotificationSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub '${MDLInstanceName}-Herd-${Environment}-OBJ-CHG-TOPIC'
+      Subscription:
+        -
+          Endpoint: !GetAtt 'GlueSnsLambdaFunction.Arn'
+          Protocol: 'lambda'
+  GlueSnsLambdaInvocationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref HerdObjectChangeNotificationSnsTopic
+      FunctionName: !GetAtt 'GlueSnsLambdaFunction.Arn'
+  GlueSnsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'org.finra.herd.mdl.handler.HerdGlueSyncHandler::handleHerdNotificationRequest'
+      Code:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3Key
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'java8'
+      Timeout: '300'
+      MemorySize: 512
+  GlueSchemaLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'org.finra.herd.mdl.handler.HerdGlueSyncHandler::handleSchemaMigrationRequest'
+      Code:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3Key
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'java8'
+      Timeout: '300'
+      MemorySize: 512
+  HerdGlueNotificatioinLambdaParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Lambda/GlueSnsLambdaArn'
+      Type: String
+      Value: !Ref GlueSnsLambdaFunction
+      Description: Herd Glue notification migration Lambda Arn
+  HerdGlueSchemaLambdaParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Lambda/GlueSchemaLambdaArn'
+      Type: String
+      Value: !Ref GlueSchemaLambdaFunction
+      Description: Herd Glue schema Migration Lambda Arn

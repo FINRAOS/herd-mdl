@@ -69,8 +69,8 @@ public class EMRClusterTest extends BaseTest {
         cftClient = new CloudFormationClient(stackName);
         Map<String, String> parameters = new HashMap<>();
         parameters.put("MDLInstanceName", instanceName);
-        parameters.put("VpcId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.VPC_ID).getValue());
-        parameters.put("SubnetId", SsmUtil.getPlainVpcParameter(SsmParameterKeyEnum.PRIVATE_SUBNETS).getValue());
+        parameters.put("VpcId", SsmUtil.getPlainParameter(SsmParameterKeyEnum.VPC_ID).getValue());
+        parameters.put("SubnetId", SsmUtil.getPlainParameter(SsmParameterKeyEnum.PRIVATE_SUBNETS).getValue());
         parameters.put("KeyPairName", TestProperties.getProperties().getProperty(StackInputParameterKeyEnum.KEY_PAIR_NAME.getKey()));
 
         try {

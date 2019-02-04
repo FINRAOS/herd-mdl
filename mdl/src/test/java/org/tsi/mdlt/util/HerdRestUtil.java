@@ -16,9 +16,7 @@
 package org.tsi.mdlt.util;
 
 import static io.restassured.RestAssured.given;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import static io.restassured.RestAssured.keyStore;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,22 +26,36 @@ import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.HttpStatus;
+import org.finra.herd.model.api.xml.BusinessObjectData;
+import org.finra.herd.model.api.xml.BusinessObjectDataCreateRequest;
+import org.finra.herd.model.api.xml.BusinessObjectDataKey;
+import org.finra.herd.model.api.xml.BusinessObjectDataStatusUpdateRequest;
+import org.finra.herd.model.api.xml.BusinessObjectDefinition;
+import org.finra.herd.model.api.xml.BusinessObjectDefinitionCreateRequest;
+import org.finra.herd.model.api.xml.BusinessObjectFormat;
+import org.finra.herd.model.api.xml.BusinessObjectFormatCreateRequest;
+import org.finra.herd.model.api.xml.BusinessObjectFormatUpdateRequest;
+import org.finra.herd.model.api.xml.NamespaceCreateRequest;
+import org.finra.herd.model.api.xml.NamespacePermissionEnum;
+import org.finra.herd.model.api.xml.SchemaColumn;
+import org.finra.herd.model.api.xml.UserNamespaceAuthorizationCreateRequest;
+import org.finra.herd.model.api.xml.UserNamespaceAuthorizationKey;
+import org.finra.herd.model.jpa.BusinessObjectDataStatusEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
+import org.tsi.mdlt.exception.TaskException;
 import org.tsi.mdlt.pojos.User;
-
-import org.finra.herd.model.api.xml.BusinessObjectData;
-import org.finra.herd.model.api.xml.BusinessObjectDefinitionCreateRequest;
-import org.finra.herd.model.api.xml.NamespaceCreateRequest;
-import org.finra.herd.model.api.xml.NamespacePermissionEnum;
-import org.finra.herd.model.api.xml.UserNamespaceAuthorizationCreateRequest;
-import org.finra.herd.model.api.xml.UserNamespaceAuthorizationKey;
 
 public class HerdRestUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger LOGGER = LoggerFactory
+        .getLogger(MethodHandles.lookup().lookupClass());
 
     private static final String HERD_BASE_URL = TestProperties.getPropertyMap().get("HerdHostname") + "/herd-app/rest";
 
@@ -56,16 +68,30 @@ public class HerdRestUtil {
     private static final String GET_BUSINESS_OBJECT_DEFINITION_URL = "/businessObjectDefinitions/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}";
     private static final String DELETE_BUSINESS_OBJECT_NOTIFICATION_URL = "/notificationRegistrations/businessObjectDataNotificationRegistrations/namespaces/{namespace}/notificationNames/{notificationName}";
 
-    private static final String GET_BUSINESS_OBJECT_DATA_URL = "/businessObjectData/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
-        + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/?partitionValue={partitionValue}";
-    private static final String DELETE_BUSINESS_OBJECT_DATA_URL = "/businessObjectData/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
-        + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/businessObjectFormatVersions/{businessObjectFormatVersion}"
-        + "/partitionValues/{partitionValue}/businessObjectDataVersions/{businessObjectDataVersion}?deleteFiles=false";
+    private static final String GET_BUSINESS_OBJECT_DATA_URL =
+        "/businessObjectData/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
+            + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/?partitionValue={partitionValue}";
+    private static final String DELETE_BUSINESS_OBJECT_DATA_URL =
+        "/businessObjectData/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
+            + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/businessObjectFormatVersions/{businessObjectFormatVersion}"
+            + "/partitionValues/{partitionValue}/businessObjectDataVersions/{businessObjectDataVersion}?deleteFiles=false";
+    private static final String POST_BUSINESS_OBJECT_DATA_URL = "/businessObjectData";
+    private static final String GET_BUSINESS_OBJECT_DATA_CREDENTIAL_URL =
+        "/businessObjectData/upload/credential/namespaces/{namespace}/businessObjectDefinitionNames"
+            + "/{businessObjectDefinitionName}/businessObjectFormatUsages/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}"
+            + "/businessObjectFormatVersions/{businessObjectFormatVersion}/partitionValues/{partitionValue}?storageName={storageName}&businessObjectDataVersion={businessObjectDataVersion}";
+    private static final String PUT_BUSINESS_OBJECT_DATA_STATUS_URL = "/businessObjectDataStatus/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}"
+        + "/businessObjectFormatUsages/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/"
+        + "businessObjectFormatVersions/{businessObjectFormatVersion}/partitionValues/{partitionValue}/businessObjectDataVersions/{businessObjectDataVersion}";
 
-    private static final String GET_BUSINESS_OBJECT_FORMAT_URL = "/businessObjectData/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
-        + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/businessObjectFormatVersions/{businessObjectFormatVersion}";
-    private static final String DELETE_BUSINESS_OBJECT_FORMAT_URL = "/businessObjectFormats/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
-        + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/businessObjectFormatVersions/{businessObjectFormatVersion}";
+    private static final String POST_BUSINESS_OBJECT_DATA_FORMAT_URL = "/businessObjectFormats";
+
+    private static final String GET_BUSINESS_OBJECT_FORMAT_URL =
+        "/businessObjectFormats/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
+            + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}?businessObjectFormatVersion={businessObjectFormatVersion}";
+    private static final String DELETE_BUSINESS_OBJECT_FORMAT_URL =
+        "/businessObjectFormats/namespaces/{namespace}/businessObjectDefinitionNames/{businessObjectDefinitionName}/businessObjectFormatUsages"
+            + "/{businessObjectFormatUsage}/businessObjectFormatFileTypes/{businessObjectFormatFileType}/businessObjectFormatVersions/{businessObjectFormatVersion}";
     private static final String POST_NAMESPACE_AUTHORIZATION_URL = "/userNamespaceAuthorizations";
     private static final String DELETE_NAMESPACE_AUTHORIZATION_URL = "/userNamespaceAuthorizations/userIds/{userId}/namespaces/{namespace}";
 
@@ -75,25 +101,27 @@ public class HerdRestUtil {
     private static final String POST_EMR_CLUSTER_URL = "/emrClusters";
     private static final String DELETE_EMR_CLUSTER_URL = "/emrClusters/namespaces/{namespace}/emrClusterDefinitionNames/{emrClusterDefinitionName}/emrClusterNames/{emrClusterName}?overrideTerminationProtection=true";
 
+    private static final String GET_STORAGE_URL = "/storages/{storageName}";
     /**
      * Get herd build info
      *
      * @param user user
-     * @return
      */
     public static Response getBuildInfo(User user) {
-        return given().spec(given().spec(getHerdBaseRequestSpecification(user))).get(GET_BUILD_INFO_URL);
+        return given().spec(given().spec(getHerdBaseRequestSpecification(user)))
+            .get(GET_BUILD_INFO_URL);
     }
 
     /**
      * Create data provider
      *
-     * @param user             user to perform rest call
+     * @param user user to perform rest call
      * @param dataProviderName data provider name
-     * @return
      */
     public static Response postDataProvider(User user, String dataProviderName) {
-        String createDataProviderBody = String.format("<dataProviderCreateRequest><dataProviderName>%s</dataProviderName></dataProviderCreateRequest>", dataProviderName);
+        String createDataProviderBody = String.format(
+            "<dataProviderCreateRequest><dataProviderName>%s</dataProviderName></dataProviderCreateRequest>",
+            dataProviderName);
         Response response = given().spec(given().spec(getHerdBaseRequestSpecification(user)))
             .body(createDataProviderBody)
             .post(POST_DATA_PROVIDER_URL);
@@ -104,9 +132,8 @@ public class HerdRestUtil {
     /**
      * Get data provider
      *
-     * @param user             user to perform rest call
+     * @param user user to perform rest call
      * @param dataProviderName data provider name
-     * @return
      */
     public static Response getDataProvider(User user, String dataProviderName) {
         Response response = given().spec(given().spec(getHerdBaseRequestSpecification(user)))
@@ -119,9 +146,8 @@ public class HerdRestUtil {
     /**
      * Delete data provider
      *
-     * @param user             user to perform rest call
+     * @param user user to perform rest call
      * @param dataProviderName data provider name
-     * @return
      */
     public static Response deleteDataProvider(User user, String dataProviderName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
@@ -134,9 +160,8 @@ public class HerdRestUtil {
     /**
      * Create new namespace
      *
-     * @param user      user to perform rest call
+     * @param user user to perform rest call
      * @param namespace namespace name to create
-     * @return
      */
     public static Response postNamespace(User user, String namespace) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
@@ -149,9 +174,8 @@ public class HerdRestUtil {
     /**
      * Get namespace
      *
-     * @param user          user to perform rest call
+     * @param user user to perform rest call
      * @param namespaceCode namespace name to get info
-     * @return
      */
     public static Response getNamespace(User user, String namespaceCode) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
@@ -164,9 +188,8 @@ public class HerdRestUtil {
     /**
      * Delete new namespace
      *
-     * @param user          user to perform rest call
+     * @param user user to perform rest call
      * @param namespaceCode namespace name to delete
-     * @return
      */
     public static Response deleteNamespace(User user, String namespaceCode) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
@@ -176,32 +199,42 @@ public class HerdRestUtil {
         return response;
     }
 
-    /**
-     * Create business object definition
-     *
-     * @param user                         user to perform rest call
-     * @param namespace                    namespace name
-     * @param businessObjectDefinitionName business object definition name
-     * @param dataProviderName             data provider name
-     * @return
-     */
-    public static Response postBusinessObjectDefinition(User user, String namespace, String businessObjectDefinitionName, String dataProviderName) {
-        Response response = given().spec(getHerdBaseRequestSpecification(user))
-            .body(getPostBusinessObjectDefinitionBody(namespace, businessObjectDefinitionName, dataProviderName))
-            .post(POST_BUSINESS_OBJECT_DEFINITION_URL);
-        LOGGER.debug(prettyJsonResponse(response));
+    public static Response postBusinessObjectDefinitionObject(User user, String namespace,
+        String bzDefName, String dataProvider) {
+        Response response = postBusinessObjectDefinition(user, namespace, bzDefName, dataProvider);
+        validateResonse(response);
         return response;
     }
 
     /**
-     * Get business object definition
+     * Create business object definition
      *
-     * @param user                         user to perform rest call
-     * @param namespace                    namespace name
+     * @param user user to perform rest call
+     * @param namespace namespace name
      * @param businessObjectDefinitionName business object definition name
-     * @return Response
+     * @param dataProviderName data provider name
      */
-    public static Response getBusinessObjectDefinition(User user, String namespace, String businessObjectDefinitionName) {
+    public static Response postBusinessObjectDefinition(User user, String namespace,
+        String businessObjectDefinitionName, String dataProviderName) {
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .body(getPostBusinessObjectDefinitionBody(namespace, businessObjectDefinitionName,
+                dataProviderName))
+            .post(POST_BUSINESS_OBJECT_DEFINITION_URL);
+
+        LOGGER.debug(prettyJsonResponse(response));
+        return response;
+    }
+
+        /**
+         * Get business object definition
+         *
+         * @param user user to perform rest call
+         * @param namespace namespace name
+         * @param businessObjectDefinitionName business object definition name
+         * @return Response
+         */
+    public static Response getBusinessObjectDefinition(User user, String namespace,
+        String businessObjectDefinitionName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("businessObjectDefinitionName", businessObjectDefinitionName)
@@ -213,17 +246,21 @@ public class HerdRestUtil {
     /**
      * Get business object data info
      *
-     * @param user               user to perform rest call
-     * @param businessObjectData business data object, requires namespace, businessObjectDefinitionName, businessObjectFormatUsage
-     *                           businessObjectFormatFileType, partitionValue
+     * @param user user to perform rest call
+     * @param businessObjectData business data object, requires namespace,
+     * businessObjectDefinitionName, businessObjectFormatUsage, businessObjectFormatFileType,
+     * partitionValue
      * @return Response
      */
     public static Response getBusinessObjectData(User user, BusinessObjectData businessObjectData) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", businessObjectData.getNamespace())
-            .pathParam("businessObjectDefinitionName", businessObjectData.getBusinessObjectDefinitionName())
-            .pathParam("businessObjectFormatUsage", businessObjectData.getBusinessObjectFormatUsage())
-            .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectDefinitionName",
+                businessObjectData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage",
+                businessObjectData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType",
+                businessObjectData.getBusinessObjectFormatFileType())
             .pathParam("partitionValue", businessObjectData.getPartitionValue())
             .get(GET_BUSINESS_OBJECT_DATA_URL);
         LOGGER.debug(prettyJsonResponse(response));
@@ -231,20 +268,63 @@ public class HerdRestUtil {
     }
 
     /**
-     * Delete business object data
-     *
-     * @param user               user to perform rest call
-     * @param businessObjectData business data object, requires namespace, businessObjectDefinitionName, businessObjectFormatUsage
-     *                           businessObjectFormatFileType, businessObjectFormatVersion, partitionValue, businessObjectDataVersion
-     * @return Response
+     * Update business object data status
+     * @param user user to perform rest call
+     * @param businessObjectData business data object, requires namespace,
+     * businessObjectDefinitionName, businessObjectFormatUsage businessObjectFormatFileType,
+     * partitionValue, businessObjectFormatVersion
+     * @return
      */
-    public static Response deleteBusinessObjectData(User user, BusinessObjectData businessObjectData) {
+    public static Response updateBusinessObjectDataStatus(User user, BusinessObjectData businessObjectData, String status) {
+        String requestBody = String.format("<businessObjectDataStatusUpdateRequest>"
+            + "    <status>%s</status>"
+            + "</businessObjectDataStatusUpdateRequest>", status);
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", businessObjectData.getNamespace())
-            .pathParam("businessObjectDefinitionName", businessObjectData.getBusinessObjectDefinitionName())
-            .pathParam("businessObjectFormatUsage", businessObjectData.getBusinessObjectFormatUsage())
-            .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectDefinitionName",
+                businessObjectData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage",
+                businessObjectData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType",
+                businessObjectData.getBusinessObjectFormatFileType())
             .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
+            .pathParam("partitionValue", businessObjectData.getPartitionValue())
+            .pathParam("businessObjectDataVersion", businessObjectData.getVersion())
+            .body(requestBody)
+            .put(PUT_BUSINESS_OBJECT_DATA_STATUS_URL);
+        LOGGER.debug(prettyJsonResponse(response));
+        return response;
+    }
+
+    public static BusinessObjectData getBusinessObjectDataObject(User user,
+        BusinessObjectData businessObjectData) {
+        Response response = getBusinessObjectData(user, businessObjectData);
+        validateResonse(response);
+
+        return response.as(BusinessObjectData.class);
+    }
+
+    /**
+     * Delete business object data
+     *
+     * @param user user to perform rest call
+     * @param businessObjectData business data object, requires namespace,
+     * businessObjectDefinitionName, businessObjectFormatUsage businessObjectFormatFileType,
+     * businessObjectFormatVersion, partitionValue, businessObjectDataVersion
+     * @return Response
+     */
+    public static Response deleteBusinessObjectData(User user,
+        BusinessObjectData businessObjectData) {
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("namespace", businessObjectData.getNamespace())
+            .pathParam("businessObjectDefinitionName",
+                businessObjectData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage",
+                businessObjectData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType",
+                businessObjectData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectFormatVersion",
+                businessObjectData.getBusinessObjectFormatVersion())
             .pathParam("partitionValue", businessObjectData.getPartitionValue())
             .pathParam("businessObjectDataVersion", businessObjectData.getVersion())
             .queryParam("deleteFiles", "true")
@@ -253,21 +333,34 @@ public class HerdRestUtil {
         return response;
     }
 
+    public static BusinessObjectFormat getBusinessObjectFormatObject(User user,
+        BusinessObjectData businessObjectData) {
+        Response response = getBusinessObjectFormat(user, businessObjectData);
+        validateResonse(response);
+        return response.as(BusinessObjectFormat.class);
+    }
+
     /**
      * Get business object data format
      *
-     * @param user               user to perform rest call
-     * @param businessObjectData business data object, requires namespace, businessObjectDefinitionName, businessObjectFormatUsage
-     *                           businessObjectFormatFileType, businessObjectFormatVersion
+     * @param user user to perform rest call
+     * @param businessObjectData business data object, requires namespace,
+     * businessObjectDefinitionName, businessObjectFormatUsage businessObjectFormatFileType,
+     * businessObjectFormatVersion
      * @return Response
      */
-    public static Response getBusinessObjectFormat(User user, BusinessObjectData businessObjectData) {
+    public static Response getBusinessObjectFormat(User user,
+        BusinessObjectData businessObjectData) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", businessObjectData.getNamespace())
-            .pathParam("businessObjectDefinitionName", businessObjectData.getBusinessObjectDefinitionName())
-            .pathParam("businessObjectFormatUsage", businessObjectData.getBusinessObjectFormatUsage())
-            .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
-            .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
+            .pathParam("businessObjectDefinitionName",
+                businessObjectData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage",
+                businessObjectData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType",
+                businessObjectData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectFormatVersion",
+                businessObjectData.getBusinessObjectFormatVersion())
             .get(GET_BUSINESS_OBJECT_FORMAT_URL);
         LOGGER.debug(prettyJsonResponse(response));
         return response;
@@ -276,12 +369,13 @@ public class HerdRestUtil {
     /**
      * Get business object notification
      *
-     * @param user             user to perform rest call
-     * @param namespace        namespace
+     * @param user user to perform rest call
+     * @param namespace namespace
      * @param notificationName notification name
      * @return Response
      */
-    public static Response deleteBusinessObjectNotification(User user, String namespace, String notificationName) {
+    public static Response deleteBusinessObjectNotification(User user, String namespace,
+        String notificationName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("notificationName", notificationName)
@@ -293,17 +387,23 @@ public class HerdRestUtil {
     /**
      * Delete business object notification
      *
-     * @param user                user to perform rest call
-     * @param businessObjectData, requires namespace, businessObjectDefinitionName, businessObjectFormatUsage, businessObjectFormatFileType, businessObjectFormatVersion
+     * @param user user to perform rest call
+     * @param businessObjectData, requires namespace, businessObjectDefinitionName,
+     * businessObjectFormatUsage, businessObjectFormatFileType, businessObjectFormatVersion
      * @return Response
      */
-    public static Response deleteBusinessObjectFormat(User user, BusinessObjectData businessObjectData) {
+    public static Response deleteBusinessObjectFormat(User user,
+        BusinessObjectData businessObjectData) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", businessObjectData.getNamespace())
-            .pathParam("businessObjectDefinitionName", businessObjectData.getBusinessObjectDefinitionName())
-            .pathParam("businessObjectFormatUsage", businessObjectData.getBusinessObjectFormatUsage())
-            .pathParam("businessObjectFormatFileType", businessObjectData.getBusinessObjectFormatFileType())
-            .pathParam("businessObjectFormatVersion", businessObjectData.getBusinessObjectFormatVersion())
+            .pathParam("businessObjectDefinitionName",
+                businessObjectData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage",
+                businessObjectData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType",
+                businessObjectData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectFormatVersion",
+                businessObjectData.getBusinessObjectFormatVersion())
             .delete(DELETE_BUSINESS_OBJECT_FORMAT_URL);
         LOGGER.debug(prettyJsonResponse(response));
         return response;
@@ -312,12 +412,13 @@ public class HerdRestUtil {
     /**
      * delete business object definition
      *
-     * @param user                         user to perform rest call
-     * @param namespace                    namespace
+     * @param user user to perform rest call
+     * @param namespace namespace
      * @param businessObjectDefinitionName businesse object definition name
      * @return
      */
-    public static Response deleteBusinessObjectDefinition(User user, String namespace, String businessObjectDefinitionName) {
+    public static Response deleteBusinessObjectDefinition(User user, String namespace,
+        String businessObjectDefinitionName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("businessObjectDefinitionName", businessObjectDefinitionName)
@@ -329,13 +430,14 @@ public class HerdRestUtil {
     /**
      * Grant namespace permission to user
      *
-     * @param grantor        user to perform rest call
-     * @param userId         user id to grant permission
-     * @param namespace      namespace to grant permission
+     * @param grantor user to perform rest call
+     * @param userId user id to grant permission
+     * @param namespace namespace to grant permission
      * @param permissionEnum namespace permission type to grant
      * @return
      */
-    public static Response grantNamespacePermission(User grantor, String userId, String namespace, NamespacePermissionEnum permissionEnum) {
+    public static Response grantNamespacePermission(User grantor, String userId, String namespace,
+        NamespacePermissionEnum permissionEnum) {
         Response response = given().spec(getHerdBaseRequestSpecification(grantor))
             .body(getGrantBody(userId, namespace, permissionEnum))
             .post(POST_NAMESPACE_AUTHORIZATION_URL);
@@ -346,12 +448,13 @@ public class HerdRestUtil {
     /**
      * Delete namespace permission from user
      *
-     * @param grantor   user to perform rest call
-     * @param userId    user id to remove permission
+     * @param grantor user to perform rest call
+     * @param userId user id to remove permission
      * @param namespace namespace permission to remove
      * @return
      */
-    public static Response deleteNamespacePermission(User grantor, String userId, String namespace) {
+    public static Response deleteNamespacePermission(User grantor, String userId,
+        String namespace) {
         Response response = given().spec(getHerdBaseRequestSpecification(grantor))
             .pathParam("userId", userId)
             .pathParam("namespace", namespace)
@@ -378,11 +481,12 @@ public class HerdRestUtil {
     /**
      * Delete EMR Cluster definition
      *
-     * @param user      user to perform rest call
+     * @param user user to perform rest call
      * @param namespace namespace of the emr cluster definition
      * @return Response
      */
-    public static Response deleteClusterDefinition(User user, String namespace, String emrClusterDefinitionName) {
+    public static Response deleteClusterDefinition(User user, String namespace,
+        String emrClusterDefinitionName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
@@ -409,13 +513,14 @@ public class HerdRestUtil {
     /**
      * Get EMR Cluster information
      *
-     * @param user                     user to use for rest call
-     * @param namespace                namesapce of the EMR Cluster
+     * @param user user to use for rest call
+     * @param namespace namesapce of the EMR Cluster
      * @param emrClusterDefinitionName EMR Cluster definition name of the EMR Cluster
-     * @param emrClusterName           EMR Cluster name
+     * @param emrClusterName EMR Cluster name
      * @return
      */
-    public static Response getCluster(User user, String namespace, String emrClusterDefinitionName, String emrClusterName) {
+    public static Response getCluster(User user, String namespace, String emrClusterDefinitionName,
+        String emrClusterName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
@@ -428,13 +533,14 @@ public class HerdRestUtil {
     /**
      * Delete EMR Cluster
      *
-     * @param user                     user to use for rest call
-     * @param namespace                name of the EMR Cluster
+     * @param user user to use for rest call
+     * @param namespace name of the EMR Cluster
      * @param emrClusterDefinitionName EMR Cluster definition name of the EMR Cluster
-     * @param emrClusterName           EMR Cluster name
+     * @param emrClusterName EMR Cluster name
      * @return
      */
-    public static Response deleteCluster(User user, String namespace, String emrClusterDefinitionName, String emrClusterName) {
+    public static Response deleteCluster(User user, String namespace,
+        String emrClusterDefinitionName, String emrClusterName) {
         Response response = given().spec(getHerdBaseRequestSpecification(user))
             .pathParam("namespace", namespace)
             .pathParam("emrClusterDefinitionName", emrClusterDefinitionName)
@@ -444,11 +550,69 @@ public class HerdRestUtil {
         return response;
     }
 
+    public static Response uploadBusinessObjectData(User user,
+        BusinessObjectDataCreateRequest dataCreateRequest) {
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .body(dataCreateRequest)
+            .post(POST_BUSINESS_OBJECT_DATA_URL);
+
+        LOGGER.info(prettyJsonResponse(response));
+        return response;
+    }
+
+    public static Response getBusinessObjectDataUploadCredential(User user,
+        BusinessObjectData bzObjData) {
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("namespace", bzObjData.getNamespace())
+            .pathParam("businessObjectDefinitionName", bzObjData.getBusinessObjectDefinitionName())
+            .pathParam("businessObjectFormatUsage", bzObjData.getBusinessObjectFormatUsage())
+            .pathParam("businessObjectFormatFileType", bzObjData.getBusinessObjectFormatFileType())
+            .pathParam("businessObjectFormatVersion", bzObjData.getBusinessObjectFormatVersion())
+            .pathParam("partitionValue", bzObjData.getPartitionValue())
+            .pathParam("storageName", "S3_MANAGED")
+            .pathParam("businessObjectDataVersion", bzObjData.getVersion())
+            .get(GET_BUSINESS_OBJECT_DATA_CREDENTIAL_URL);
+
+        LOGGER.debug(prettyJsonResponse(response));
+        return response;
+    }
+
+    public static Response createBusinessObjectFormatObject(User user, BusinessObjectFormatCreateRequest createRequest){
+        Response response = createBusinessObjectFormat(user, createRequest);
+
+        validateResonse(response);
+        return response;
+    }
+    /**
+     * Create business object format
+     * @param user user to perform rest call
+     * @param createRequest business object format request body object
+     * @return
+     */
+    public static Response createBusinessObjectFormat(User user, BusinessObjectFormatCreateRequest createRequest){
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .body(createRequest)
+            .post(POST_BUSINESS_OBJECT_DATA_FORMAT_URL);
+
+        LOGGER.debug(prettyJsonResponse(response));
+        return response;
+    }
+
+    public static Response getStorage(User user, String storageName){
+        Response response = given().spec(getHerdBaseRequestSpecification(user))
+            .pathParam("storageName", storageName)
+            .get(GET_STORAGE_URL);
+
+        LOGGER.debug(prettyJsonResponse(response));
+        return response;
+    }
+
+
     /**
      * Get deep link url
      *
      * @param user user to perform rest call
-     * @param url  depp lin url
+     * @param url depp lin url
      * @return
      */
     public static Response getDeepLink(User user, String url) {
@@ -482,28 +646,38 @@ public class HerdRestUtil {
         return getBaseRequestSpecification(user).baseUri(HERD_BASE_URL);
     }
 
-    private static UserNamespaceAuthorizationCreateRequest getGrantBody(String userId, String namespace, NamespacePermissionEnum namespacePermissionEnum) {
-        UserNamespaceAuthorizationKey userNamespaceAuthorizationKey = new UserNamespaceAuthorizationKey(userId, namespace);
-        return new UserNamespaceAuthorizationCreateRequest(userNamespaceAuthorizationKey, Collections.singletonList(namespacePermissionEnum));
+    private static UserNamespaceAuthorizationCreateRequest getGrantBody(String userId,
+        String namespace, NamespacePermissionEnum namespacePermissionEnum) {
+        UserNamespaceAuthorizationKey userNamespaceAuthorizationKey = new UserNamespaceAuthorizationKey(
+            userId, namespace);
+        return new UserNamespaceAuthorizationCreateRequest(userNamespaceAuthorizationKey,
+            Collections.singletonList(namespacePermissionEnum));
     }
 
-    private static BusinessObjectDefinitionCreateRequest getPostBusinessObjectDefinitionBody(String namespace, String businessObjectDefinitionName, String dataProviderName) {
+    private static BusinessObjectDefinitionCreateRequest getPostBusinessObjectDefinitionBody(
+        String namespace, String businessObjectDefinitionName, String dataProviderName) {
         BusinessObjectDefinitionCreateRequest businessObjectDefinitionCreateRequest = new BusinessObjectDefinitionCreateRequest();
         businessObjectDefinitionCreateRequest.setNamespace(namespace);
-        businessObjectDefinitionCreateRequest.setBusinessObjectDefinitionName(businessObjectDefinitionName);
+        businessObjectDefinitionCreateRequest
+            .setBusinessObjectDefinitionName(businessObjectDefinitionName);
         businessObjectDefinitionCreateRequest.setDataProviderName(dataProviderName);
         return businessObjectDefinitionCreateRequest;
     }
 
-    protected static String prettyJsonResponse(Response response){
+    protected static String prettyJsonResponse(Response response) {
         String s = response.asString();
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(s);
-        }
-        catch (JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             LOGGER.warn(e.getMessage());
             return s;
+        }
+    }
+
+    private static void validateResonse(Response response){
+        if(response.statusCode() != HttpStatus.SC_OK){
+            throw new TaskException("Expect to getting 200 for rest call, but getting" + response.statusCode());
         }
     }
 }

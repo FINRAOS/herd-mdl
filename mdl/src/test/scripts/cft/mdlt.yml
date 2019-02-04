@@ -25,9 +25,10 @@ Parameters:
     Description: Whether shutdown herd-mdl stack after test execution
   MDLInstanceName:
     Default: mdlt
-    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created
+    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created, max length is 6
     Type: String
     AllowedPattern: '[a-z0-9]*'
+    MaxLength: 6
   ReleaseVersion:
     Default: 1.4.0
     Description: 'Enter the MDL release to use - RC, DEV etc'

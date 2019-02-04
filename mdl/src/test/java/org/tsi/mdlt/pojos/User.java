@@ -93,33 +93,33 @@ public class User {
     }
 
     public static User getLdapAdminUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.ADMIN_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.ADMIN_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.ADMIN_PASSWORD).getValue());
     }
 
     public static User getLdapMdlAppUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.MDL_APP_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.MDL_APP_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.MDL_APP_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.MDL_APP_PASSWORD).getValue());
     }
 
     public static User getLdapSecAppUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.SEC_APP_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.SEC_APP_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.SEC_APP_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.SEC_APP_PASSWORD).getValue());
     }
 
     public static User getHerdAdminUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_ADMIN_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.Herd_ADMIN_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.HERD_ADMIN_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.Herd_ADMIN_PASSWORD).getValue());
     }
 
     public static User getHerdRoUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_RO_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.HERD_RO_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.HERD_RO_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.HERD_RO_PASSWORD).getValue());
     }
 
     public static User getHerdBasicUser() {
-        return new User(SsmUtil.getPlainLdapParameter(SsmParameterKeyEnum.HERD_BASIC_USER).getValue(),
-            SsmUtil.getDecryptedLdapParameter(SsmParameterKeyEnum.HERD_BASIC_PASSWORD).getValue());
+        return new User(SsmUtil.getPlainParameter(SsmParameterKeyEnum.HERD_BASIC_USER).getValue(),
+            SsmUtil.getDecryptedParameter(SsmParameterKeyEnum.HERD_BASIC_PASSWORD).getValue());
     }
 
     public static User getNoAuthValidJdbcUser() {

@@ -242,6 +242,21 @@
       <version>${aws-sdk.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-lambda</artifactId>
+      <version>${aws-sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-glue</artifactId>
+      <version>${aws-sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-athena</artifactId>
+      <version>${aws-sdk.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
       <version>${open.csv.version}</version>
@@ -284,12 +299,11 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-lambda</artifactId>
-      <version>${aws-sdk.version}</version>
+      <groupId>org.finra.herd</groupId>
+      <artifactId>herd-uploader</artifactId>
+      <version>${herd.version}</version>
     </dependency>
   </dependencies>
-
   <build>
 
     <!-- Default versions of plugins. -->

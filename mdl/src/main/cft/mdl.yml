@@ -93,6 +93,10 @@ Parameters:
     Description: Create Cloudfront distribution for Shepherd - true || false
     AllowedValues: [true, false]
     Type: String
+  CreateGlueLambda:
+    Description: Create Glue lambda to migrate herd data
+    AllowedValues: [true, false]
+    Type: String
   CertificateArn:
     Description: Certificate Arn for MDL
     Type: String
@@ -172,6 +176,7 @@ Conditions:
   UseS3staticWebPages: !And [!Equals [!Ref EnableSSLAndAuth, false], !Equals [!Ref CreateS3Buckets, true]]
   CreateRoute53ForCloudfront: !And [!Equals [!Ref EnableSSLAndAuth, true], !Equals [!Ref CreateS3Buckets, true], !Equals [!Ref CreateCloudFrontDistribution, true]]
   DeployBDSQLWithAuth: !And [!Equals [!Ref EnableSSLAndAuth, true], !Or [!Equals [!Ref DeployComponents, BDSQL], !Equals [!Ref DeployComponents, All]]]
+  CreateGlueLambda: !Equals [!Ref CreateGlueLambda, true]
 Resources:
   PrerequisitesPrimaryStack:
     Type: 'AWS::CloudFormation::Stack'
@@ -281,11 +286,20 @@ Resources:
         EnableSSLAndAuth: !Ref EnableSSLAndAuth
         PrivateSubnetsParameter: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         NsAuthSyncUtilitySecurityGroupParameter: !Join ['/', ['/app/MDL', !Ref MDLInstanceName, !Ref Environment, 'SecurityGroup/NsAuthSyncUtility']]
+  HerdGlueLambdaStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Condition: CreateGlueLambda
+    DependsOn: ElasticSearchEC2Stack
+    Properties:
+      TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlCreateGlueLambda.yml]]
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
   HerdEC2Stack:
     Type: 'AWS::CloudFormation::Stack'
     Condition: DeployHerd
     DependsOn:
-      - ElasticSearchEC2Stack
+      - HerdGlueLambdaStack
     Properties:
       TemplateURL: !Join ['', ['https://s3.amazonaws.com/', !Ref DeploymentBucketName, /, !Ref ReleaseVersion, /cft/mdlHerd.yml]]
       Parameters:

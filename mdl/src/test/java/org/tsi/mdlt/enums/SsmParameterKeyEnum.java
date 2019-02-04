@@ -38,12 +38,11 @@ public enum SsmParameterKeyEnum {
 
     LDAP_DN("ldap_dn", "/app/MDL/{instanceName}/{environment}/LDAP/BaseDN"),
     LDAP_HOSTNAME("ldap_hostname", "/app/MDL/{instanceName}/{environment}/LDAP/HostName"),
-    AUTH_GROUP("authGroup", "/app/MDL/{instanceName}/{environment}/LDAP/AuthGroup"),
 
     VPC_ID("vpcId", "/global/{instanceName}/{environment}/VPC/ID"),
     PRIVATE_SUBNETS("privateSubnets", "/global/{instanceName}/{environment}/VPC/SubnetIDs/private"),
 
-    ACM_ARN("acmArn", "/app/MDL/{instanceName}/{environment}/ACM/Arn");
+    GLUE_SCHEMA_LAMBDA_NAME("glueFunction", "/app/MDL/{instanceName}/{environment}/Lambda/GlueSchemaLambdaArn");
 
     private String variableName;
     private String parameterKey;

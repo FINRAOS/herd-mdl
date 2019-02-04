@@ -46,17 +46,7 @@ public class SsmUtil {
      * @param parameterKey parameter key
      * @return Parameter
      */
-    public static Parameter getPlainLdapParameter(SsmParameterKeyEnum parameterKey) {
-        return getSsmParameter(parameterKey, false);
-    }
-
-    /**
-     * Get parameter using parameter key
-     *
-     * @param parameterKey parameter key
-     * @return Parameter
-     */
-    public static Parameter getPlainVpcParameter(SsmParameterKeyEnum parameterKey) {
+    public static Parameter getPlainParameter(SsmParameterKeyEnum parameterKey) {
         return getSsmParameter(parameterKey, false);
     }
 
@@ -66,7 +56,7 @@ public class SsmUtil {
      * @param parameterKey parameter key
      * @return Parameter
      */
-    public static Parameter getDecryptedLdapParameter(SsmParameterKeyEnum parameterKey) {
+    public static Parameter getDecryptedParameter(SsmParameterKeyEnum parameterKey) {
         return getSsmParameter(parameterKey, true);
     }
 
