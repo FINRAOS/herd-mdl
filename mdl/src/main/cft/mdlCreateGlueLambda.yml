@@ -23,7 +23,7 @@ Parameters:
     Description: Release environment
     Type: String
   S3BucketName:
-    Default: 'GlueS3BucketName'
+    Default: 'YourS3BucketNameForgGlueLambda'
     Description: Glue Lambda jar s3 bucketname
     Type: String
   S3Key:
