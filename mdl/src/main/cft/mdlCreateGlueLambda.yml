@@ -23,7 +23,7 @@ Parameters:
     Description: Release environment
     Type: String
   S3BucketName:
-    Default: 'maggietest-dev'
+    Default: 'GlueS3BucketName'
     Description: Glue Lambda jar s3 bucketname
     Type: String
   S3Key:
