@@ -22,6 +22,14 @@ Parameters:
   Environment:
     Description: Release environment
     Type: String
+  S3BucketName:
+    Default: 'maggietest-dev'
+    Description: Glue Lambda jar s3 bucketname
+    Type: String
+  S3Key:
+    Default: 'glue-poc-1.0-SNAPSHOT.jar'
+    Description: Glue Lambda jar s3 key
+    Type: String
 Resources:
   LambdaExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -128,8 +136,8 @@ Resources:
     Properties:
       Handler: 'org.finra.herd.mdl.handler.HerdGlueSyncHandler::handleHerdNotificationRequest'
       Code:
-        S3Bucket: 'maggietest-dev'
-        S3Key: 'glue-poc-1.0-SNAPSHOT.jar'
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3Key
       Role: !GetAtt 'LambdaExecutionRole.Arn'
       Runtime: 'java8'
       Timeout: '300'
@@ -139,8 +147,8 @@ Resources:
     Properties:
       Handler: 'org.finra.herd.mdl.handler.HerdGlueSyncHandler::handleSchemaMigrationRequest'
       Code:
-        S3Bucket: 'maggietest-dev'
-        S3Key: 'glue-poc-1.0-SNAPSHOT.jar'
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3Key
       Role: !GetAtt 'LambdaExecutionRole.Arn'
       Runtime: 'java8'
       Timeout: '300'

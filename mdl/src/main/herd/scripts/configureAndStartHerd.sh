@@ -35,6 +35,13 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
+# Execute the given command without echo option
+function execute_cmd_no_echo {
+        cmd="${1}"
+        eval $cmd
+        check_error ${PIPESTATUS[0]} "$cmd"
+}
+
 #MAIN
 configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
 if [ ! -f ${configFile} ] ; then
@@ -173,12 +180,15 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
         #update glue migration lambda environments
         herdBaseUrl="${httpProtocol}://${herdLoadBalancerDNSName}/herd-app/rest"
         glueSnsLambdaArn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Lambda/GlueSnsLambdaArn --region ${region} --output text --query Parameter.Value)
-        execute_cmd "aws lambda update-function-configuration --function-name ${glueSnsLambdaArn} \
-        --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
-
+        if [ -n "$glueSnsLambdaArn" ]; then
+            execute_cmd_no_echo "aws lambda update-function-configuration --function-name ${glueSnsLambdaArn} \
+            --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
+        fi
         glueSchemaLambdaArn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Lambda/GlueSchemaLambdaArn --region ${region} --output text --query Parameter.Value)
-        execute_cmd "aws lambda update-function-configuration --function-name ${glueSchemaLambdaArn} \
-        --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
+        if [ -n "$glueSchemaLambdaArn" ]; then
+            execute_cmd_no_echo "aws lambda update-function-configuration --function-name ${glueSchemaLambdaArn} \
+            --environment '{\"Variables\": {\"BASE_URL\":\"${herdBaseUrl}\", \"USERNAME\" : \"${herdAdminUsername}\", \"PASSWORD\":\"${herdAdminPassword}\", \"S3_BUCKET\" : \"${herdS3BucketName}\"}}'"
+        fi
     fi
 
     if [ "${enableSSLAndAuth}" = "true" ] ; then

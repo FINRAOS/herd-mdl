@@ -116,6 +116,11 @@ Parameters:
     Description: Create Cloudfront distribution for Shepherd - true || false
     AllowedValues: [true, false]
     Type: String
+  CreateGlueLambda:
+    Default: 'false'
+    Description: Create Glue lambda to migrate herd data
+    AllowedValues: [true, false]
+    Type: String
   CertificateArn:
     Description: Certificate Arn paramter key for MDL
     Type: String
@@ -222,6 +227,7 @@ Metadata:
           - CreateDemoObjects
           - EnableSSLAndAuth
           - RefreshDatabase
+          - CreateGlueLambda
       - Label:
           default: Generic Parameters
         Parameters:
@@ -439,6 +445,7 @@ Resources:
         CustomTagValue: !Ref CustomTagValue
         NumberOfBdsqlCoreInstances: !Ref NumberOfBdsqlCoreInstances
         CloudWatchRetentionDays: !Ref CloudWatchRetentionDays
+        CreateGlueLambda: !Ref CreateGlueLambda
       Tags:
         - Key: !Ref CustomTagName
           Value: !Ref CustomTagValue
