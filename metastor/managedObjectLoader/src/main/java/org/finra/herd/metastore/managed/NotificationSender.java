@@ -56,6 +56,9 @@ public class NotificationSender {
 	@Value( "${email_host}" )
 	private String emailHost;
 
+    @Value("${AGS}")
+	private String ags;
+
 	PebbleEngine engine = new PebbleEngine.Builder().autoEscaping( false ).strictVariables( true ).build();
 
 	public void sendFailureEmail( JobDefinition od, int numRetry, String errorLog, String clusterID ) {
@@ -108,11 +111,11 @@ public class NotificationSender {
 		try {
 
 			Message msg = new MimeMessage( session );
-			msg.setFrom( new InternetAddress( "donotreply@finra.org", "METASTOR" ) );
+			msg.setFrom( new InternetAddress( "donotreply@finra.org", ags ) );
 
 			msg.addRecipient( Message.RecipientType.TO, new InternetAddress( mailingList ) );
 
-			msg.setSubject( String.format( "METASTOR-%s %s", env, subject ) );
+			msg.setSubject( String.format( "%s-%s %s", ags, env, subject ) );
 
 			msg.setDataHandler( new DataHandler( new ByteArrayDataSource( msgBody, "text/plain" ) ) );
 			javax.mail.Transport.send( msg );

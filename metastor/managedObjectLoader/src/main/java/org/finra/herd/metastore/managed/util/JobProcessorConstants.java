@@ -16,7 +16,6 @@
 package org.finra.herd.metastore.managed.util;
 
 public interface JobProcessorConstants {
-	String METASTOR_NAMESPACE_NM = "METASTOR";
 	String METASTOR_CLUSTER_NAME = "metastor";
 
 	String SVC_ACC_PREFIX = "svc";

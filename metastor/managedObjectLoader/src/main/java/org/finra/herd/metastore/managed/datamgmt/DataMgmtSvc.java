@@ -39,6 +39,9 @@ import java.util.List;
 @Component
 @Slf4j
 public class DataMgmtSvc {
+    @Value("${AGS}")
+    private String ags;
+
 	@Autowired
 	ApiClient dmApiClient;
 
@@ -149,7 +152,7 @@ public class DataMgmtSvc {
 
 	public BusinessObjectDataNotificationRegistration getBORegisteredNotificationDetails( String notificationName ) throws ApiException {
 		return new BusinessObjectDataNotificationRegistrationApi( dmApiClient )
-				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( JobProcessorConstants.METASTOR_NAMESPACE_NM, notificationName );
+				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( ags, notificationName );
 	}
 
 	public BusinessObjectDataSearchResult searchBOData( JobDefinition jd, int pageNum, int pageSize, Boolean filterOnValidLatestVersions ) throws ApiException{

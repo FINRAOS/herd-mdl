@@ -51,7 +51,6 @@ import java.util.logging.Logger;
 @Component
 public class ClusterManager implements InitializingBean {
 
-	public static final String NAMESPACE = "METASTOR";
 	public static final String CLUSTER_NM_DELIMITER = "_";
 	public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
 
@@ -93,6 +92,9 @@ public class ClusterManager implements InitializingBean {
 
 	@Value( "${CREATE_CLUSTER_RETRY_COUNT}" )
 	int createClusterMaxRetryCount = 5;
+
+    @Value("${AGS}")
+    private String ags;
 
 	@Autowired
 	NotificationSender notificationSender;
@@ -464,7 +466,7 @@ public class ClusterManager implements InitializingBean {
 
 	private void createCluster( EmrApi emrApi, String proposedName ) throws ApiException {
 		EmrClusterCreateRequest request = new EmrClusterCreateRequest();
-		request.setNamespace( NAMESPACE );
+		request.setNamespace( ags );
 		request.setDryRun(false);
 		request.setEmrClusterDefinitionName(clusterDef);
 		request.setEmrClusterName(proposedName);
@@ -474,7 +476,7 @@ public class ClusterManager implements InitializingBean {
 	}
 
 	private String proposedName( int created ) {
-		return new StringBuilder( NAMESPACE )
+		return new StringBuilder( ags )
 				.append( CLUSTER_NM_DELIMITER )
 				.append( created )
 				.toString();
