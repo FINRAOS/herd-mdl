@@ -19,7 +19,6 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.ObjectProcessor;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.api.BusinessObjectDataNotificationRegistrationApi;
 import org.finra.herd.sdk.api.BusinessObjectFormatApi;
@@ -27,6 +26,7 @@ import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -39,6 +39,7 @@ import java.util.List;
 @Component
 @Slf4j
 public class DataMgmtSvc {
+
     @Value("${AGS}")
     private String ags;
 

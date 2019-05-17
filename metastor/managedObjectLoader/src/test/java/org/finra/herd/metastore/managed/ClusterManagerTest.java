@@ -165,7 +165,7 @@ public class ClusterManagerTest {
 		clusterManager.startAdditionalClusters( 1, existingCluster );
 
 		assertEquals( 1, existingCluster.size());
-		assertEquals( ClusterManager.NAMESPACE + "_1", existingCluster.get( 0 ) );
+		assertEquals( "METASTOR_1", existingCluster.get( 0 ) );
 	}
 
 	@Test
