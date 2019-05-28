@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.logging.Logger;
 
 public class JobDefinition {
@@ -194,12 +195,26 @@ public class JobDefinition {
 
     public String getTableName()
     {
-        StringBuilder sb = new StringBuilder(getActualObjectName()).append("_")
-                .append(objectDefinition.usageCode).append("_")
-                .append(objectDefinition.fileType);
-        String tblName = sb.toString().replaceAll("\\.", "_").replaceAll(" ","_").replaceAll("-","_");
-
-        return tblName;
+		return new StringJoiner( "_" )
+				.add( identifyObjectName())
+				.add( objectDefinition.usageCode )
+				.add( objectDefinition.fileType )
+				.toString()
+					.replaceAll("\\.", "_")
+					.replaceAll(" ","_")
+					.replaceAll("-","_");
     }
+
+	private String identifyObjectName() {
+		String originalObjectName = "originalObjectName";
+
+		if ( correlation.contains( originalObjectName ) ) {
+				return Json.createReader( new StringReader( correlation ) )
+						.readObject().getJsonObject( "businessObject" )
+						.getString( originalObjectName );
+		}
+
+		return getActualObjectName();
+	}
 
 }
