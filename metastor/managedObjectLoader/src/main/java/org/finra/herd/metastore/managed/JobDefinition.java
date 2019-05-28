@@ -205,10 +205,10 @@ public class JobDefinition {
 					.replaceAll("-","_");
     }
 
-	private String identifyObjectName() {
-		String originalObjectName = "originalObjectName";
+	protected String identifyObjectName() {
+		String originalObjectName = "original_object_name";
 
-		if ( correlation.contains( originalObjectName ) ) {
+		if ( !StringUtils.isEmpty(correlation) && correlation.contains( originalObjectName ) ) {
 				return Json.createReader( new StringReader( correlation ) )
 						.readObject().getJsonObject( "businessObject" )
 						.getString( originalObjectName );
