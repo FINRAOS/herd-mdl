@@ -15,6 +15,8 @@
 **/
 package org.finra.herd.metastore.managed.util;
 
+import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
+
 public interface JobProcessorConstants {
 	String METASTOR_CLUSTER_NAME = "metastor";
 
@@ -28,5 +30,9 @@ public interface JobProcessorConstants {
 	String COMMA = ",";
 
 	int DM_RECORD_RETURN_MAX_LIMIT = 1000;
+
+	// Stats jobs
+	String GATHER_STATS_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/stats/emr_gather_stats.sh";
+	String DROP_TABLE_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/dropObj/emr_drop_table.sh";
 
 }

@@ -193,8 +193,7 @@ public class JobDefinition {
         this.wfType = wfType;
     }
 
-    public String getTableName()
-    {
+    public String getTableName() {
 		return new StringJoiner( "_" )
 				.add( identifyObjectName())
 				.add( objectDefinition.usageCode )

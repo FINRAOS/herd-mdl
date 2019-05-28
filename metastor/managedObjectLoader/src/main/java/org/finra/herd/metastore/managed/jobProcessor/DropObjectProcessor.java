@@ -17,20 +17,19 @@ package org.finra.herd.metastore.managed.jobProcessor;
 
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.stereotype.Component;
 
 
 @Component
 public class DropObjectProcessor extends JobProcessor {
-    private static final String SCRIPT_PATH = HerdMetastoreConfig.homeDir+"/metastor/deploy/common/scripts/dropObj/emr_drop_table.sh";
 
-    @Override
-    protected ProcessBuilder createProcessBuilder(JobDefinition od) {
-        String dbName = od.getObjectDefinition().getDbName();
-        String tblName=od.getActualObjectName()+"_"+od.getObjectDefinition().getUsageCode()+"_"+od.getObjectDefinition().getFileType();
-        tblName = tblName.replaceAll("\\.","_").replaceAll(" ", "_").replaceAll("-","_");
-
-        ProcessBuilder pb = new ProcessBuilder("sh", SCRIPT_PATH, dbName, tblName);
-        return pb;
-    }
+	@Override
+	protected ProcessBuilder createProcessBuilder( JobDefinition od ) {
+		return new ProcessBuilder( "sh"
+				, JobProcessorConstants.DROP_TABLE_SCRIPT_PATH
+				, od.getObjectDefinition().getDbName()
+				, od.getTableName()
+		);
+	}
 }
