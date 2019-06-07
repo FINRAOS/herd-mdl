@@ -28,6 +28,7 @@ public class ManagedJobProcessorTest {
     public void testProcessJob()
     {
         ManagedJobProcessor jobProcessor = new ManagedJobProcessor();
+        jobProcessor.hiveHqlGenerator = Mockito.mock(HiveHqlGenerator.class);
         JobDefinition jobDefinition = new JobDefinition(1L, "test", "obj", "usage",
                 "ft", "2016-08-12", "null", "111", "TRADE_DT");
 
@@ -59,6 +60,7 @@ public class ManagedJobProcessorTest {
     public void testNullPartitionKeyFailure()
     {
         ManagedJobProcessor jobProcessor = new ManagedJobProcessor();
+        jobProcessor.hiveHqlGenerator = Mockito.mock(HiveHqlGenerator.class);
         assertFalse(jobProcessor.process(new JobDefinition(1L, "test", "obj", "usage",
                 "ft", "2016-08-12", "null", "111", "test"), "",""));
 

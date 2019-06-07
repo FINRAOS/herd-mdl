@@ -93,6 +93,7 @@ public class ClusterManager implements InitializingBean {
 	@Value( "${CREATE_CLUSTER_RETRY_COUNT}" )
 	int createClusterMaxRetryCount = 5;
 
+
     @Value("${AGS}")
     private String ags;
 
@@ -159,7 +160,16 @@ public class ClusterManager implements InitializingBean {
 		createClusterRetryCounter = 0;
 	}
 
-	public boolean registerCluster() {
+    public void setAgs(String ags) {
+        this.ags = ags;
+    }
+
+    public void setClusterDef(String clusterDef) {
+        this.clusterDef = clusterDef;
+    }
+
+
+    public boolean registerCluster() {
         String sql = "INSERT IGNORE INTO `EMR_CLUSTER` (`CLUSTER_NAME`,`CLUSTER_ID`, CREATE_TIME, STATUS) VALUES (?, ?, now(), 'R')";
 
         template.update(sql, clusterName, clusterID);
