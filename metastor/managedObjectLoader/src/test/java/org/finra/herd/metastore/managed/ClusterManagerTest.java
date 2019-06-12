@@ -21,13 +21,16 @@ import com.sun.jersey.api.client.GenericType;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.EmrCluster;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -146,14 +149,15 @@ public class ClusterManagerTest {
     @Test
     public void testStartAdditionalClusterCreated() throws ApiException {
 		ClusterManager clusterManager = new ClusterManager();
-		final String[] accepts = {"application/xml", "application/json"};
+        clusterManager.setAgs("METASTOR");
+
+        final String[] accepts = {"application/xml", "application/json"};
 
 		String[] authNames = new String[] { "basicAuthentication" };
 
-
-
 		ApiClient dmApiClient = Mockito.mock( ApiClient.class );
-		clusterManager.setDmRestClient( dmApiClient );
+
+        clusterManager.setDmRestClient( dmApiClient );
 
 		when( dmApiClient.selectHeaderAccept( accepts ) ).thenReturn( "application/json" );
 		when( dmApiClient.selectHeaderContentType( accepts ) ).thenReturn( "application/json" );
@@ -171,6 +175,8 @@ public class ClusterManagerTest {
 	@Test
 	public void testStartAdditionalClusterNotCreatedMaxRetryReached() throws ApiException {
 		ClusterManager clusterManager = new ClusterManager();
+        clusterManager.setAgs("METASTOR");
+        clusterManager.setClusterDef("metastor_emr_5");
 
 		ArrayList<String> existingCluster = new ArrayList<>();
 		clusterManager.startAdditionalClusters( 1, existingCluster );

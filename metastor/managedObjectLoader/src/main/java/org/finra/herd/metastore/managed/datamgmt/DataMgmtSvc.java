@@ -66,7 +66,7 @@ public class DataMgmtSvc {
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 		request.setIncludeDropTableStatement( false );
 		request.setIncludeIfNotExistsOption( !replaceColumn );
-		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setReplaceColumns( replaceColumn );
 
 		request.setTableName( jd.getTableName() );
@@ -90,7 +90,7 @@ public class DataMgmtSvc {
 		BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
 
 		request.setIncludeDropTableStatement( false );
-		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setBusinessObjectFormatUsage( jd.getObjectDefinition().getUsageCode() );
 		request.setBusinessObjectFormatFileType( jd.getObjectDefinition().getFileType() );
 		request.setBusinessObjectDefinitionName( jd.getObjectDefinition().getObjectName() );
