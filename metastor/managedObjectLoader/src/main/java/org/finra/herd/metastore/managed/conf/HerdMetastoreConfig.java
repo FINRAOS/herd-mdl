@@ -17,20 +17,25 @@ package org.finra.herd.metastore.managed.conf;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.hive.jdbc.HiveDriver;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 
 /**
  * Herd Metastore Configuration
@@ -76,7 +81,7 @@ public class HerdMetastoreConfig {
 		return dataSource;
 	}
 
-	@Bean
+	@Bean(name = "template")
 	public JdbcTemplate getJdbcTemplate() {
 		return new JdbcTemplate( getDataSource() );
 	}
@@ -135,5 +140,16 @@ public class HerdMetastoreConfig {
 	@Bean
 	public String homeDir(){
 		return homeDir;
+	}
+
+	@Bean (name = "hiveJdbcTemplate")
+	public JdbcTemplate hiveJdbcTemplate() {
+		SimpleDriverDataSource dataSource = new SimpleDriverDataSource(
+				new HiveDriver()
+				, HIVE_URL
+				, HIVE_USER
+				, HIVE_PASSWORD
+		);
+		return new JdbcTemplate( dataSource );
 	}
 }

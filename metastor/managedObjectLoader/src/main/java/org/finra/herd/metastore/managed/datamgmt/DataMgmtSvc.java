@@ -128,6 +128,7 @@ public class DataMgmtSvc {
 		request.setPartitionValueFilters( null );
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 
+		log.info( "Get BO DDL Request: \n{}", request.toString() );
 		return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl( request );
 	}
 

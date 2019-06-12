@@ -24,6 +24,7 @@ import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.hive.*;
+import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.StringJoiner;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -45,13 +47,13 @@ import static java.nio.file.StandardOpenOption.CREATE;
 public class HiveHqlGenerator {
 
     @Autowired
-    DataMgmtSvc dataMgmtSvc;
+    protected DataMgmtSvc dataMgmtSvc;
 
     @Autowired
-	HiveClient hiveClient;
+	protected HiveClient hiveClient;
 
     @Autowired
-    NotificationSender notificationSender;
+    protected NotificationSender notificationSender;
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -65,8 +67,7 @@ public class HiveHqlGenerator {
                 list.add(dataMgmtSvc.getTableSchema(jd, true));
             }
             else {
-                HiveTableSchema hiveTableSchema =
-                        hiveClient.getExistingDDL(jd.getObjectDefinition().getDbName(), tableName);
+                HiveTableSchema hiveTableSchema = hiveClient.getExistingDDL(jd.getObjectDefinition().getDbName(), tableName);
 
                 BusinessObjectFormat format = dataMgmtSvc.getDMFormat(jd);
 
@@ -132,6 +133,7 @@ public class HiveHqlGenerator {
         } else {
             log.info("Table does not exist, create new " + jd.toString());
         }
+        log.info( "Table Schema: " + list );
         return list;
     }
 
@@ -213,60 +215,92 @@ public class HiveHqlGenerator {
     }
 
     public String buildHql(JobDefinition jd, List<String> partitions) throws IOException, ApiException, SQLException {
-
-        Path path = Paths.get("/tmp/" + jd.getWfType() + "_" + jd.getExecutionID() + "_" + jd.getNumOfRetry() + ".hql");
-        Files.deleteIfExists(path);
-
-        Files.createFile(path);
-        String dbName = jd.getObjectDefinition().getDbName();
-        String tableName = jd.getTableName();
-
-        boolean tableExists = hiveClient.tableExist(jd.getObjectDefinition().getDbName(), tableName);
+        boolean tableExists = hiveClient.tableExist(jd.getObjectDefinition().getDbName(), jd.getTableName());
+        BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions);
 
         List<String> schemaHql = schemaSql(tableExists, jd);
 
-        schemaHql.add(0, "use " + dbName + ";");
-        schemaHql.add(0, "CREATE DATABASE IF NOT EXISTS " + dbName + ";");
+        // Add database Statements
+		selectDatabase(jd, schemaHql );
 
-        BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions);
+        // Add DDL's from data DDL
+        addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
-        if (tableExists && jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON
-                && jd.getPartitionKey().equalsIgnoreCase("partition")) {
-            String ddl = dataDdl.getDdl();
-            String location = ddl.substring(ddl.indexOf("LOCATION") + 8);
-            schemaHql.add(String.format("alter table %s SET LOCATION %s", tableName, location));
-        } else {
-            if (tableExists && jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON) {
-                //Singleton, add drop statement when table exists
-                schemaHql.add(String.format("alter table %s drop if exists partition (%s >'1970-01-01');", tableName, jd.getPartitionKey()));
-            }
-            schemaHql.add(dataDdl.getDdl());
-        }
         //Stats
+		addAnalyzeStats( jd, partitions, schemaHql );
 
-        if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON) {
-            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
-                schemaHql.add(String.format("analyze table %s compute statistics noscan;",
-                        tableName));
-            } else {
-                schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;",
-                        tableName, jd.getPartitionKey()));
-            }
-        } else if (partitions.size() == 1) {
-            String stats = String.format("analyze table %s partition(`%s`='%s') compute statistics noscan;",
-                    tableName,
-                    jd.getPartitionKey(),
-                    partitions.get(0));
-            schemaHql.add(stats);
-        }
+		// Create file
+		Path hqlFilePath = createHqlFile( jd );
+        Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
 
-        Files.write(path, schemaHql, CREATE, APPEND);
-
-        return path.toString();
+        return hqlFilePath.toString();
     }
 
-    protected boolean cascade( int wfType ){
+	protected void selectDatabase( JobDefinition jd, List<String> schemaHql ) {
+		String dbName = jd.getObjectDefinition().getDbName();
+		schemaHql.add(0, "use " + dbName + ";");
+		schemaHql.add(0, "CREATE DATABASE IF NOT EXISTS " + dbName + ";");
+	}
+
+	protected void addPartitionChanges( boolean tableExists, JobDefinition jd, BusinessObjectDataDdl dataDdl, List<String> schemaHql ) {
+		if(tableExists && MetastoreUtil.isSingletonWF( jd.getWfType() )){
+			// Handling partiton=none scenario
+			if(jd.getPartitionKey().equalsIgnoreCase("partition")) {
+				String ddl = dataDdl.getDdl();
+				String location = ddl.substring( ddl.indexOf( "LOCATION" ) + 8 );
+				schemaHql.add( String.format( "alter table %s SET LOCATION %s", jd.getTableName(), location ) );
+			}else{
+				//Singleton, add drop statement when table exists
+				schemaHql.add(String.format("alter table %s drop if exists partition (%s >'1970-01-01');", jd.getTableName(), jd.getPartitionKey()));
+				schemaHql.add( dataDdl.getDdl() );
+			}
+		}else{
+			schemaHql.add( dataDdl.getDdl() );
+		}
+	}
+
+	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
+		if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
+			if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
+				schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
+			} else {
+				schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
+			}
+		} else if (partitions.size() == 1) {
+			schemaHql.add(
+					String.format("analyze table %s partition(`%s`='%s') compute statistics noscan;"
+							, jd.getTableName()
+							, jd.getPartitionKey()
+							, partitions.get(0))
+			);
+		}
+	}
+
+	protected boolean cascade( int wfType ){
     	return true;
 	}
+
+	/**
+	 * Method to create the HQL file for adding partitions
+	 *
+	 * @param jd
+	 * @return
+	 * @throws IOException
+	 */
+	protected Path createHqlFile( JobDefinition jd ) throws IOException {
+		Path hqlFilePath = Paths.get( hqlFileName( jd ) );
+		Files.deleteIfExists( hqlFilePath );
+		Files.createFile( hqlFilePath );
+		return hqlFilePath;
+	}
+
+	protected String hqlFileName( JobDefinition jd ) {
+		return new StringJoiner( "_", "/tmp/", ".hql" )
+					.add( String.valueOf( jd.getWfType() ) )
+					.add( String.valueOf( jd.getExecutionID() ) )
+					.add( String.valueOf( jd.getNumOfRetry() ) )
+					.toString();
+	}
+
 
 }

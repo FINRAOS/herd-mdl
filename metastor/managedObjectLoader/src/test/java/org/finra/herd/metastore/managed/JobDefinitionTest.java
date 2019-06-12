@@ -46,7 +46,6 @@ public class JobDefinitionTest {
 
 		JobDefinition jd = new JobDefinition(3L, "METASTORE", "ABC_LATE", "PRC-2","BZ","",correlation,"","");
 
-		assertEquals("ABC", jd.identifyObjectName());
 		assertEquals("ABC_PRC_2_BZ", jd.getTableName());
 	}
 
@@ -56,7 +55,6 @@ public class JobDefinitionTest {
 
 		JobDefinition jd = new JobDefinition(3L, "SAW", "ABC_COMPACTION", "PRC-2","BZ","",null,"","");
 
-		assertEquals("ABC_COMPACTION", jd.identifyObjectName());
 		assertEquals("ABC_COMPACTION_PRC_2_BZ", jd.getTableName());
 	}
 

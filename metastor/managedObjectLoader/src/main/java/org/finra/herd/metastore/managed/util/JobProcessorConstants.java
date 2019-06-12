@@ -35,4 +35,10 @@ public interface JobProcessorConstants {
 	String GATHER_STATS_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/stats/emr_gather_stats.sh";
 	String DROP_TABLE_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/dropObj/emr_drop_table.sh";
 
+	// Hive JDBC properties
+	String HIVE_URL = "jdbc:hive2://localhost:10000/";
+	String DRIVER_NAME = "org.apache.hive.jdbc.HiveDriver";
+	String HIVE_USER = "hadoop";
+	String HIVE_PASSWORD = "";
+
 }
