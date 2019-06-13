@@ -29,11 +29,10 @@
 
 	<artifactId>metastore</artifactId>
 	<groupId>org.finra.herd-mdl.metastore</groupId>
-	<version>${herd.mdl.version}</version>
+	<version>1.2.13</version>
 	<packaging>pom</packaging>
 
 	<properties>
-		<herd.mdl.version>1.2.12</herd.mdl.version>
 		<spring.boot.version>2.0.2.RELEASE</spring.boot.version>
 		<lombok.version>1.18.0</lombok.version>
 		<herd.sdk.version>0.97.0</herd.sdk.version>
