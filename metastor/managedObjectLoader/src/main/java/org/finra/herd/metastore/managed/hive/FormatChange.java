@@ -37,7 +37,7 @@ public class FormatChange {
 
     public boolean hasChange()
     {
-        return hasColumnChanges()||partitonColumnChanged||escapeStrChanged||nullStrChanged||delimChanged;
+        return hasColumnChanges()||partitonColumnChanged||escapeStrChanged||nullStrChanged;
     }
 
     public boolean hasColumnChanges()
