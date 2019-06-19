@@ -175,6 +175,7 @@ public class HiveHqlGenerator {
 
             FormatChange change = FormatChange.builder().nameChanges(nameChanges).newColumns(addedColumns)
                     .typeChanges(typeChanges).build();
+            //@Todo - Once the fix for delimiters is done
 
 //            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), hiveTableSchema.getNullChar()))
 //            {
