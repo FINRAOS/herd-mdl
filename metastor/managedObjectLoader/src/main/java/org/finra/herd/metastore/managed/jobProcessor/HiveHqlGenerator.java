@@ -176,20 +176,20 @@ public class HiveHqlGenerator {
             FormatChange change = FormatChange.builder().nameChanges(nameChanges).newColumns(addedColumns)
                     .typeChanges(typeChanges).build();
 
-            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), hiveTableSchema.getNullChar()))
-            {
-                change.setNullStrChanged(true);
-            }
-
-            if(! HiveTableSchema.isSameChar(newSchema.getDelim(),hiveTableSchema.getDelim()))
-            {
-                change.setDelimChanged(true);
-            }
-
-            if(! HiveTableSchema.isSameChar(newSchema.getEscape(),hiveTableSchema.getEscape()))
-            {
-                change.setEscapeStrChanged(true);
-            }
+//            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), hiveTableSchema.getNullChar()))
+//            {
+//                change.setNullStrChanged(true);
+//            }
+//
+//            if(! HiveTableSchema.isSameChar(newSchema.getDelim(),hiveTableSchema.getDelim()))
+//            {
+//                change.setDelimChanged(true);
+//            }
+//
+//            if(! HiveTableSchema.isSameChar(newSchema.getEscape(),hiveTableSchema.getEscape()))
+//            {
+//                change.setEscapeStrChanged(true);
+//            }
 
             List<ColumnDef> existingPartition = hiveTableSchema.getPartitionColumns();
             List<ColumnDef> newPartition = newSchema.getPartitionColumns();
