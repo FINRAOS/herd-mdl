@@ -220,7 +220,7 @@ Resources:
       AdvancedOptions:
         rest.action.multi.allow_explicit_index: 'true'
       VPCOptions:
-        SubnetIds: !Split [',', !Ref PrivateSubnetsParameterKey]
+        SubnetIds: [!Select [0, !Split [',', !Ref PrivateSubnetsParameterKey]], !Select [1, !Split [',', !Ref PrivateSubnetsParameterKey]]]
         SecurityGroupIds: !Split [',', !Ref EsSecurityGroup]
   ElasticSearchDomainParameter:
     Type: 'AWS::SSM::Parameter'
