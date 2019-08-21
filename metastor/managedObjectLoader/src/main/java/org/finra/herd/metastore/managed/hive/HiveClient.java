@@ -28,6 +28,8 @@ public interface HiveClient {
 
 	List<HivePartition> getExistingPartitions( String database, String tableName, Set<String> partitionSpec );
 
+    List<HivePartition> getExistingPartitions( String database, String tableName);
+
 	void executeQueries(String database, List<String> schemaSql);
 
 

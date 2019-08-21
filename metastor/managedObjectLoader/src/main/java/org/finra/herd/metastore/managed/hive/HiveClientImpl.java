@@ -202,6 +202,24 @@ public class HiveClientImpl implements HiveClient {
 		return partName;
 	}
 
+    @Override
+	public List<HivePartition> getExistingPartitions(String database, String tableName) {
+        List<HivePartition> partName = Lists.newArrayList();
+
+        partName.addAll(
+            hiveJdbcTemplate.query(
+                String.format( "SHOW PARTITIONS %s.%s", database, tableName)
+                , new RowMapper<HivePartition>() {
+
+                    @Override
+                    public HivePartition mapRow(ResultSet resultSet, int i ) throws SQLException {
+                        return HivePartition.builder().metastorePartName( resultSet.getString( 1 ) ).build();
+                    }
+                }
+            ) );
+        return partName;
+    }
+
 	@Override
 	public void executeQueries( String database, List<String> schemaSql ) {
 		log.info( "Executing schemaSQL: {}", schemaSql );
