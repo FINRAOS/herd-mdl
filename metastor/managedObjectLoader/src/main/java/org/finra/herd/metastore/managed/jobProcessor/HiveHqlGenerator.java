@@ -268,12 +268,14 @@ public class HiveHqlGenerator {
 				schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
 			}
 		} else if (partitions.size() == 1) {
-			schemaHql.add(
-					String.format("analyze table %s partition(`%s`='%s') compute statistics noscan;"
-							, jd.getTableName()
-							, jd.getPartitionKey()
-							, partitions.get(0))
-			);
+			if ( jd.isSubPartitionLevelProcessing() ) {
+				schemaHql.add( String.format( "analyze table %s partition(`%s`='%s', `%s`='%s') compute statistics noscan;"
+						, jd.getTableName(), jd.getPartitionKey(), jd.getTopLevelPartitionValue(), jd.getSubPartitionKey(), jd.getSubPartitionValue() ) );
+			} else {
+				schemaHql.add( String.format( "analyze table %s partition(`%s`='%s') compute statistics noscan;"
+						, jd.getTableName(), jd.getPartitionKey(), partitions.get( 0 ) )
+				);
+			}
 		}
 	}
 

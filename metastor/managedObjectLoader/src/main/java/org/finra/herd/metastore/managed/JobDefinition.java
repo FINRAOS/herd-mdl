@@ -30,7 +30,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.logging.Logger;
+
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.SUB_PARTITION_VAL_SEPARATOR;
 
 @Slf4j
 @ToString
@@ -41,6 +42,8 @@ public class JobDefinition {
     int wfType;
     int numOfRetry;
 
+    boolean subPartitionLevelProcessing = false;
+
     String partitionValue;
     String correlation;
     String executionID;
@@ -48,6 +51,9 @@ public class JobDefinition {
     String actualObjectName;
     String tableName;
 	String partitionKey;
+	String topLevelPartitionValue;
+	String subPartitionKey;
+	String subPartitionValue;
 
     ObjectDefinition objectDefinition;
 
@@ -106,6 +112,11 @@ public class JobDefinition {
             jobDefinition.objectDefinition.fileType=resultSet.getString("FILE_TYPE");
 
             jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
+			if ( jobDefinition.getPartitionValue().contains( SUB_PARTITION_VAL_SEPARATOR ) ) {
+				jobDefinition.topLevelPartitionValue = jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR )[0];
+				jobDefinition.subPartitionValue = jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR )[1];
+				jobDefinition.subPartitionLevelProcessing = true;
+			}
             // Execution ID not being used, other than filenaming .hql files it just have to unique
             jobDefinition.executionID=resultSet.getString("ID");
             jobDefinition.partitionKey=resultSet.getString("PARTITION_KEY");

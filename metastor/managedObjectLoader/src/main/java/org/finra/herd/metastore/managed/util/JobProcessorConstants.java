@@ -28,6 +28,7 @@ public interface JobProcessorConstants {
 	// DM_NOTIFICATION table partition values delimiters
 	String DOUBLE_UNDERSCORE = "__";
 	String COMMA = ",";
+	String SUB_PARTITION_VAL_SEPARATOR = ":";
 
 	int DM_RECORD_RETURN_MAX_LIMIT = 1000;
 
