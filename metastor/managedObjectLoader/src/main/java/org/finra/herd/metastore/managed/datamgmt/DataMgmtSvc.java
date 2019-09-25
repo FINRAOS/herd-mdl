@@ -129,9 +129,9 @@ public class DataMgmtSvc {
 				} else {
 					filter.setPartitionValues( partitions );
 				}
-				partitionValueFilters.add( filter );
 			}
 		}
+		partitionValueFilters.add( filter );
 
 		request.setPartitionValueFilter( null );
 		request.setPartitionValueFilters( partitionValueFilters );
