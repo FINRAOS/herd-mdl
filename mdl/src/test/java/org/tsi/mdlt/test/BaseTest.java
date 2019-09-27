@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsi.mdlt.pojos.User;
 import org.tsi.mdlt.util.jdbc.JDBCHelper;
 import org.tsi.mdlt.util.jdbc.JDBCTestCase;
 import org.tsi.mdlt.util.shell.ShellHelper;
@@ -40,8 +41,23 @@ public class BaseTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+    protected static final User SEC_APP_USER = User.getLdapSecAppUser();
+    protected static final User MDL_APP_USER = User.getLdapMdlAppUser();
+    protected static final User HERD_RO_USER = User.getHerdRoUser();
+    protected static final User HERD_BASIC_USER = User.getHerdBasicUser();
+    protected static final User HERD_ADMIN_USER = User.getHerdAdminUser();
+
+    protected static final String HERD_WILDCARD_USER = "*";
+
+    protected static final String NAMESPACE_MDL = "MDL";
+    protected static final String NAMESPACE_SEC = "SEC_MARKET_DATA";
+
     protected void LogStep(String message) {
         LOGGER.info("Step: " + message);
+    }
+
+    protected void LogCleanup(String message) {
+        LOGGER.info("Cleanup: " + message);
     }
 
     protected void LogVerification(String message) {
@@ -61,9 +77,9 @@ public class BaseTest {
     }
 
     protected List<ShellTestCase> getTestCases(String filePath) {
-        ArrayList<ShellTestCase> inputCommands = new ArrayList<>();
+        ArrayList<ShellTestCase> inputCommands;
         try {
-            inputCommands.addAll(ShellHelper.parseShellTestCases(filePath));
+            inputCommands = new ArrayList<>(ShellHelper.parseShellTestCases(filePath));
         }
         catch (IOException e) {
             e.printStackTrace();
@@ -74,9 +90,9 @@ public class BaseTest {
     }
 
     protected List<JDBCTestCase> getJdbcTestCases(String filePath) {
-        ArrayList<JDBCTestCase> inputCommands = new ArrayList<>();
+        ArrayList<JDBCTestCase> inputCommands;
         try {
-            inputCommands.addAll(JDBCHelper.parseJDBCTestCases(filePath));
+            inputCommands = new ArrayList<>(JDBCHelper.parseJDBCTestCases(filePath));
         }
         catch (IOException e) {
             e.printStackTrace();

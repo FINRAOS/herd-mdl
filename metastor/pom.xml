@@ -15,58 +15,163 @@
   limitations under the License.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.0.2.RELEASE</version>
+		<relativePath></relativePath>
+	</parent>
 
-  <artifactId>herd-metastore</artifactId>
-  <groupId>org.finra.herd-mdl</groupId>
-  <version>1.0.0</version>
+	<modelVersion>4.0.0</modelVersion>
 
-  <packaging>pom</packaging>
+	<artifactId>metastore</artifactId>
+	<groupId>org.finra.herd-mdl.metastore</groupId>
+	<version>1.2.3</version>
+	<packaging>pom</packaging>
 
-  <properties>
-    <spring.boot.version>2.0.2.RELEASE</spring.boot.version>
-  </properties>
+	<properties>
+		<spring.boot.version>2.0.2.RELEASE</spring.boot.version>
+		<lombok.version>1.18.0</lombok.version>
+		<herd.sdk.version>0.65.0</herd.sdk.version>
+		<jcommander.version>1.72</jcommander.version>
+		<javax.json.version>1.1.2</javax.json.version>
+		<glassfish.version>1.1</glassfish.version>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.gpg.plugin.version>1.6</maven.gpg.plugin.version>
+		<nexus.staging.maven.plugin.version>1.6.8</nexus.staging.maven.plugin.version>
+		<maven.source.plugin.version>3.0.1</maven.source.plugin.version>
+		<maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
+	</properties>
 
-  <modules>
-    <module>managedObjectLoader</module>
-    <module>metastoreOperations</module>
-  </modules>
+	<modules>
+		<module>managedObjectLoader</module>
+		<module>metastoreOperations</module>
+	</modules>
 
-  <licenses>
-    <license>
-      <name>The Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    </license>
-  </licenses>
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
 
-  <developers>
-    <developer>
-      <id>VekasS</id>
-      <name>Vekas Singh</name>
-      <email>vekassingh@gmail.com</email>
-      <url>https://github.com/VekasS</url>
-      <organization>FINRA</organization>
-      <organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
-      <roles>
-        <role>developer</role>
-        <role>tester</role>
-      </roles>
-    </developer>
-  </developers>
+	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.finra.herd</groupId>
+			<artifactId>herd-sdk</artifactId>
+			<version>${herd.sdk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.beust</groupId>
+			<artifactId>jcommander</artifactId>
+			<version>${jcommander.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.json</groupId>
+			<artifactId>javax.json-api</artifactId>
+			<version>${javax.json.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.json</artifactId>
+			<version>${glassfish.version}</version>
+		</dependency>
+	</dependencies>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>${spring.boot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+	<developers>
+		<developer>
+			<id>VekasS</id>
+			<name>Vekas Singh</name>
+			<email>vekassingh@gmail.com</email>
+			<url>https://github.com/VekasS</url>
+			<organization>FINRA</organization>
+			<organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
+			<roles>
+				<role>developer</role>
+				<role>tester</role>
+			</roles>
+		</developer>
+	</developers>
 
+	<scm>
+		<connection>scm:git:https://github.com/FINRAOS/herd-mdl</connection>
+		<developerConnection>scm:git:https://github.com/FINRAOS/herd-mdl</developerConnection>
+		<url>https://github.com/FINRAOS/herd-mdl</url>
+	</scm>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven.gpg.plugin.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<configuration>
+									<passphraseServerId>gpg.passphrase</passphraseServerId>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.plugins</groupId>
+						<artifactId>nexus-staging-maven-plugin</artifactId>
+						<version>${nexus.staging.maven.plugin.version}</version>
+						<extensions>true</extensions>
+						<configuration>
+							<serverId>finra-ossrh</serverId>
+							<nexusUrl>https://oss.sonatype.org</nexusUrl>
+							<autoReleaseAfterClose>true</autoReleaseAfterClose>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<distributionManagement>
+		<repository>
+			<id>finra-ossrh</id>
+			<name>Nexus Staging Repository</name>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+
+		<snapshotRepository>
+			<id>finra-ossrh</id>
+			<name>Nexus Snapshot Repository</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
+				<configuration>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>

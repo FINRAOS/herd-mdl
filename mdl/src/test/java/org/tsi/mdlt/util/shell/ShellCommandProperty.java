@@ -45,6 +45,10 @@ public class ShellCommandProperty {
     private static void addAllRequiredSsmToMap(Map<String, String> propertiesMap) {
         addSsmParameterToMap(SsmParameterKeyEnum.MDL_APP_USER, propertiesMap);
         addDecryptedSsmParameterToMap(SsmParameterKeyEnum.MDL_APP_PASSWORD, propertiesMap);
+        addSsmParameterToMap(SsmParameterKeyEnum.HERD_ADMIN_USER, propertiesMap);
+        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.Herd_ADMIN_PASSWORD, propertiesMap);
+        addSsmParameterToMap(SsmParameterKeyEnum.SEC_APP_USER, propertiesMap);
+        addDecryptedSsmParameterToMap(SsmParameterKeyEnum.SEC_APP_PASSWORD, propertiesMap);
     }
 
     private static void addSsmParameterToMap(SsmParameterKeyEnum ssmParameterKeyEnum,

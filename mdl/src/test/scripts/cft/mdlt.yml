@@ -22,33 +22,19 @@ Parameters:
     AllowedValues:
       - 'true'
       - 'false'
-    Description: Whether rollback on app stack failure
+    Description: Whether shutdown herd-mdl stack after test execution
   MDLInstanceName:
     Default: mdlt
-    Description: Application Name:Unique name to be associated with the stack, max length 5 as LB name has 32 chars length limitation
+    Description: instance name for exsiting stack or instance name prefix of new mdl stack to be created
     Type: String
     AllowedPattern: '[a-z0-9]*'
-    MaxLength: 5
   ReleaseVersion:
-    Default: DEV
+    Default: 1.4.0
     Description: 'Enter the MDL release to use - RC, DEV etc'
     Type: String
-  InstallMdlYmlLUrl:
-    Description: Url of the install mdl yml location
-    Type: String
-  MdltBucketName:
-    Description: Bucket where the latest mdlt build is available
-    Default: mdl-build-bucket
-    Type: String
-  MDLTBranch:
-    Default: mdlt
-    Description: Enter the MDLT branch to use
-    Type: String
-  KeyName:
-    Default: APP_MDL_PROD
+  KeyPairName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-    Type: String
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Type: 'AWS::EC2::KeyPair::KeyName'
   ImageId:
     Default: ami-1853ac65
     Description: AMI id for EC2 instances
@@ -57,73 +43,312 @@ Parameters:
     Description: Test deploy host EC2 instance type
     Type: String
     Default: t2.medium
-  VpcIdParameterKey:
-    Default: /VPC/Primary/ID
-    Description: VPC Parameter key name in system store
-    Type: String
-  PrivateSubnetsParameterKey:
-    Default: /VPC/Primary/SubnetIDs/private
-    Description: VPC Parameter key name in system store
-    Type: String
   DeployComponents:
     Type: String
     Default: All
     AllowedValues: [All, Prereqs Only, Herd, Metastor, BDSQL]
     Description: Choose individual MDL components to deploy. Default is All, which will deploy all components
+  MdltResultS3BucketName:
+     Description: Provide your s3 bucket name if you want to save mdlt results to your s3 bucket, otherwise, mdlt result will be saved to mdlt default bucket
+     Type: String
+  CertificateArn:
+    Description: Certificate Arn for MDL, only needed when creating new mdl auth stack
+    Type: String
+  HostedZoneName:
+    Description: Hosted Zone Name to create Route53 record set group for the given domain, only needed when creating new mdl auth stack
+    Type: String
+  DomainNameSuffix:
+    Description: Domain name suffix for MDL Domains, only needed when creating new mdl auth stack
+    Type: String
+  CreateVPC:
+    Default: 'true'
+    Description: Create VPC - true || false
+    AllowedValues: [true, false]
+    Type: String
+  ExistingStack:
+    Default: 'false'
+    Description: Existing mdl stack - true || false
+    AllowedValues: [true, false]
+    Type: String
+  MdlVpcId:
+    Description: use existing VPC id, only needed when creating new mdl stack
+    Type: String
+  MdlPrivateSubnets:
+    Description: use existing private subnet ids, only needed when creating new mdl stack
+    Type: String
+  MdlPublicSubnets:
+    Description: use existing public subnet ids, only needed when creating new mdl stack
+    Type: String
+  Environment:
+    Description: Application environment(or environment of existing stack)
+    Default: prod
+    Type: String
+  MdlAuthStackName:
+    Description: name of existing Auth stack or name to be used for creating mdl auth stack, auth stack will not be created if this value is empty
+    Type: String
+  MdlNoAuthStackName:
+    Default: mdltNoAuth
+    Description: name of existing noAuth stack or name to be used for creating mdl stack without auth, noAuth stack will not be created if this value is empty
+    Type: String
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Deployment Parameters
+        Parameters:
+          - ReleaseVersion
+          - DeployComponents
+      - Label:
+          default: Resources - Conditional Parameters
+        Parameters:
+          - CreateVPC
+          - ExistingStack
+          - RollbackOnFailure
+      - Label:
+          default: Generic Parameters
+        Parameters:
+          - MDLInstanceName
+          - Environment
+          - MdltResultS3BucketName
+      - Label:
+          default: Mdl Stack Name Parameters
+        Parameters:
+          - MdlAuthStackName
+          - MdlNoAuthStackName
+      - Label:
+          default: Instance Parameters
+        Parameters:
+          - ImageId
+          - InstanceType
+          - KeyPairName
+      - Label:
+          default: Web Domain and Certificate Parameters
+        Parameters:
+          - CertificateArn
+          - DomainNameSuffix
+          - HostedZoneName
+      - Label:
+          default: AWS VPC Parameter
+        Parameters:
+          - MdlVpcId
+          - MdlPublicSubnets
+          - MdlPrivateSubnets
+Conditions:
+    CreateVPCTrueCondition: !Equals [!Ref CreateVPC, 'true']
+    CreateVPCSsmCondition: !And [ !Equals [!Ref CreateVPC, 'false'] , !Equals [!Ref ExistingStack, 'false'] ]
+    CreateAuthCondition: !Not [!Equals [!Ref MdlAuthStackName, '']]
+    CreateNoAuthCondition: !Not [!Equals [!Ref MdlNoAuthStackName, '']]
 Resources:
-  DeployHostHttpsWithAuth:
+  DeployBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub '${AWS::AccountId}-${MDLInstanceName}-mdlt-staging-${Environment}'
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: '*'
+  ArtifactCopyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import os
+          import zipfile
+          import cfnresponse
+          import boto3
+          import urllib.request
+
+          def handler(event, context):
+              release_version = event['ResourceProperties']['ReleaseVersion']
+              deployment_bucket_name = event['ResourceProperties']['DeploymentBucketName']
+              release_artifact_location = 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v{releaseVersion}/herd-mdlt-{releaseVersion}-dist.zip'.replace('{releaseVersion}', release_version)
+
+              s3 = boto3.client('s3')
+              physical_id = "CopyArtifactsLambdaPhysicalID"
+              response_data = {}
+
+              if event['RequestType'] == 'Create':
+                  response_data['Message'] = 'Copied mdlt needed yml to staging bucket: {}.'.format(deployment_bucket_name)
+
+                  try:
+                      os.makedirs('/tmp/downloads/')
+                      os.makedirs('/tmp/extracts/')
+                      local_deploy_file = '/tmp/downloads/{}'.format(os.path.basename('herd-mdlt-dist.zip'))
+                      urllib.request.urlretrieve(release_artifact_location, local_deploy_file)
+
+                      s3_resource = boto3.resource('s3')
+                      s3_resource.Bucket(deployment_bucket_name).upload_file(local_deploy_file, 'herd-mdlt-dist.zip')
+
+                      local_extract_directory = '/tmp/extracts/{}'.format(release_version)
+                      with zipfile.ZipFile(local_deploy_file, 'r') as zip_ref:
+                          zip_ref.extractall(local_extract_directory)
+
+                      for root, dirs, files in os.walk(local_extract_directory):
+                          for filename in files:
+                              abs_filepath = os.path.join(root, filename)
+                              print('Uploading file: {} to bucket: {} with key: {}'.format(abs_filepath, deployment_bucket_name, os.path.relpath(abs_filepath, local_extract_directory)))
+                              s3_resource.Bucket(deployment_bucket_name).upload_file(abs_filepath, os.path.relpath(abs_filepath, local_extract_directory))
+
+                      response_data['Message'] = 'Successfully uploaded artifacts to staging location.'
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Delete':
+                  response_data['Message'] = 'Deleted artifacts from bucket: {}'.format(deployment_bucket_name)
+
+                  objects_to_delete = []
+
+                  try:
+                      for key in s3.list_objects_v2(Bucket=deployment_bucket_name, MaxKeys=1000)['Contents']:
+                          objects_to_delete.append({
+                              'Key': key['Key']
+                          })
+
+                      print('Deleting {} objects from staging bucket: {}'.format(len(objects_to_delete), deployment_bucket_name))
+                      s3.delete_objects(
+                          Bucket=deployment_bucket_name,
+                          Delete={
+                              'Objects': objects_to_delete
+                          }
+                      )
+                      print('Deleted {} objects'.format(len(objects_to_delete)))
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+
+              elif event['RequestType'] == 'Update':
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 128
+  ArtifactCopyCustomResource:
+    Type: Custom::ArtifactCopierResource
+    Properties:
+      ServiceToken: !GetAtt 'ArtifactCopyLambdaFunction.Arn'
+      ReleaseVersion: !Ref ReleaseVersion
+      DeploymentBucketName: !Ref DeployBucket
+      WaitMdltVpcIdSsm: !If [CreateVPCSsmCondition, !Ref MdltVPCParameter, 'CreateVPC']
+      WaitMdltPrivateSubnetsSsm: !If [CreateVPCSsmCondition, !Ref MdltPrivateSubnetsParameter, 'CreateVPC']
+      WaitMdltPublicSubnetsSsm: !If [CreateVPCSsmCondition, !Ref MdltPublicSubnetsParameter, 'CreateVPC']
+  CreateVPCStack:
+    Condition: CreateVPCTrueCondition
+    DependsOn: ArtifactCopyCustomResource
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join
-        - ''
-        - - 'https://s3.amazonaws.com/'
-          - !Ref MdltBucketName
-          - /mdlt/build/
-          - !Ref MDLTBranch
-          - /
-          - scripts/cft/mdltDeployHost.yml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/mdlVpc.yml'
+      Parameters:
+        MDLInstanceName: !Ref MDLInstanceName
+        Environment: !Ref Environment
+        CustomTagName: 'application'
+        CustomTagValue: 'herd-mdl'
+  #save provided vpc values to ssm parameter if createVPC = false, otherwise, these ssm parameters will be created by CreateVPCStack
+  MdltVPCParameter:
+    Condition: CreateVPCSsmCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+      Type: String
+      Value: !Ref MdlVpcId
+      Description: VPC id for MDLT
+  MdltPrivateSubnetsParameter:
+    Condition: CreateVPCSsmCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
+      Type: String
+      Value: !Ref MdlPrivateSubnets
+      Description: private subnet ids for MDLT
+  MdltPublicSubnetsParameter:
+    Condition: CreateVPCSsmCondition
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/public'
+      Type: String
+      Value: !Ref MdlPublicSubnets
+      Description: public subnet ids for MDLT
+  DeployHostHttpsWithAuth:
+    Condition: CreateAuthCondition
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'true'
         RollbackOnFailure: !Ref RollbackOnFailure
-        MDLInstanceName: !Join
-          - ''
-          - - !Ref MDLInstanceName
-            - httpsauth
-        KeyName: !Ref KeyName
-        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        MDLInstanceName: !Sub '${MDLInstanceName}httpsauth'
+        MDLStackName: !Ref MdlAuthStackName
+        KeyName: !Ref KeyPairName
         ReleaseVersion: !Ref ReleaseVersion
-        MdltBucketName: !Ref MdltBucketName
-        MDLTBranch: !Ref MDLTBranch
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcIdParameterKey: !Ref VpcIdParameterKey
-        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPrivateSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
+        MdltResultS3BucketName: !Ref MdltResultS3BucketName
+        CertificateArn: !Ref CertificateArn
+        HostedZoneName: !Ref HostedZoneName
+        DomainNameSuffix: !Ref DomainNameSuffix
+        Environment: !Ref Environment
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
+        MDLTWrapperInstanceName: !Ref MDLInstanceName
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'
   DeployHostHttpWithoutAuth:
+    Condition: CreateNoAuthCondition
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: !Join
-        - ''
-        - - 'https://s3.amazonaws.com/'
-          - !Ref MdltBucketName
-          - /mdlt/build/
-          - !Ref MDLTBranch
-          - /
-          - scripts/cft/mdltDeployHost.yml
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${DeployBucket}/scripts/cft/mdltDeployHost.yml'
       Parameters:
         EnableSSLAndAuth: 'false'
         RollbackOnFailure: !Ref RollbackOnFailure
-        MDLInstanceName: !Join
-          - ''
-          - - !Ref MDLInstanceName
-            - httpnauth
-        KeyName: !Ref KeyName
-        InstallMdlYmlLUrl: !Ref InstallMdlYmlLUrl
+        MDLInstanceName: !Sub '${MDLInstanceName}httpnauth'
+        MDLStackName: !Ref MdlNoAuthStackName
+        KeyName: !Ref KeyPairName
         ReleaseVersion: !Ref ReleaseVersion
-        MdltBucketName: !Ref MdltBucketName
-        MDLTBranch: !Ref MDLTBranch
         ImageId: !Ref ImageId
         InstanceType: !Ref InstanceType
-        VpcIdParameterKey: !Ref VpcIdParameterKey
-        PrivateSubnetsParameterKey: !Ref PrivateSubnetsParameterKey
+        MdltVpcIdParameterKey: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/ID'
+        MdltPrivateSubnetsParameter: !Sub '/global/${MDLInstanceName}/${Environment}/VPC/SubnetIDs/private'
         DeployComponents: !Ref DeployComponents
+        MdltResultS3BucketName: !Ref MdltResultS3BucketName
+        CertificateArn: ''
+        HostedZoneName: ''
+        DomainNameSuffix: ''
+        Environment: !Ref Environment
+        WaitOnVpcIfCreate: !If [CreateVPCTrueCondition, !Ref CreateVPCStack, !Ref ArtifactCopyCustomResource]
+        MDLTWrapperInstanceName: !Ref MDLInstanceName
+        InstallMdlYmlUrl: !Sub 'https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v${ReleaseVersion}/installMDL.yml'

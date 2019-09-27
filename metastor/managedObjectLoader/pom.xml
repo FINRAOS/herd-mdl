@@ -17,9 +17,9 @@
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<parent>
-		<artifactId>herd-metastore</artifactId>
-		<groupId>org.finra.herd-mdl</groupId>
-		<version>1.0.0</version>
+		<artifactId>metastore</artifactId>
+		<groupId>org.finra.herd-mdl.metastore</groupId>
+		<version>1.2.3</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -38,20 +38,13 @@
 		<guava.version>23.0</guava.version>
 		<common.dpcp.version>2.2.0</common.dpcp.version>
 		<pebble.version>2.3.0</pebble.version>
-		<herd.sdk.version>0.65.0</herd.sdk.version>
-		<lombok.version>1.18.0</lombok.version>
 		<hive.jdbc.version>2.1.1</hive.jdbc.version>
-		<hadoop.common.version>3.0.0</hadoop.common.version>
-		<jcommander.version>1.72</jcommander.version>
-		<javax.json.version>1.1.2</javax.json.version>
-		<glassfish.version>1.1</glassfish.version>
+		<hadoop.common.version>2.7.3</hadoop.common.version>
 
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>2.20</maven-surefire-plugin.version>
 		<maven.assembly.plugin.version>3.1.0</maven.assembly.plugin.version>
 
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
 		<module.name>managedObjectLoader</module.name>
 	</properties>
 
@@ -159,7 +152,6 @@
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
 			<version>2.18.0</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -172,17 +164,6 @@
 			<version>${pebble.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.finra.herd</groupId>
-			<artifactId>herd-sdk</artifactId>
-			<version>${herd.sdk.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>${lombok.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.hive</groupId>
 			<artifactId>hive-jdbc</artifactId>
 			<version>${hive.jdbc.version}</version>
@@ -191,21 +172,6 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<version>${hadoop.common.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.beust</groupId>
-			<artifactId>jcommander</artifactId>
-			<version>${jcommander.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>javax.json</groupId>
-			<artifactId>javax.json-api</artifactId>
-			<version>${javax.json.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.json</artifactId>
-			<version>${glassfish.version}</version>
 		</dependency>
 	</dependencies>
 
@@ -236,6 +202,7 @@
 						</goals>
 						<configuration>
 							<finalName>${module.name}</finalName>
+							<classifier>exec</classifier>
 						</configuration>
 					</execution>
 				</executions>
@@ -250,16 +217,6 @@
 				<groupId>org.openclover</groupId>
 				<artifactId>clover-maven-plugin</artifactId>
 				<version>${clover.version}</version>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${maven-compiler-plugin.version}</version>
-				<configuration>
-					<source>${maven.compiler.source}</source>
-					<target>${maven.compiler.target}</target>
-				</configuration>
 			</plugin>
 
 			<plugin>
@@ -278,6 +235,34 @@
 						<phase>package</phase>
 						<goals>
 							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>${maven.source.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven.javadoc.plugin.version}</version>
+				<executions>
+					<!-- Build individual Javadoc JAR's for each sub-project. -->
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
 						</goals>
 					</execution>
 				</executions>

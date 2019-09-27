@@ -1,0 +1,200 @@
+#
+# Copyright 2018 herd-mdl contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MDL - namespace-authorization sync utility installation template
+Parameters:
+  MDLInstanceName:
+    Description: 'MDL Instance name'
+    Type: String
+  Environment:
+    Description: 'Environment/SDLC (eg DEV, QA, PROD)'
+    Type: String
+  ReleaseVersion:
+    Description: Release version
+    Type: String
+  DeploymentBucketName:
+    Description: Deployment bucket parameter key name in system store
+    Type: String
+  EnableSSLAndAuth:
+    Default: 'true'
+    Description: Whether to enable Authentication/SSL
+    Type: String
+  LambdaRuntime:
+    Description: The Lambda runtime to use
+    Type: String
+    Default: python2.7
+  HandlerName:
+    Description: The name of the lambda handler
+    Type: String
+    Default: ns_auth_sync_utility.handler
+  PrivateSubnetsParameter:
+    Description: VPC Parameter key name in system store
+    Type: AWS::SSM::Parameter::Value<String>
+  NsAuthSyncUtilitySecurityGroupParameter:
+    Description: Security Group name for ns-auth-sync in system store
+    Type: AWS::SSM::Parameter::Value<String>
+Conditions:
+  EnableSSLAndAuth: !Equals
+    - !Ref EnableSSLAndAuth
+    - 'true'
+Resources:
+  NsAuthSyncLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${MDLInstanceName}-Herd-${Environment}-NS-AUTH-LAMBDA-FUNCTION'
+      Handler: !Ref HandlerName
+      VpcConfig:
+        SubnetIds: !Split
+          - ','
+          - !Ref PrivateSubnetsParameter
+        SecurityGroupIds:
+          - !Ref NsAuthSyncUtilitySecurityGroupParameter
+      Code:
+        S3Bucket: !Ref DeploymentBucketName
+        S3Key: !Join
+          - ''
+          - - !Ref ReleaseVersion
+            - /lambda/ns_auth_sync_utility.zip
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: !Ref 'LambdaRuntime'
+      Timeout: '900'
+      Environment:
+        Variables:
+          INSTANCE_NAME: !Ref MDLInstanceName
+          ENVIRONMENT: !Ref Environment
+          DEBUG_ENABLED: 'no'
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      RoleName: !Join
+        - '-'
+        - - !Ref MDLInstanceName
+          - !Ref ReleaseVersion
+          - 'ns-auth-sync-lambda-role'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+  NsAuthUtilityArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Resources/Lambda/NsAuthSyncArn'
+      Type: String
+      Value: !GetAtt 'NsAuthSyncLambdaFunction.Arn'
+      Description: ns-auth-sync utility lambda function's ARN
+  NsAuthChangeSnsTopicArnParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Resources/SNS/UserNamespaceChgTopicArn'
+      Type: String
+      Value: !Ref NsAuthChangeNotificationSnsTopic
+      Description: user-namespace authorization changes SNS topic's ARN
+  NsAuthChangeNotificationSnsTopic:
+    Type: AWS::SNS::Topic
+    Condition: EnableSSLAndAuth
+    Properties:
+      DisplayName: !Sub '${MDLInstanceName}-Herd-${Environment}-NS-AUTH-TOPIC'
+      Subscription:
+        -
+          Endpoint: !GetAtt 'NsAuthSyncLambdaFunction.Arn'
+          Protocol: 'lambda'
+  LambdaInvocationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref NsAuthChangeNotificationSnsTopic
+      FunctionName: !GetAtt 'NsAuthSyncLambdaFunction.Arn'
+  ManageEniLifecycleFunction:
+      Type: AWS::Lambda::Function
+      DependsOn: NsAuthSyncLambdaFunction
+      Properties:
+        Handler: index.handler
+        Role: !GetAtt LambdaExecutionRole.Arn
+        Code:
+          ZipFile: !Sub |
+            var response = require('cfn-response');
+            var AWS = require('aws-sdk');
+
+            exports.handler = function(event, context) {
+              if (event.RequestType != 'Delete') {
+                response.send(event, context, response.SUCCESS, {});
+                return;
+              }
+              var ec2 = new AWS.EC2();
+              var params = {
+                Filters: [
+                  {
+                    Name: 'group-id',
+                    Values: event.ResourceProperties.SecurityGroups
+                  },
+                  {
+                    Name: 'description',
+                    Values: ['AWS Lambda VPC ENI: *']
+                  }
+                ]
+              };
+
+              console.log("Deleting attachments!");
+              // Detach, then delete ENIs which were spinned up by AWS for our VPC Lambda
+              ec2.describeNetworkInterfaces(params).promise().then(function(data) {
+                console.log("Got Interfaces:\n", JSON.stringify(data));
+                return Promise.all(data.NetworkInterfaces.map(function(networkInterface) {
+                  var networkInterfaceId = networkInterface.NetworkInterfaceId;
+                  var attachmentId = networkInterface.Attachment.AttachmentId;
+                  return ec2.detachNetworkInterface({AttachmentId: attachmentId}).promise().then(function(data) {
+                    return ec2.waitFor('networkInterfaceAvailable', {NetworkInterfaceIds: [networkInterfaceId]}).promise();
+                  }).then(function(data) {
+                    console.log("Detached Interface, deleting:\n", networkInterfaceId);
+                    return ec2.deleteNetworkInterface({NetworkInterfaceId: networkInterfaceId}).promise();
+                  });
+                }));
+              }).then(function(data) {
+                console.log("Success!");
+                response.send(event, context, response.SUCCESS, {});
+              }).catch(function(err) {
+                console.log("Failure:\n", JSON.stringify(err));
+                response.send(event, context, response.FAILED, {});
+              });
+            };
+        Timeout: 300
+        Runtime: nodejs4.3
+  VPCDestroyENI:
+    Type: Custom::VPCDestroyENI
+    Properties:
+      ServiceToken: !GetAtt 'ManageEniLifecycleFunction.Arn'
+      SecurityGroups: [!Ref NsAuthSyncUtilitySecurityGroupParameter]
+Outputs:
+  LambdaFunctionName:
+    Description: Function name of the ns-auth sync utility lambda.
+    Value: !Sub '${MDLInstanceName}-${Environment}-NS-AUTH-LAMBDA-FUNCTION'
+  LambdaFunctionArn:
+    Description: ARN of the ns-auth sync utility function.
+    Value: !GetAtt 'NsAuthSyncLambdaFunction.Arn'
+  UserNamespaceChgTopicArn:
+    Description: ARN of the user-namespace change SNS Topic which Herd publishes to
+    Value: !Ref NsAuthChangeNotificationSnsTopic
+
+

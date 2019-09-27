@@ -35,14 +35,6 @@ function execute_cmd {
         check_error ${PIPESTATUS[0]} "$cmd"
 }
 
-#MAIN
-configFile="/home/mdladmin/deploy/mdl/conf/deploy.props"
-if [ ! -f ${configFile} ] ; then
-    echo "Config file does not exist ${configFile}"
-    exit 1
-fi
-. ${configFile}
-
 # Install packages
 execute_cmd "yum update -y aws-cfn-bootstrap"
 execute_cmd "yum install -y lynx"

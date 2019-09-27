@@ -37,6 +37,7 @@ hooks:
   BeforeInstall:
     - location: scripts/installPackagesForHerd.sh
       timeout: 300
+      runas: root
   AfterInstall:
     - location: scripts/installDBForHerd.sh
       timeout: 600
@@ -47,6 +48,10 @@ hooks:
   ApplicationStart:
     - location: scripts/configureAndStartHerd.sh
       timeout: 300
+      runas: mdladmin
+  ValidateService:
+    - location: scripts/smokeTestHerd.sh
+      timeout: 600
       runas: mdladmin
   ApplicationStop:
     - location: scripts/stopHerd.sh

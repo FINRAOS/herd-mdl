@@ -17,13 +17,11 @@ package org.tsi.mdlt.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.tsi.mdlt.aws.CloudFormationClient;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 
 //TODO this deployHost.property and test.properties need to managed/merged together
@@ -35,10 +33,8 @@ public class TestProperties {
     private static Properties propertyValues;
 
     static {
-        try (InputStream propFileStream =
-                CloudFormationClient.class.getResourceAsStream("/mdl.props")) {
+        try {
             propertyValues = new Properties();
-            propertyValues.load(propFileStream);
 
             //replace default test parameters with DeployPropertiesFile
             Properties systemPropertyValues = System.getProperties();
@@ -48,6 +44,7 @@ public class TestProperties {
                     propertyValues.load(new FileInputStream(propertyFileName));
                 }
             }
+            propertyValues.load(new FileInputStream("./mdlt/conf/test.props"));
         }
         catch (IOException e) {
             throw new UncheckedIOException("Failed to load resource", e);

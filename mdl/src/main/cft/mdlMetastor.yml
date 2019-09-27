@@ -22,7 +22,7 @@ Parameters:
   MetastorVersion:
     Description: Metastor release version to use.
     Type: String
-    Default: '1.0.0'
+    Default: '1.1.0'
   ReleaseVersion:
     Description: Release version
     Type: String
@@ -115,6 +115,9 @@ Parameters:
   Environment:
     Description: Application environment
     Type: String
+  LogGroupName:
+    Description: CloudWatch Log group name
+    Type: String
 Conditions:
   EnableSSLAndAuth: !Equals
     - !Ref EnableSSLAndAuth
@@ -176,32 +179,52 @@ Resources:
                 - ''
                 - - |
                     function check_error {     return_code=${1};     cmd="$2";     if [ ${return_code} -ne 0 ];     then         echo "$(date "+%m/%d/%Y %H:%M:%S") *** ERROR *** ${cmd} has failed with error $return_code";         exit 1;     fi; }
-                  - |
                     function execute_cmd {         cmd="${1}";         retry="${2}";         echo $cmd;         eval $cmd;         returnCode=${PIPESTATUS[0]};         if [ ${returnCode} -ne 0 ] ; then             if [ ${retry} = "RETRY" ] ; then                 sleep 2m;                 eval $cmd;                 check_error ${PIPESTATUS[0]} "$cmd";             fi;         else             check_error ${returnCode} "$cmd";         fi;          }
-                  - |
+                    configFile="/tmp/logs.props"
+                    . ${configFile}
                     user=mdladmin
-                  - |
                     password=$(openssl rand -base64 32 | tr -d /=+ | cut -c -16)
-                  - |
                     execute_cmd "useradd -m -d /home/${user} ${user}"
-                  - |
                     echo ${user}:${password} | chpasswd
-                  - |
                     echo "${user} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-                  - |
                     cd /home/${user}
-                  - |
                     execute_cmd "curl -O https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install" "RETRY" 2>&1
-                  - |
                     execute_cmd "chmod +x ./install"
-                  - |
                     execute_cmd "./install auto" "RETRY" 2>&1
-                  - |
                     execute_cmd "sudo service codedeploy-agent status"
-                  - |
                     echo 'Code deploy setup complete, sleeping for 2 mins'
-                  - |
                     sleep 2m
+                    execute_cmd "wget https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py" "RETRY" 2>&1
+                    execute_cmd "chmod +x ./awslogs-agent-setup.py"
+                    execute_cmd "sudo python awslogs-agent-setup.py -n -r ${region} -c s3://aws-codedeploy-us-east-1/cloudwatch/awslogs.conf"
+                    execute_cmd "sudo service awslogs restart"
+          files:
+            /var/awslogs/etc/config/codedeploy_logs.conf:
+              content: !Sub |
+                [codedeploy-agent-logs]
+                datetime_format = %Y-%m-%d %H:%M:%S
+                file = /var/log/aws/codedeploy-agent/codedeploy-agent.log
+                log_stream_name = metastor/codedeploy/{instance_id}-codedeploy-agent-log
+                log_group_name = ${LogGroupName}
+
+                [codedeploy-updater-logs]
+                file = /tmp/codedeploy-agent.update.log
+                log_stream_name = metastor/codedeploy/{instance_id}-codedeploy-updater-log
+                log_group_name = ${LogGroupName}
+
+                [codedeploy-deployment-logs]
+                file = /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log
+                log_stream_name = metastor/codedeploy/{instance_id}-codedeploy-deployments-log
+                log_group_name = ${LogGroupName}
+              mode: '000644'
+              owner: root
+              group: root
+            /tmp/logs.props:
+              content: !Sub |
+                region=${AWS::Region}
+              mode: '000644'
+              owner: root
+              group: root
         Install:
           packages:
             yum:
@@ -359,6 +382,10 @@ Resources:
                   - |-
 
                     deployLocation=/home/mdladmin/deploy/mdl
+                  - |-
+
+                    logGroupName=
+                  - !Ref LogGroupName
                   - |+
 
               mode: '000400'
@@ -415,16 +442,7 @@ Resources:
       KeyName: !Ref KeypairName
       SecurityGroups:
         - !Ref MetastorSecurityGroup
-      UserData: !Base64
-        'Fn::Join':
-          - ''
-          - - |
-              #!/bin/bash -xe
-            - '/opt/aws/bin/cfn-init -v '
-            - '         --stack '
-            - !Ref 'AWS::StackName'
-            - '         --resource MetastorLaunchConfig '
-            - '         --configsets PreInstallAndInstall '
-            - '         --region '
-            - !Ref 'AWS::Region'
-            - |+
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            /opt/aws/bin/cfn-init -v  --stack ${AWS::StackName} --resource MetastorLaunchConfig --configsets PreInstallAndInstall --region ${AWS::Region}

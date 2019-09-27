@@ -43,25 +43,32 @@ if [ ! -f ${configFile} ] ; then
 fi
 . ${configFile}
 
-execute_cmd "echo \"From $0\""
-# Download and serve herd-ui (shepherd)
-execute_cmd "mkdir -p ${deployLocation}/herd-ui"
-execute_cmd "wget --quiet --random-wait https://registry.npmjs.org/@herd/herd-ui-dist/-/herd-ui-dist-${herdUiVersion}.tgz -O ${deployLocation}/herd-ui/herd-ui.tgz"
-execute_cmd "cd ${deployLocation}/herd-ui"
-execute_cmd "tar -xzf herd-ui.tgz"
-execute_cmd "cd package/dist"
-execute_cmd "aws s3 sync . s3://${shepherdS3BucketName}"
+# determine if this is a rolling-deployment and only if install Shepherd if it's not
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
 
-# Change Shepherd based on authentication selection
-if [ "${enableSSLAndAuth}" = "true" ] ; then
-    execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/true/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${mdlInstanceName}herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}/${httpProtocol}:\/\/${mdlInstanceName}herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
-else
-    execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/false/g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}//g\" ${deployLocation}/conf/configuration.json"
-    execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}/g\" ${deployLocation}/conf/configuration.json"
+if [ "${herdRollingDeployment}" = "false" ] ; then
+    execute_cmd "echo \"From $0\""
+    # Download and serve herd-ui (shepherd)
+    execute_cmd "mkdir -p ${deployLocation}/herd-ui"
+    execute_cmd "wget --quiet --random-wait https://registry.npmjs.org/@herd/herd-ui-dist/-/herd-ui-dist-${herdUiVersion}.tgz -O ${deployLocation}/herd-ui/herd-ui.tgz"
+    execute_cmd "cd ${deployLocation}/herd-ui"
+    execute_cmd "tar -xzf herd-ui.tgz"
+    execute_cmd "cd package/dist"
+    execute_cmd "aws s3 sync . s3://${shepherdS3BucketName}"
+
+    # Change Shepherd based on authentication selection
+    if [ "${enableSSLAndAuth}" = "true" ] ; then
+        execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/true/g\" ${deployLocation}/conf/configuration.json"
+        execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${mdlInstanceName}-herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
+        execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}/${httpProtocol}:\/\/${mdlInstanceName}-herd.${domainNameSuffix}/g\" ${deployLocation}/conf/configuration.json"
+    else
+        execute_cmd "sed -i \"s/{{USE_BASIC_AUTH}}/false/g\" ${deployLocation}/conf/configuration.json"
+        execute_cmd "sed -i \"s/{{BASIC_AUTH_REST_UI}}//g\" ${deployLocation}/conf/configuration.json"
+        execute_cmd "sed -i \"s/{{HERD_URL}}/${httpProtocol}:\/\/${herdLoadBalancerDNSName}/g\" ${deployLocation}/conf/configuration.json"
+    fi
+    execute_cmd "aws s3 cp ${deployLocation}/conf/configuration.json s3://${shepherdS3BucketName}"
+
 fi
-execute_cmd "aws s3 cp ${deployLocation}/conf/configuration.json s3://${shepherdS3BucketName}"
+
 
 exit 0

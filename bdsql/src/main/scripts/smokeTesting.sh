@@ -26,7 +26,7 @@ function log(){
     echo "$(date '+%F %T') bdsql-$LOG_SOURCE[$$]: $MSG"
 }
 
-function run_preto_query(){
+function run_presto_query(){
 
     local APP_USER="$1"
     local QUERY="$2"
@@ -57,8 +57,8 @@ function run_preto_query(){
 function cleanup_tmp_objects(){
 
     log "removing tmp objects"
-    run_preto_query "$APP_USER" "SHOW TABLES" | sed -e 's/"//g' | egrep '^t[0-9]+(_|$)' | while read t; do
-        run_preto_query "$APP_USER" "DROP TABLE user_$APP_USER.$t"
+    run_presto_query "$APP_USER" "SHOW TABLES" | sed -e 's/"//g' | egrep '^t[0-9]+(_|$)' | while read t; do
+    run_presto_query "$APP_USER" "DROP TABLE user_$APP_USER.$t"
     done
 
 }
@@ -77,28 +77,28 @@ function main(){
     cleanup_tmp_objects
     echo
 
-    run_preto_query "$APP_USER" "select * from system.runtime.nodes"
-    run_preto_query "$APP_USER" "select * from system.metadata.catalogs"
+    run_presto_query "$APP_USER" "select * from system.runtime.nodes"
+    run_presto_query "$APP_USER" "select * from system.metadata.catalogs"
     echo
 
-    run_preto_query "$APP_USER" "select current_timestamp"
+    run_presto_query "$APP_USER" "select current_timestamp"
     echo
 
-    run_preto_query "$APP_USER" "show schemas"
-    run_preto_query "$APP_USER" "show tables"
+    run_presto_query "$APP_USER" "show schemas"
+    run_presto_query "$APP_USER" "show tables"
     echo
 
-    run_preto_query "$APP_USER" "create table t0_default (my_id bigint, my_string varchar)"
-    run_preto_query "$APP_USER" "insert into t0_default values (1,'abc')"
-    run_preto_query "$APP_USER" "select * from t0_default"
+    run_presto_query "$APP_USER" "create table t0_default (my_id bigint, my_string varchar)"
+    run_presto_query "$APP_USER" "insert into t0_default values (1,'abc')"
+    run_presto_query "$APP_USER" "select * from t0_default"
     echo
 
-    run_preto_query "$APP_USER" "create table t0_orc (my_id bigint, my_string varchar) with (format = 'ORC')"
-    run_preto_query "$APP_USER" "create table t0_text (my_id bigint, my_string varchar) with (format = 'TEXTFILE')"
+    run_presto_query "$APP_USER" "create table t0_orc (my_id bigint, my_string varchar) with (format = 'ORC')"
+    run_presto_query "$APP_USER" "create table t0_text (my_id bigint, my_string varchar) with (format = 'TEXTFILE')"
     echo
 
-    run_preto_query "$APP_USER" "create table t1 as select * from mdl.mdl_object_mdl_txt limit 10"
-    run_preto_query "$APP_USER" "select * from t1"
+    run_presto_query "$APP_USER" "create table t1 as select * from mdl.mdl_object_mdl_txt limit 10"
+    run_presto_query "$APP_USER" "select * from t1"
     echo
 
     cleanup_tmp_objects
@@ -112,8 +112,8 @@ function main(){
 
 . /home/hadoop/conf/deploy.props
 
-export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MdlAppUsername --with-decryption --output text --query Parameter.Value)
-export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/MDLAppPassword --with-decryption --output text --query Parameter.Value)
+export APP_USER=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/User/HerdAdminUsername --with-decryption --output text --query Parameter.Value)
+export APP_PASS=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/LDAP/Password/HerdAdminPassword --with-decryption --output text --query Parameter.Value)
 export PRESTO_PASSWORD="$APP_PASS"
 
 main 2>&1

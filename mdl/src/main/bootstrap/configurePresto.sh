@@ -67,9 +67,8 @@ execute_cmd "unzip bdsql.zip"
 execute_cmd "chmod 755 scripts/*"
 
 execute_cmd "scripts/configureBDSQL.sh"
-execute_cmd "scripts/smokeTesting.sh"
 
-# Signal to Cloud Stack
+# Signal cloudformation that the stack is ready
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Bdsql Creation Complete' \"${waitHandle}\""
 
 

@@ -45,5 +45,6 @@ fi
 
 execute_cmd "echo \"From $0\""
 execute_cmd "sudo service elasticsearch stop"
+execute_cmd "sudo service docker stop"
 
 exit 0

@@ -62,6 +62,7 @@ Resources:
               - '*'
       WebsiteConfiguration:
         IndexDocument: index.html
+        ErrorDocument: index.html
   CloudfrontS3Bucket:
     Type: 'AWS::S3::Bucket'
     Condition: EnableSSLAndAuth
@@ -94,6 +95,80 @@ Resources:
               - - 'arn:aws:s3:::'
                 - !If [EnableSSLAndAuth, !Ref CloudfrontS3Bucket, !Ref S3BucketForStaticPages]
                 - /*
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                  - s3:List*
+                  - s3:DeleteObject
+                Resource: '*'
+  S3CleanupLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: 'index.handler'
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          def handler(event, context):
+              bucket_list = event['ResourceProperties']['BucketList']
+              physical_id = "EmptyS3BucketLambdaPhysicalID"
+              response_data = {}
+              if event['RequestType'] == 'Delete':
+                  try:
+                      for bucket_name in bucket_list:
+                          print('Emptying s3 bucket:{}'.format(bucket_name))
+                          empty_s3_bucket(bucket_name)
+                  except Exception as e:
+                      response_data['Message'] = 'Unexpected error. Exception: {}'.format(e)
+                      cfnresponse.send(event, context, cfnresponse.FAILED, response_data, physical_id)
+                  response_data['Message'] = 'Succssfully Empty S3 bucket list: {}'.format(bucket_list)
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+              else:
+                  response_data['Message'] = 'Nothing to do.'
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_id)
+
+          def empty_s3_bucket(bucket_name):
+              s3 = boto3.resource( 's3')
+              bucket = s3.Bucket(bucket_name)
+              bucket.objects.all().delete()
+              print('Empty s3 bucket {} successfully'.format(bucket_name))
+      Role: !GetAtt 'LambdaExecutionRole.Arn'
+      Runtime: 'python3.6'
+      Timeout: '300'
+      MemorySize: 256
+  S3CleanupCustomResource:
+    Type: Custom::S3CleanupCustomResource
+    Properties:
+      ServiceToken: !GetAtt 'S3CleanupLambdaFunction.Arn'
+      BucketList:
+        - !Ref MDLStagingBucket
+        - !Ref HerdS3Bucket
+        - !If [EnableSSLAndAuth, !Ref CloudfrontS3Bucket, !Ref S3BucketForStaticPages]
   HerdS3BucketParameter:
     Type: 'AWS::SSM::Parameter'
     Properties:

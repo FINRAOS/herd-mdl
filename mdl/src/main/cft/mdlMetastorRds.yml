@@ -37,11 +37,11 @@ Parameters:
     Description: Mysql RDS database Engine
     Type: String
   MetastorDBEngineVersion:
-    Default: 5.6.29
+    Default: 5.6.40
     Description: Mysql database version
     Type: String
     AllowedValues:
-      - 5.6.29
+      - 5.6.40
     ConstraintDescription: Must select a valid MetastorDB Engine Version.
   MetastorDBSize:
     Default: '10'
@@ -104,7 +104,7 @@ Parameters:
   AutoInstMinorVersionUpgrade:
     Description: 'Automatic Minor Version Upgrade. Non-prod: Yes & Prod: No'
     Type: String
-    Default: 'true'
+    Default: 'false'
     AllowedValues:
       - 'true'
       - 'false'
@@ -187,9 +187,26 @@ Resources:
         - MetastorMysqlDB
         - Endpoint.Address
       Description: Name of Metastor RDS Host name
+  MetastorRdsPassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/METASTOR/RDS/hiveAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Metastor RDS master account password
+  MetastorHivePassword:
+    Type: 'AWS::SSM::Parameter'
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/METASTOR/HIVE/hiveAccount'
+      Type: String
+      Value: 'changeit'
+      Description: Metastor Hive account password
 Outputs:
   MetastorDBHost:
     Description: Metastor DB host name
     Value: !GetAtt
       - MetastorMysqlDB
       - Endpoint.Address
+  MetastorDBName:
+    Description: Mestastor DB name
+    Value: !Sub '${MDLInstanceName}${Environment}Metastor'

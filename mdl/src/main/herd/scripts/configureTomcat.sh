@@ -46,6 +46,15 @@ fi
 execute_cmd "cd /home/mdladmin"
 herdDatabaseNonRootUserPassword=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RDS/${herdDatabaseNonRootUser}Account --with-decryption --region ${region} --output text --query Parameter.Value)
 
+herdVersion=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/CurrentVersion --region ${region} --output text --query Parameter.Value)
+requestedVersion=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/RequestedVersion --region ${region} --output text --query Parameter.Value)
+
+# determine if this is a rolling-deployment and use the reuested version if needed
+herdRollingDeployment=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/HERD/DeploymentInvoked --region ${region} --output text --query Parameter.Value)
+if [ "${herdRollingDeployment}" = "true" ] ; then
+    herdVersion=${requestedVersion}
+fi
+
 # Deploy tomcat files
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/finra/herd/herd-war/${herdVersion}/herd-war-${herdVersion}.war -O /usr/share/tomcat8/webapps/herd-app.war"
 execute_cmd "wget --quiet --random-wait http://central.maven.org/maven2/org/postgresql/postgresql/9.4-1201-jdbc41/postgresql-9.4-1201-jdbc41.jar --directory-prefix=/usr/share/tomcat8/lib/"
@@ -59,7 +68,7 @@ execute_cmd "chown tomcat:tomcat /usr/share/tomcat8/conf/context.xml"
 
 # web.xml
 execute_cmd "cp ${deployLocation}/xml/install/web.xml /usr/share/tomcat8/conf/web.xml"
-execute_cmd "sed -i \"s/REPLACE_Shepherd_DOMAIN_NAME/${mdlInstanceName}shepherd.${domainNameSuffix}/g\" /usr/share/tomcat8/conf/web.xml"
+execute_cmd "sed -i \"s/REPLACE_Shepherd_DOMAIN_NAME/${mdlInstanceName}-shepherd.${domainNameSuffix}/g\" /usr/share/tomcat8/conf/web.xml"
 shepherdWebSiteBucketNameOnly=`echo ${shepherdWebSiteBucketUrl} | cut -d"/" -f3-`
 execute_cmd "sed -i \"s/REPLACE_Shepherd_BUCKET_URL/${shepherdWebSiteBucketNameOnly}/g\" /usr/share/tomcat8/conf/web.xml"
 

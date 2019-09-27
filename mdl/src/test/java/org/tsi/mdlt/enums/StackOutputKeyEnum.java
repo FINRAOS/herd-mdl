@@ -24,7 +24,7 @@ public enum StackOutputKeyEnum {
     BDSQL_URL("BdsqlURL"),
     ES_EC2_IP("EsEc2Ip"),
     SHEPHERD_WEBSITE_URL("ShepherdWebSiteBucketUrl"),
-    SHEPHERD_S3_BUCKET("ShepherdS3Bucket"),
+    MDL_STAGING_BUCKET_NAME("MDLStagingBucketName"),
     HERD_LB_DNS_NAME("HerdLoadBalancerDNSName"),
     HERD_LB_DNS_URL("HerdLoadBalancerDNSURL"),
     HERD_LB_URL("HerdLoadBalancerURL"),

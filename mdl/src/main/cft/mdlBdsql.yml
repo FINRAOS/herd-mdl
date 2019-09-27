@@ -29,13 +29,16 @@ Parameters:
   MDLServerDeploymentRole:
     Description: 'Metastor Service Deployment role '
     Type: AWS::SSM::Parameter::Value<String>
+  PrestoMaxMemoryPerNode:
+    Description: query.max-memory-per-node parameter for Presto
+    Type: String
   DeploymentBucketName:
     Description: Deployment bucket where the code resides
     Type: String
   BdsqlVersion:
     Description: Bdsql version to use.
     Type: String
-    Default: '1.0.0'
+    Default: '1.2.0'
   ReleaseVersion:
     Description: Release version
     Type: String
@@ -99,6 +102,9 @@ Parameters:
   LdapMdlAppUsername:
     Description: Application service account
     Type: AWS::SSM::Parameter::Value<String>
+  LogGroupName:
+    Description: CloudWatch Log group name
+    Type: String
 Conditions:
   EnableSSLAndAuth: !Equals
     - !Ref EnableSSLAndAuth
@@ -206,9 +212,11 @@ Resources:
             Args:
               - !Ref MDLInstanceName
               - !Ref Environment
-              - !Ref MDLStagingBucketName
+              - !Ref DeploymentBucketName
               - !Sub 's3://${MDLStagingBucketName}/certs/mdl.jks'
               - !Ref 'AWS::Region'
+              - !Ref ReleaseVersion
+              - !Ref LogGroupName
       Configurations:
         - Classification: emrfs-site
           ConfigurationProperties:
@@ -263,7 +271,7 @@ Resources:
             http-server.http.enabled: 'true'
             http-server.http.port: '8889'
             query.max-history: '100'
-            query.max-memory-per-node: 10GB
+            query.max-memory-per-node: !Ref PrestoMaxMemoryPerNode
             query.max-memory: 40GB
             query.initial-hash-partitions: '4'
             query.client.timeout: 20m
@@ -338,16 +346,30 @@ Resources:
       HostedZoneName:
         Ref: HostedZoneName
       RecordSets:
-      - Name: !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]]
+      - Name: !Join ['', [!Ref MDLInstanceName, '-bdsql.', !Ref DomainNameSuffix]]
         Type: CNAME
         TTL: '900'
         ResourceRecords: [!GetAtt [BdsqlLoadBalancer, DNSName]]
+  BdsqlClusterIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Bdsql/ClusterId'
+      Type: String
+      Value: !Ref BdsqlEMRPrestoCluster
+      Description: Bdsql Cluster Id
+  BdsqlMasterInstanceParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/app/MDL/${MDLInstanceName}/${Environment}/Bdsql/MasterIp'
+      Type: String
+      Value: 'FilledLater'
+      Description: Master instance's ip
 Outputs:
   BdsqlLoadBalancerURL:
     Value: !Join
       - ''
       - - 'jdbc:presto://'
-        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, 'bdsql.', !Ref DomainNameSuffix]], !GetAtt [BdsqlLoadBalancer, DNSName]]
+        - !If [EnableSSLAndAuth, !Join ['', [!Ref MDLInstanceName, '-bdsql.', !Ref DomainNameSuffix]], !GetAtt [BdsqlLoadBalancer, DNSName]]
         - !If [EnableSSLAndAuth, ':443/hive', ':80/hive']
     Description: Application load balancer URL for Bdsql cluster
   BdsqlLoadBalancerDNSURL:

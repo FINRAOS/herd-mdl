@@ -21,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -30,6 +31,7 @@ import com.amazonaws.services.cloudformation.model.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsi.mdlt.aws.CloudFormationClient;
+import org.tsi.mdlt.aws.SsmUtil;
 import org.tsi.mdlt.enums.StackInputParameterKeyEnum;
 import org.tsi.mdlt.enums.StackOutputKeyEnum;
 
@@ -44,6 +46,7 @@ public class TestWrapper {
 
     private static final String OUTPUT_NAME_HERD_HOSTNAME = "HerdHostname";
     private static final String OUTPUT_NAME_HERD_URL = "HerdURL";
+    private static final Properties TEST_PROPERTIES = TestProperties.getProperties();
 
     public static void main(String[] args) {
         try {
@@ -52,20 +55,25 @@ public class TestWrapper {
                 System.exit(1);
             }
             //Getting properties
-            Properties testProperties = TestProperties.getProperties();
-            String instanceName = testProperties.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
+            String instanceName = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey());
+            String stackName = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.MDL_STACK_NAME.getKey());
             boolean rollbackOnFailure = Boolean.valueOf(System.getProperty(StackInputParameterKeyEnum.ROLLBACK_ON_FAILURE.getKey()));
             String command = args[0];
 
             if (SETUP_CMD.equals(command)) {
+                LOGGER.info("Create VPC SSM if creating new mdl stack");
+                saveExistingStackParameter(stackName);
+                createVpcSsmIfNotExistingStack(stackName, instanceName);
+
                 LOGGER.info("Create application wrapper stack, wait for completion and save outputs for testing");
-                createStackAndWaitForCompletion(instanceName, rollbackOnFailure);
-                saveStackInputProperties(instanceName);
-                saveStackOutputProperties(instanceName);
+                createStackAndWaitForCompletion(stackName, rollbackOnFailure);
+                saveStackInputProperties(stackName);
+                saveStackOutputProperties(stackName);
             }
             else if (SHUTDOWN_CMD.equals(command)) {
-                //Note: Delete app wrapper stack first, then prereq wrapper stack
-                shutdownStack(instanceName);
+                deleteVpcSsm(instanceName);
+                shutdownStack(stackName);
+                verifyStackSsmAreDeleted();
             }
             else {
                 throw new IllegalArgumentException("Unrecognized command : " + command);
@@ -78,14 +86,13 @@ public class TestWrapper {
         }
     }
 
-    private static void createStackAndWaitForCompletion(String instanceName, boolean rollbackOnFailure) {
-        String stackName = getStackNameByInstanceName(instanceName);
+    private static void createStackAndWaitForCompletion(String stackName, boolean rollbackOnFailure) {
         CloudFormationClient cfClient;
         try {
             cfClient = new CloudFormationClient(stackName);
             Map<String, String> parameters = createStackParameters();
             try {
-                cfClient.createStack(parameters, APP_STACK_TEMPLATE_CFT, false, rollbackOnFailure);
+                cfClient.createStack(parameters, APP_STACK_TEMPLATE_CFT, rollbackOnFailure);
             }
             catch (AlreadyExistsException ae) {
                 LOGGER.warn("Stack, " + stackName + " already exists, initializing the properties file if needed");
@@ -95,6 +102,50 @@ public class TestWrapper {
             LOGGER.error("Error while trying to create the stack.", e);
             System.exit(1);
         }
+    }
+
+    private static void saveExistingStackParameter(String stackName) throws Exception {
+        boolean existingStack = new CloudFormationClient(stackName).stackExists(stackName);
+
+        LOGGER.info(String.format("Save existingStack=%s to file test.props", String.valueOf(existingStack)));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")));
+        writer.write("existingStack" + "=" + String.valueOf(existingStack));
+        writer.newLine();
+        writer.close();
+    }
+
+    private static void createVpcSsmIfNotExistingStack(String stackName, String instanceName) throws Exception {
+        //if new mdl need to be created, create mdl required ssm parameters ahead of time using provided vpc values
+        if (!new CloudFormationClient(stackName).stackExists(stackName)) {
+            String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
+
+            String vpcKeyFormat = "/global/%s/%s/VPC/ID";
+            String privateSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/private";
+            String publicSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/public";
+            String vpcKey = String.format(vpcKeyFormat, instanceName, environment);
+            String privateSubnetsKey = String.format(privateSubnetsKeyFormat, instanceName, environment);
+            String publicSubnetsKey = String.format(publicSubnetsKeyFormat, instanceName, environment);
+
+            //mdltWrapperInstanceName ssm has all valid vpc values, which can be found in mdlt.yml
+            String mdltWrapperInstanceName = TEST_PROPERTIES.getProperty("MDLTWrapperInstanceName");
+            SsmUtil.putParameter(vpcKey, SsmUtil.getPlainTextParameter(String.format(vpcKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(privateSubnetsKey, SsmUtil.getPlainTextParameter(String.format(privateSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+            SsmUtil.putParameter(publicSubnetsKey, SsmUtil.getPlainTextParameter(String.format(publicSubnetsKeyFormat, mdltWrapperInstanceName, environment)).getValue());
+        }
+    }
+
+    private static void deleteVpcSsm(String instanceName) throws Exception {
+        String environment = TEST_PROPERTIES.getProperty(StackInputParameterKeyEnum.ENVIRONMENT.getKey());
+        String vpcKeyFormat = "/global/%s/%s/VPC/ID";
+        String privateSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/private";
+        String publicSubnetsKeyFormat = "/global/%s/%s/VPC/SubnetIDs/public";
+        String vpcKey = String.format(vpcKeyFormat, instanceName, environment);
+        String privateSubnetsKey = String.format(privateSubnetsKeyFormat, instanceName, environment);
+        String publicSubnetsKey = String.format(publicSubnetsKeyFormat, instanceName, environment);
+
+        SsmUtil.deleteParameter(vpcKey);
+        SsmUtil.deleteParameter(privateSubnetsKey);
+        SsmUtil.deleteParameter(publicSubnetsKey);
     }
 
     private static Map<String, String> createStackParameters() {
@@ -107,32 +158,34 @@ public class TestWrapper {
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENVIRONMENT, parameters);
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.DEPLOY_COMPONENTS, parameters);
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.RELEASE_VERSION, parameters);
+
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.DOMAIN_NAME_SUFFIX, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.HOSTED_ZONE_NAME, parameters);
+        addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.CERTIFICATE_ARN, parameters);
+
         addTestInputPropertyToParameterMap(StackInputParameterKeyEnum.ENABLE_SSL_AUTH, parameters);
         //when enableSslAndAuth is true, set parameter createOpenLdap to true
         parameters.put(StackInputParameterKeyEnum.CREATE_OPEN_lDAP.getKey(), enableSslAndAuth);
+        //DeployHostEc2 will never createVpc, mdlt wrapper yml file(mdlt.yml) will create vpc if createVpc is true
+        parameters.put(StackInputParameterKeyEnum.CREATE_VPC.getKey(), "false");
         return parameters;
     }
 
-    private static void addTestInputPropertyToParameterMap(StackInputParameterKeyEnum keyEnum, Map<String, String> parameters){
-        parameters.put(keyEnum.getKey(),  TestProperties.getProperties().getProperty(keyEnum.getKey()));
+    private static void addTestInputPropertyToParameterMap(StackInputParameterKeyEnum keyEnum, Map<String, String> parameters) {
+        parameters.put(keyEnum.getKey(), TestProperties.getProperties().getProperty(keyEnum.getKey()));
     }
 
-    private static void saveStackOutputProperties(String instanceName) throws Exception {
+    private static void saveStackOutputProperties(String stackName) throws Exception {
 
-        LOGGER.info("Save stack outputs to file test.props for instanceName: " + instanceName);
+        LOGGER.info("Save stack outputs to file test.props for stack: " + stackName);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props"), true))) {
 
             LOGGER.info("Get all output value from wrapper and nested stacks and write them to test.props");
-
-            writer.write(StackOutputKeyEnum.MDL_INSTANCE_NAME.getKey() + "=" + instanceName);
+            writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + stackName);
             writer.newLine();
 
-            String appStackName = getStackNameByInstanceName(instanceName);
-            writer.write(StackOutputKeyEnum.APP_STACK_NAME.getKey() + "=" + appStackName);
-            writer.newLine();
-
-            CloudFormationClient cfClient = new CloudFormationClient(appStackName);
+            CloudFormationClient cfClient = new CloudFormationClient(stackName);
             Map<String, String> clusterOutputs = cfClient.getStackOutput();
 
             if (clusterOutputs != null && !clusterOutputs.isEmpty()) {
@@ -143,23 +196,29 @@ public class TestWrapper {
         }
     }
 
-    private static void saveStackInputProperties(String instanceName) throws Exception {
-        LOGGER.info("Save some stack inputs to file test.props for instanceName: " + instanceName);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props")))) {
-            String appStackName = getStackNameByInstanceName(instanceName);
+    private static void saveStackInputProperties(String stackName) throws Exception {
+        LOGGER.info("Save some stack inputs to file test.props for stack: " + stackName);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File("mdlt/conf/test.props"), true))) {
 
-            CloudFormationClient cfClient = new CloudFormationClient(appStackName);
-            Parameter env = cfClient.getStackByName(appStackName).getParameters().stream()
-                    .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
-                    .findFirst().get();
+            CloudFormationClient cfClient = new CloudFormationClient(stackName);
+            List<Parameter> stackInputParameters = cfClient.getStackByName(stackName).getParameters();
+            Parameter env = stackInputParameters.stream()
+                .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.ENVIRONMENT.getKey()))
+                .findFirst().get();
 
             writer.write(env.getParameterKey() + "=" + env.getParameterValue());
+            writer.newLine();
+
+            Parameter instanceName = stackInputParameters.stream()
+                .filter(parameter -> parameter.getParameterKey().equals(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey()))
+                .findFirst().get();
+            writer.write(StackInputParameterKeyEnum.MDL_INSTANCE_NAME.getKey() + "=" + instanceName.getParameterValue());
             writer.newLine();
         }
     }
 
     private static void writeEntryToWriter(Entry<String, String> entry, BufferedWriter writer)
-            throws IOException {
+        throws IOException {
         switch (entry.getKey()) {
             case OUTPUT_NAME_HERD_URL:
                 String herdURLValue = entry.getValue();
@@ -167,7 +226,7 @@ public class TestWrapper {
                 writer.newLine();
 
                 writer.write(OUTPUT_NAME_HERD_HOSTNAME + "="
-                        + herdURLValue.substring(0, herdURLValue.indexOf("/herd-app")));
+                    + herdURLValue.substring(0, herdURLValue.indexOf("/herd-app")));
                 writer.newLine();
                 break;
             default:
@@ -176,13 +235,26 @@ public class TestWrapper {
         }
     }
 
-    private static void shutdownStack(String instanceName) throws Exception {
-        String stackName = getStackNameByInstanceName(instanceName);
+    //TODO, need to retry only on specific errors for deleting stack
+    private static void shutdownStack(String stackName) throws Exception {
         CloudFormationClient cfClient = new CloudFormationClient(stackName);
-        cfClient.deleteStack();
+        int retryTimes = 3;
+        while (retryTimes > 0) {
+            try {
+                cfClient.deleteStack();
+                break;
+            }
+            catch (Exception e) {
+                retryTimes--;
+                LOGGER.error("Failed to delete stack, remaining retry times :" + retryTimes);
+            }
+        }
     }
 
-    private static String getStackNameByInstanceName(String instanceName) {
-        return instanceName + "App";
+    private static void verifyStackSsmAreDeleted(){
+        String stackSsmPrefix = String.format("/app/MDL/%s/%s", TestProperties.get(StackInputParameterKeyEnum.MDL_INSTANCE_NAME),
+            TestProperties.get(StackInputParameterKeyEnum.ENVIRONMENT));
+        assert(SsmUtil.getParametersWithPrefix(stackSsmPrefix).size() == 0);
     }
+
 }

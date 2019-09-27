@@ -46,3 +46,15 @@ done
 #restart presto-server to cleanup presto cache for ldap
 execute_cmd	"sudo stop presto-server"
 execute_cmd	"sudo start presto-server"
+
+mdlInstanceRowCount=0
+# Wait presto sever to be up
+while [ ${mdlInstanceRowCount} -ne 1 ] ; do
+    echo "Waiting Presto server to be up"
+    echo "presto-cli --catalog hive --schema mdl --execute \"show tables\""
+    echo "------------------------------------------------------"
+    presto-cli --catalog hive --schema mdl --execute "show tables"
+    echo "------------------------------------------------------"
+    mdlInstanceRowCount=`presto-cli --catalog hive --schema mdl --execute "show tables" | wc -l`
+    sleep 1m
+done

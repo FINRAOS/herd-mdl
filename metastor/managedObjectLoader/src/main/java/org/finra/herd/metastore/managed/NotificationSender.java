@@ -47,7 +47,7 @@ public class NotificationSender {
 	@Value( "${MAILING_LIST}" )
 	private String mailingList;
 
-	@Value( "${ENV}" )
+	@Value( "${ENV_GROUP}" )
 	String env;
 
 	@Value( "${FORMAT_CHANGE_MAILING_LIST}" )
@@ -131,7 +131,7 @@ public class NotificationSender {
 		}
 	}
 
-	String getFormatChangeMsg( FormatChange change, int version, JobDefinition job,
+	protected String getFormatChangeMsg( FormatChange change, int version, JobDefinition job,
 							   HiveTableSchema existing, HiveTableSchema newColumns )
 			throws PebbleException, IOException {
 		PebbleTemplate template = engine.getTemplate( "templates/formatChangeNotificationTemplate.txt" );

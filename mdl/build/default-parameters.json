@@ -1,0 +1,44 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "DeployComponents",
+      "ParameterValue": "All"
+    },
+    {
+      "ParameterKey": "CertificateInfo",
+      "ParameterValue": ""
+    },
+    {
+      "ParameterKey": "MDLInstanceName",
+      "ParameterValue": "mymdlinstance"
+    },
+    {
+      "ParameterKey": "CreateOpenLDAP",
+      "ParameterValue": "false"
+    },
+    {
+      "ParameterKey": "CreateVPC",
+      "ParameterValue": "true"
+    },
+    {
+      "ParameterKey": "EnableSSLAndAuth",
+      "ParameterValue": "false"
+    },
+    {
+      "ParameterKey": "Environment",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "DomainNameSuffix",
+      "ParameterValue": ""
+    },
+    {
+      "ParameterKey": "HostedZoneName",
+      "ParameterValue": ""
+    },
+    {
+      "ParameterKey": "CertificateArn",
+      "ParameterValue": ""
+    }
+  ]
+}

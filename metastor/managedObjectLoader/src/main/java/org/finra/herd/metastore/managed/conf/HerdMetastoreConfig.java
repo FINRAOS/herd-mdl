@@ -44,25 +44,25 @@ public class HerdMetastoreConfig {
 	public static final String CRED_FILE_PATH = "cred.file.path";
 
 	@Value( "${MYSQL_URL}" )
-	String dburl;
+	protected String dburl;
 
 	@Value( "${MYSQL_USR}" )
-	String dbUser;
+    protected String dbUser;
 
 	@Value( "${MYSQL_PASS}" )
-	String dbPass;
+    protected String dbPass;
 
 	@Value( "${DM_URL}" )
-	String dmUrl;
+    protected String dmUrl;
 
 	@Value( "${JDBC_VALIDATE_QUERY}" )
-	String validationQuery;
+    protected String validationQuery;
 
 	@Autowired
-	Environment environment;
+    protected Environment environment;
 
 	@Autowired
-	Path credentialFilePath;
+    protected Path credentialFilePath;
 
 	@Bean(destroyMethod = "")
 	public DataSource getDataSource() {

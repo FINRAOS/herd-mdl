@@ -41,6 +41,9 @@ hooks:
     - location: scripts/createCert.sh
       timeout: 300
       runas: mdladmin
+    - location: scripts/packageNsAuthLambda.sh
+      timeout: 900
+      runas: root
   ApplicationStart:
     - location: scripts/configureAndStartES.sh
       timeout: 300

@@ -45,6 +45,25 @@ fi
 
 
 execute_cmd "cd /home/mdladmin"
+execute_cmd "aws configure set default.region ${region}"
+
+# Set cloudwatch log group retention period
+execute_cmd "aws logs put-retention-policy --log-group-name ${logGroupName} --retention-in-days ${cloudWatchRetentionDays}"
+
+# Copy stack tags to cloudwatch log group
+stack_tags=$(aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[*].Tags[]" --output json)
+tagExists=$( echo jq -r '.[]' | jq 'any' <<<"${stack_tags}" )
+if [ "${tagExists}" != "false" ] ; then
+    echo "tagging cloudwatch log group"
+    cloudwatch_tags=$( echo jq -r '.[]' | jq 'from_entries' <<<"${stack_tags}" )
+    cloudwatch_tags=${cloudwatch_tags//\"/\\\"}
+    execute_cmd "aws logs tag-log-group --log-group-name ${logGroupName} --tags \"${cloudwatch_tags}\""
+fi
+
+#Configure cloudwatch log for elastic search
+execute_cmd "sed -i \"s/{log_group_name}/${logGroupName}/g\" ${deployLocation}/conf/logs.conf"
+execute_cmd "sudo bash -c 'echo >> /var/awslogs/etc/config/codedeploy_logs.conf; cat ${deployLocation}/conf/logs.conf >> /var/awslogs/etc/config/codedeploy_logs.conf'"
+execute_cmd "sudo service awslogs restart"
 
 # Configure apache
 execute_cmd "sudo ${deployLocation}/scripts/configureApacheES.sh"
@@ -57,17 +76,15 @@ execute_cmd "sleep 15"
 # Configure elasticsearch
 execute_cmd "sudo ${deployLocation}/scripts/configureES.sh"
 
-# Start elasticsearch
-execute_cmd "echo \"From $0\""
-execute_cmd "sudo service elasticsearch start"
-execute_cmd "sleep 15"
-
-# Health check command
-execute_cmd "/usr/bin/curl http://localhost:8888/_cluster/health"
-
 # Signal to Cloud Stack
 execute_cmd "/opt/aws/bin/cfn-signal -e 0 -r 'Elasticsearch Creation Complete' \"${waitHandleForEs}\""
 
 echo "Everything looks good"
+
+# Terminate this instance since we are now using AWS' Elasticsearch service, this will be cleaned up in
+# a future release
+echo "Terminating instance"
+instanceId=`curl http://169.254.169.254/latest/meta-data/instance-id`
+execute_cmd "aws ec2 terminate-instances --instance-ids ${instanceId}"
 
 exit 0
