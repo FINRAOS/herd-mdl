@@ -15,8 +15,9 @@
 **/
 package org.finra.herd.metastore.managed.util;
 
+import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
+
 public interface JobProcessorConstants {
-	String METASTOR_NAMESPACE_NM = "METASTOR";
 	String METASTOR_CLUSTER_NAME = "metastor";
 
 	String SVC_ACC_PREFIX = "svc";
@@ -27,7 +28,18 @@ public interface JobProcessorConstants {
 	// DM_NOTIFICATION table partition values delimiters
 	String DOUBLE_UNDERSCORE = "__";
 	String COMMA = ",";
+	String SUB_PARTITION_VAL_SEPARATOR = ":";
 
 	int DM_RECORD_RETURN_MAX_LIMIT = 1000;
+
+	// Stats jobs
+	String GATHER_STATS_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/stats/emr_gather_stats.sh";
+	String DROP_TABLE_SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/dropObj/emr_drop_table.sh";
+
+	// Hive JDBC properties
+	String HIVE_URL = "jdbc:hive2://localhost:10000/";
+	String DRIVER_NAME = "org.apache.hive.jdbc.HiveDriver";
+	String HIVE_USER = "hadoop";
+	String HIVE_PASSWORD = "";
 
 }

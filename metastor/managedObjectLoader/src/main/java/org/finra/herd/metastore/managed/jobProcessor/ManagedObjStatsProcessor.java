@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,16 +30,12 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class ManagedObjStatsProcessor extends JobProcessor {
-	private static final String SCRIPT_PATH = HerdMetastoreConfig.homeDir + "/metastor/deploy/common/scripts/stats/emr_gather_stats.sh";
-
 	@Autowired
 	DataMgmtSvc dataMgmtSvc;
 
 	@Override
 	protected ProcessBuilder createProcessBuilder( JobDefinition od ) {
-		String dbName = od.getObjectDefinition().getDbName();
-		String tblName = od.getObjectDefinition().getObjectName() + "_" + od.getObjectDefinition().getUsageCode() + "_" + od.getObjectDefinition().getFileType();
-		tblName = tblName.replaceAll( "\\.", "_" ).replaceAll( " ", "_" ).replaceAll( "-", "_" );
+		String tblName = od.getTableName();
 
 		ProcessBuilder pb = null;
 		try {
@@ -48,7 +45,12 @@ public class ManagedObjStatsProcessor extends JobProcessor {
 				log.error( "ERROR: PARTITION_COLUMNS is empty for {}", tblName );
 				return pb;
 			}
-			pb = new ProcessBuilder( "sh", SCRIPT_PATH, dbName, tblName, quotedPartitionKeys );
+			pb = new ProcessBuilder( "sh"
+					, JobProcessorConstants.GATHER_STATS_SCRIPT_PATH
+					, od.getObjectDefinition().getDbName()
+					, tblName
+					, quotedPartitionKeys
+			);
 		} catch ( ApiException e ) {
 			log.error( "Could not get BO format due to: {}", e.getMessage(), e );
 		}

@@ -35,6 +35,29 @@ public class JobDefinitionTest {
         assertEquals("ABC", jd.getActualObjectName());
     }
 
+	@Test
+	public void testIdentifyObjectName()
+	{
+		String correlation = "{\n" +
+				"  \"businessObject\": {\n" +
+				"    \"original_object_name\":\"ABC\"\n" +
+				"  }\n" +
+				"}";
+
+		JobDefinition jd = new JobDefinition(3L, "METASTORE", "ABC_LATE", "PRC-2","BZ","",correlation,"","");
+
+		assertEquals("ABC_PRC_2_BZ", jd.getTableName());
+	}
+
+	@Test
+	public void testIdentifyObjectNameWhenCorrelationIsNull()
+	{
+
+		JobDefinition jd = new JobDefinition(3L, "SAW", "ABC_COMPACTION", "PRC-2","BZ","",null,"","");
+
+		assertEquals("ABC_COMPACTION_PRC_2_BZ", jd.getTableName());
+	}
+
     @Test
     public void testGetActualNameIllegalJson()
     {
@@ -48,7 +71,7 @@ public class JobDefinitionTest {
 
         assertEquals("ABC_COMPACTION", jd.getActualObjectName());
     }
-    
+
     @Test
     public void testSpecialCharacter()
     {
@@ -57,7 +80,7 @@ public class JobDefinitionTest {
                 {"meta test","table test","prc test 1","txt"},
                 {"meta.test","table.test","prc.test.1","txt"}
         } ;
-        
+
         for(String[] s:testObjs)
         {
             JobDefinition jd = new JobDefinition(100L, s[0], s[1], s[2], s[3],"","","","");

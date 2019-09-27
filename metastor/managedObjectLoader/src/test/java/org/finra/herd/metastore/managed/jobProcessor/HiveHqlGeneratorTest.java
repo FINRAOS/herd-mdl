@@ -146,9 +146,14 @@ public class HiveHqlGeneratorTest {
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
         HiveTableSchema hiveTableSchema = HiveClientTest.getTestHiveTableSchema();
+        HiveClient hiveClient = Mockito.mock(HiveClient.class);
+        hiveHqlGenerator.hiveClient=hiveClient;
+        hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
+
+
 
         String ddl = "CREATE EXTERNAL TABLE IF NOT EXISTS `string` (\n" +
-                "    `TDATE` DATE,\n" +
+                "    `DATE` DATE,\n" +
                 "    `ACTIVITY_NAME` VARCHAR(35),\n" +
                 "    `TRANSACTN_DT_KEY` DECIMAL(10),\n" +
                 "    `OPT_PROD_KEY` DECIMAL(21),\n" +
@@ -170,6 +175,7 @@ public class HiveHqlGeneratorTest {
                 "STORED AS TEXTFILE;";
 
         BusinessObjectFormat format = new BusinessObjectFormat();
+        format.setBusinessObjectFormatVersion(0);
 
         FormatChange change = hiveHqlGenerator.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);

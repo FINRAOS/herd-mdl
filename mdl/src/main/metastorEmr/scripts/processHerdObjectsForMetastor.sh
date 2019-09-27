@@ -76,6 +76,7 @@ execute_cmd "sed -i \"s/{{BACK_LOADING_CHUNK_SIZE}}/100/g\" ${config_file_locati
 execute_cmd "sed -i \"s/{{BACK_LOADING_PAGINATION_PAGE_SIZE}}/1000/g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{EMR_IDLE_TIME_OUT}}/10/g\" ${config_file_location}"
 execute_cmd "sed -i \"s/{{EMAIL_HOST}}/`hostname`/g\" ${config_file_location}"
+execute_cmd "sed -i \"s/{{AGS}}/METASTOR/g\" ${config_file_location}"
 
 # do not log credentials
 sed -i "s/{{{MS_HIVE_0_13_PWD}}}/${hivePassword}/g" ${config_file_location}

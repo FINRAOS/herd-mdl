@@ -19,7 +19,6 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.ObjectProcessor;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.api.BusinessObjectDataNotificationRegistrationApi;
 import org.finra.herd.sdk.api.BusinessObjectFormatApi;
@@ -27,6 +26,7 @@ import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -39,6 +39,10 @@ import java.util.List;
 @Component
 @Slf4j
 public class DataMgmtSvc {
+
+    @Value("${AGS}")
+    private String ags;
+
 	@Autowired
 	ApiClient dmApiClient;
 
@@ -62,7 +66,7 @@ public class DataMgmtSvc {
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 		request.setIncludeDropTableStatement( false );
 		request.setIncludeIfNotExistsOption( !replaceColumn );
-		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setReplaceColumns( replaceColumn );
 
 		request.setTableName( jd.getTableName() );
@@ -86,7 +90,7 @@ public class DataMgmtSvc {
 		BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
 
 		request.setIncludeDropTableStatement( false );
-		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setBusinessObjectFormatUsage( jd.getObjectDefinition().getUsageCode() );
 		request.setBusinessObjectFormatFileType( jd.getObjectDefinition().getFileType() );
 		request.setBusinessObjectDefinitionName( jd.getObjectDefinition().getObjectName() );
@@ -95,6 +99,7 @@ public class DataMgmtSvc {
 		request.setIncludeIfNotExistsOption( true );
 		request.setTableName( jd.getTableName() );
 
+		List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
 		PartitionValueFilter filter = new PartitionValueFilter();
 
 		filter.setPartitionKey( jd.getPartitionKey() );
@@ -113,18 +118,51 @@ public class DataMgmtSvc {
 
 		} else {
 
+			log.info( "Partitions: {}", partitions );
 			if ( jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase( "PARTITION" ) ) {
 				filter.setPartitionValues( Lists.newArrayList( "none" ) );
 			} else {
-				filter.setPartitionValues( partitions );
+				if ( jd.isSubPartitionLevelProcessing() ) {
+					log.info( "Top Level Partition: {}, SubPartition: {}", jd.getTopLevelPartitionValue(), jd.getSubPartitionValue() );
+					filter.setPartitionValues( Lists.newArrayList( jd.getTopLevelPartitionValue() ) );
+					addSubPartitionFilter( jd, partitionValueFilters);
+				} else {
+					filter.setPartitionValues( partitions );
+				}
 			}
 		}
+		partitionValueFilters.add( filter );
 
-		request.setPartitionValueFilter( filter );
-		request.setPartitionValueFilters( null );
+		request.setPartitionValueFilter( null );
+		request.setPartitionValueFilters( partitionValueFilters );
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 
+		log.info( "Get BO DDL Request: \n{}", request.toString() );
 		return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl( request );
+	}
+
+	/**
+	 * To add Sub Partition value filter
+	 *
+	 * @param jd
+	 * @param partitionValueFilters
+	 * @throws ApiException
+	 */
+	private void addSubPartitionFilter( JobDefinition jd, List<PartitionValueFilter> partitionValueFilters ) throws ApiException {
+		List<SchemaColumn> partitionKeys = getDMFormat( jd ).getSchema().getPartitions();
+		log.debug( "Partition Keys {} for {}", partitionKeys, jd.getTableName() );
+
+		if ( partitionKeys.size() >= 2 ) {
+			PartitionValueFilter subPartitionFilter = new PartitionValueFilter();
+			String subPartitionKey = partitionKeys.get( 1 ).getName();
+			log.debug( "SubPartition Partition Key: {}", subPartitionKey );
+			jd.setSubPartitionKey( subPartitionKey );
+			subPartitionFilter.setPartitionKey( subPartitionKey );
+			subPartitionFilter.setPartitionValues( Lists.newArrayList( jd.getSubPartitionValue() ) );
+			partitionValueFilters.add( subPartitionFilter );
+		} else {
+			log.warn( "Object not partitioned correctly, not enough partition keys to find sub partition" );
+		}
 	}
 
 	public BusinessObjectFormatKeys getBOAllFormatVersions( org.finra.herd.metastore.managed.JobDefinition od, boolean latestBusinessObjectFormatVersion ) throws ApiException {
@@ -149,7 +187,7 @@ public class DataMgmtSvc {
 
 	public BusinessObjectDataNotificationRegistration getBORegisteredNotificationDetails( String notificationName ) throws ApiException {
 		return new BusinessObjectDataNotificationRegistrationApi( dmApiClient )
-				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( JobProcessorConstants.METASTOR_NAMESPACE_NM, notificationName );
+				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( ags, notificationName );
 	}
 
 	public BusinessObjectDataSearchResult searchBOData( JobDefinition jd, int pageNum, int pageSize, Boolean filterOnValidLatestVersions ) throws ApiException{
