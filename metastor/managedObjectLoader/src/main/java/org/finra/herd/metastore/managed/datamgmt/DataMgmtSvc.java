@@ -16,6 +16,7 @@
 package org.finra.herd.metastore.managed.datamgmt;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.ObjectProcessor;
@@ -32,6 +33,8 @@ import org.springframework.stereotype.Component;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * Herd Client
@@ -100,38 +103,22 @@ public class DataMgmtSvc {
 		request.setTableName( jd.getTableName() );
 
 		List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
-		PartitionValueFilter filter = new PartitionValueFilter();
-
-		filter.setPartitionKey( jd.getPartitionKey() );
 
 		if ( jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && !jd.getPartitionKey().equalsIgnoreCase( "PARTITION" ) ) {
-			Calendar c = Calendar.getInstance();
-			c.add( Calendar.DATE, 1 );
-			String date = new SimpleDateFormat( "YYYY-MM-dd" ).format( c.getTime() );
-			LatestBeforePartitionValue value = new LatestBeforePartitionValue();
-			value.setPartitionValue( date );
-			filter.setLatestBeforePartitionValue( value );
-
-			filter.setPartitionValues( null );
-			filter.setLatestAfterPartitionValue( null );
-
-
+			addPartitionedSingletonFilter( jd, partitionValueFilters );
 		} else {
 
 			log.info( "Partitions: {}", partitions );
 			if ( jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase( "PARTITION" ) ) {
-				filter.setPartitionValues( Lists.newArrayList( "none" ) );
+				addPartitionFilter( jd.getPartitionKey(), Lists.newArrayList( "none" ), partitionValueFilters );
 			} else {
 				if ( jd.isSubPartitionLevelProcessing() ) {
-					log.info( "Top Level Partition: {}, SubPartition: {}", jd.getTopLevelPartitionValue(), jd.getSubPartitionValue() );
-					filter.setPartitionValues( Lists.newArrayList( jd.getTopLevelPartitionValue() ) );
 					addSubPartitionFilter( jd, partitionValueFilters);
 				} else {
-					filter.setPartitionValues( partitions );
+					addPartitionFilter( jd.getPartitionKey(), partitions, partitionValueFilters );
 				}
 			}
 		}
-		partitionValueFilters.add( filter );
 
 		request.setPartitionValueFilter( null );
 		request.setPartitionValueFilters( partitionValueFilters );
@@ -141,8 +128,30 @@ public class DataMgmtSvc {
 		return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl( request );
 	}
 
+	private void addPartitionFilter( String partitionKey, List<String> partitions, List<PartitionValueFilter> partitionValueFilters ) {
+		PartitionValueFilter filter = new PartitionValueFilter();
+		filter.setPartitionKey( partitionKey );
+		filter.setPartitionValues( partitions );
+		partitionValueFilters.add( filter );
+	}
+
+	private void addPartitionedSingletonFilter( JobDefinition jd, List<PartitionValueFilter> partitionValueFilters ) {
+		Calendar c = Calendar.getInstance();
+		c.add( Calendar.DATE, 1 );
+		String date = new SimpleDateFormat( "YYYY-MM-dd" ).format( c.getTime() );
+		LatestBeforePartitionValue value = new LatestBeforePartitionValue();
+		value.setPartitionValue( date );
+
+		PartitionValueFilter filter = new PartitionValueFilter();
+		filter.setPartitionKey( jd.getPartitionKey() );
+		filter.setLatestBeforePartitionValue( value );
+		filter.setPartitionValues( null );
+		filter.setLatestAfterPartitionValue( null );
+		partitionValueFilters.add( filter );
+	}
+
 	/**
-	 * To add Sub Partition value filter
+	 * To partition filter with sub partitions
 	 *
 	 * @param jd
 	 * @param partitionValueFilters
@@ -150,19 +159,21 @@ public class DataMgmtSvc {
 	 */
 	private void addSubPartitionFilter( JobDefinition jd, List<PartitionValueFilter> partitionValueFilters ) throws ApiException {
 		List<SchemaColumn> partitionKeys = getDMFormat( jd ).getSchema().getPartitions();
-		log.debug( "Partition Keys {} for {}", partitionKeys, jd.getTableName() );
+		log.info( "Partition Keys {} for {}", partitionKeys, jd.getTableName() );
+		Map<String, String> partitionKeyValues = Maps.newLinkedHashMap();
 
-		if ( partitionKeys.size() >= 2 ) {
-			PartitionValueFilter subPartitionFilter = new PartitionValueFilter();
-			String subPartitionKey = partitionKeys.get( 1 ).getName();
-			log.debug( "SubPartition Partition Key: {}", subPartitionKey );
-			jd.setSubPartitionKey( subPartitionKey );
-			subPartitionFilter.setPartitionKey( subPartitionKey );
-			subPartitionFilter.setPartitionValues( Lists.newArrayList( jd.getSubPartitionValue() ) );
-			partitionValueFilters.add( subPartitionFilter );
-		} else {
-			log.warn( "Object not partitioned correctly, not enough partition keys to find sub partition" );
-		}
+		//TODO: Add size check between keys and values
+		IntStream.range( 0, partitionKeys.size() )
+			.forEach( i -> {
+				String partitionKey = partitionKeys.get( i ).getName();
+				String partitionValue = jd.getPartitionValues().get( i );
+				log.info( "Partition Key: {}\t Value: {}", partitionKey, partitionValue );
+				partitionKeyValues.put( partitionKey, partitionValue );
+
+				addPartitionFilter( partitionKey, Lists.newArrayList( partitionValue ), partitionValueFilters );
+			} );
+
+		jd.setPartitionsKeyValue( partitionKeyValues );
 	}
 
 	public BusinessObjectFormatKeys getBOAllFormatVersions( org.finra.herd.metastore.managed.JobDefinition od, boolean latestBusinessObjectFormatVersion ) throws ApiException {
