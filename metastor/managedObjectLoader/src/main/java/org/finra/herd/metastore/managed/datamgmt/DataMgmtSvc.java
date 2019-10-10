@@ -162,8 +162,7 @@ public class DataMgmtSvc {
 		log.info( "Partition Keys {} for {}", partitionKeys, jd.getTableName() );
 		Map<String, String> partitionKeyValues = Maps.newLinkedHashMap();
 
-		//TODO: Add size check between keys and values
-		IntStream.range( 0, partitionKeys.size() )
+		IntStream.range( 0, jd.getPartitionValues().size() )
 			.forEach( i -> {
 				String partitionKey = partitionKeys.get( i ).getName();
 				String partitionValue = jd.getPartitionValues().get( i );

@@ -124,6 +124,7 @@ public class JobDefinition {
 
 			jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
 			if ( jobDefinition.getPartitionValue().contains( SUB_PARTITION_VAL_SEPARATOR ) ) {
+				jobDefinition.subPartitionLevelProcessing = true;
 				jobDefinition.partitionValues = Lists.newArrayList( jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR ));
 			}
 
