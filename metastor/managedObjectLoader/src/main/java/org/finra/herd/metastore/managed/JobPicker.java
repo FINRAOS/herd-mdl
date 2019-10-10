@@ -31,12 +31,22 @@ public class JobPicker {
 			" FROM (DM_NOTIFICATION n left outer join " +
 			"(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
 			"group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
-			"where WF_TYPE != 3 and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
+			"where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
 			"METASTOR_OBJECT_LOCKS lc where lc.NAMESPACE=n.NAMESPACE and lc.OBJ_NAME=n.OBJECT_DEF_NAME and lc.USAGE_CODE=n.USAGE_CODE and" +
 			" lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=?)  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
 
 
-	static final String DELETE_EXPIRED_LOCKS = "delete from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
+    public static final String FIND_UNLOCKED_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c, PRIORITY" +
+        " FROM (DM_NOTIFICATION n left outer join " +
+        "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
+        "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
+        "where WF_TYPE =5  and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
+        "METASTOR_OBJECT_LOCKS lc where lc.NAMESPACE=n.NAMESPACE and lc.OBJ_NAME=n.OBJECT_DEF_NAME and lc.USAGE_CODE=n.USAGE_CODE and" +
+        " lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=?)  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
+
+
+
+    static final String DELETE_EXPIRED_LOCKS = "delete from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
 
 	static final String LOCK_QUERY = "insert ignore into METASTOR_OBJECT_LOCKS (NAMESPACE,\n" +
 			"OBJ_NAME, USAGE_CODE,\n" +
@@ -63,14 +73,24 @@ public class JobPicker {
 	@Value( "${RETRY_INTERVAL}" )
 	int jobRetryIntervalInSecs;
 
+
+    @Value("${analyaze.stats:false}")
+    boolean isAnalyzestats;
+
 	List<JobDefinition> findJob( String clusterID, String workerID ) {
 		List<JobDefinition> jobs = new ArrayList<JobDefinition>();
 
 		try {
 			deleteExpiredLocks();
-			List<JobDefinition> result = template.query( FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
-							jobRetryIntervalInSecs, clusterID},
-					new JobDefinition.ObjectDefinitionMapper() );
+			if (isAnalyzestats){
+                List<JobDefinition> result = template.query(FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry,
+                        jobRetryIntervalInSecs, clusterID},
+                    new JobDefinition.ObjectDefinitionMapper());
+            }else {
+                List<JobDefinition> result = template.query(FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
+                        jobRetryIntervalInSecs, clusterID},
+                    new JobDefinition.ObjectDefinitionMapper());
+            }
 			//Locking
 			//1. Delete expired locks
 			ObjectDefinition lockedJd = null;

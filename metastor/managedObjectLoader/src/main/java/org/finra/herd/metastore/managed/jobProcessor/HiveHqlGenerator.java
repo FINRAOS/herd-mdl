@@ -55,6 +55,11 @@ public class HiveHqlGenerator {
     @Autowired
     protected NotificationSender notificationSender;
 
+    @Autowired
+    protected BackLoadObjectProcessor backLoadObjectProcessor;
+
+
+
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
         String tableName = jd.getTableName();
@@ -261,6 +266,9 @@ public class HiveHqlGenerator {
 	}
 
 	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
+
+        addGatherStatsJob(jd);
+
 		if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
 			if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
 				schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
@@ -278,6 +286,32 @@ public class HiveHqlGenerator {
 			}
 		}
 	}
+
+    private void addGatherStatsJob( JobDefinition jd ) {
+        log.info( "Adding gather Stats job" );
+        DMNotification dmNotification = buildDMNotification( jd );
+        dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
+        dmNotification.setExecutionId( "stats" );
+        dmNotification.setPartitionKey( quotedPartitionKeys( jd.getTableSchema() ) );
+        dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
+        log.info( "Herd Notification DB request: \n{}", dmNotification );
+        jobProcessorDAO.addDMNotification( dmNotification );
+    }
+
+	protected DMNotification buildDMNotification( JobDefinition jd ) {
+        return DMNotification.builder()
+            .namespace( jd.getNamespace() )
+            .objDefName( jd.getObjectName() )
+            .formatUsage( jd.getUsage() )
+            .fileType( jd.getFileType() )
+            .workflowType( jd.getWorkflowType() )
+            .partitionValue( jd.getPartitionValues() )
+            .partitionKey( jd.getPartitionKey() )
+            .executionId( jd.getExecutionId() )
+            .clusterName( jd.getClusterName() )
+            .correlationData( jd.getCorrelation() )
+            .build();
+    }
 
 	protected boolean cascade( int wfType ){
     	return true;
