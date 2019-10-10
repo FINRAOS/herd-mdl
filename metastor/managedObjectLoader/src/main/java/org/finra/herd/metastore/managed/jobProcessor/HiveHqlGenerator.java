@@ -55,9 +55,6 @@ public class HiveHqlGenerator {
     @Autowired
     protected NotificationSender notificationSender;
 
-    @Autowired
-    protected BackLoadObjectProcessor backLoadObjectProcessor;
-
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -269,22 +266,22 @@ public class HiveHqlGenerator {
 
         addGatherStatsJob(jd);
 
-		if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
-			if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
-				schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
-			} else {
-				schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
-			}
-		} else if (partitions.size() == 1) {
-			if ( jd.isSubPartitionLevelProcessing() ) {
-				schemaHql.add( String.format( "analyze table %s partition(`%s`='%s', `%s`='%s') compute statistics noscan;"
-						, jd.getTableName(), jd.getPartitionKey(), jd.getTopLevelPartitionValue(), jd.getSubPartitionKey(), jd.getSubPartitionValue() ) );
-			} else {
-				schemaHql.add( String.format( "analyze table %s partition(`%s`='%s') compute statistics noscan;"
-						, jd.getTableName(), jd.getPartitionKey(), partitions.get( 0 ) )
-				);
-			}
-		}
+//        if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
+//            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
+//                schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
+//            } else {
+//                schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
+//            }
+//        } else if (partitions.size() == 1) {
+//            if ( jd.isSubPartitionLevelProcessing() ) {
+//                schemaHql.add( String.format( "analyze table %s partition(`%s`='%s', `%s`='%s') compute statistics noscan;"
+//                    , jd.getTableName(), jd.getPartitionKey(), jd.getTopLevelPartitionValue(), jd.getSubPartitionKey(), jd.getSubPartitionValue() ) );
+//            } else {
+//                schemaHql.add( String.format( "analyze table %s partition(`%s`='%s') compute statistics noscan;"
+//                    , jd.getTableName(), jd.getPartitionKey(), partitions.get( 0 ) )
+//                );
+//            }
+//        }
 	}
 
     private void addGatherStatsJob( JobDefinition jd ) {
