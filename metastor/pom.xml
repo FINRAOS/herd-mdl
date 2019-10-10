@@ -49,7 +49,7 @@
 
 	<modules>
 		<module>managedObjectLoader</module>
-		<module>metastoreOperations</module>
+		<!--<module>metastoreOperations</module>-->
 	</modules>
 
 	<licenses>
