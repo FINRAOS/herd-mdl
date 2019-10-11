@@ -15,6 +15,7 @@
 **/
 package org.finra.herd.metastore.managed;
 
+import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -28,6 +29,8 @@ import javax.json.JsonReader;
 import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -44,16 +47,15 @@ public class JobDefinition {
 
     boolean subPartitionLevelProcessing = false;
 
-    String partitionValue;
     String correlation;
     String executionID;
     String clusterName;
     String actualObjectName;
     String tableName;
 	String partitionKey;
-	String topLevelPartitionValue;
-	String subPartitionKey;
-	String subPartitionValue;
+    String partitionValue;
+	List<String> partitionValues;
+	Map<String, String> partitionsKeyValue;
 
     ObjectDefinition objectDefinition;
 
@@ -97,6 +99,15 @@ public class JobDefinition {
     public JobDefinition() {
     }
 
+    public String getPartitionsSpecForStats(){
+    	StringJoiner partitionStats = new StringJoiner( "," , "(", ")");
+    	partitionsKeyValue.forEach( (k, v) -> {
+    		partitionStats.add( String.format( "`%s`='%s'", k, v ) );
+		} );
+
+    	return partitionStats.toString();
+	}
+
     @Slf4j
     public static class ObjectDefinitionMapper implements RowMapper<JobDefinition> {
 
@@ -111,12 +122,12 @@ public class JobDefinition {
             jobDefinition.objectDefinition.usageCode=resultSet.getString("USAGE_CODE");
             jobDefinition.objectDefinition.fileType=resultSet.getString("FILE_TYPE");
 
-            jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
+			jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
 			if ( jobDefinition.getPartitionValue().contains( SUB_PARTITION_VAL_SEPARATOR ) ) {
-				jobDefinition.topLevelPartitionValue = jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR )[0];
-				jobDefinition.subPartitionValue = jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR )[1];
 				jobDefinition.subPartitionLevelProcessing = true;
+				jobDefinition.partitionValues = Lists.newArrayList( jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR ));
 			}
+
             // Execution ID not being used, other than filenaming .hql files it just have to unique
             jobDefinition.executionID=resultSet.getString("ID");
             jobDefinition.partitionKey=resultSet.getString("PARTITION_KEY");
