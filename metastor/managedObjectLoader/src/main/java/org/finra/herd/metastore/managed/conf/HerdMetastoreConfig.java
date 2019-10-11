@@ -149,7 +149,7 @@ public class HerdMetastoreConfig {
     }
 
     @Bean
-    public boolean isIsAnalyzeStats{ return isAnalyzeStats;}
+    public boolean isIsAnalyzeStats(){ return isAnalyzeStats;}
 
     @Bean (name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {
