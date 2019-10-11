@@ -293,6 +293,10 @@ public class HiveHqlGenerator {
 
 	}
 
+    protected String quotedPartitionKeys( Schema schema ) {
+        return schema.getPartitions().stream().map( p -> p.getName() ).collect( Collectors.joining( "`,`", "`", "`" ) );
+    }
+
 
 	protected DMNotification buildDMNotification( JobDefinition jd ) {
         return DMNotification.builder()
