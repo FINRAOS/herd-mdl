@@ -264,7 +264,15 @@ public class HiveHqlGenerator {
 
 	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
 
-        addGatherStatsJob(jd);
+        log.info( "Adding gather Stats job" );
+        DMNotification dmNotification = buildDMNotification( jd );
+        dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
+        dmNotification.setExecutionId( "stats" );
+        dmNotification.setPartitionKey( quotedPartitionKeys( jd.getTableSchema() ) );
+        dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
+
+        log.info( "Herd Notification DB request: \n{}", dmNotification );
+        jobProcessorDAO.addDMNotification( dmNotification );
 
 //        if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
 //            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
@@ -284,16 +292,6 @@ public class HiveHqlGenerator {
 //        }
 	}
 
-    private void addGatherStatsJob( JobDefinition jd ) {
-        log.info( "Adding gather Stats job" );
-        DMNotification dmNotification = buildDMNotification( jd );
-        dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
-        dmNotification.setExecutionId( "stats" );
-        dmNotification.setPartitionKey( quotedPartitionKeys( jd.getTableSchema() ) );
-        dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
-        log.info( "Herd Notification DB request: \n{}", dmNotification );
-        jobProcessorDAO.addDMNotification( dmNotification );
-    }
 
 	protected DMNotification buildDMNotification( JobDefinition jd ) {
         return DMNotification.builder()
@@ -302,8 +300,6 @@ public class HiveHqlGenerator {
             .formatUsage( jd.getUsage() )
             .fileType( jd.getFileType() )
             .workflowType( jd.getWorkflowType() )
-            .partitionValue( jd.getPartitionValues() )
-            .partitionKey( jd.getPartitionKey() )
             .executionId( jd.getExecutionId() )
             .clusterName( jd.getClusterName() )
             .correlationData( jd.getCorrelation() )
