@@ -24,12 +24,16 @@ import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.hive.*;
+import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
+import org.finra.herd.sdk.model.Schema;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -38,6 +42,7 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -54,6 +59,10 @@ public class HiveHqlGenerator {
 
     @Autowired
     protected NotificationSender notificationSender;
+
+    @Autowired
+    JobProcessorDAO jobProcessorDAO;
+
 
 
 
@@ -265,14 +274,21 @@ public class HiveHqlGenerator {
 	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
 
         log.info( "Adding gather Stats job" );
-        DMNotification dmNotification = buildDMNotification( jd );
-        dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
-        dmNotification.setExecutionId( "stats" );
-        dmNotification.setPartitionKey( quotedPartitionKeys( jd.getTableSchema() ) );
-        dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
+    try {
+        BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat(jd);
+        DMNotification dmNotification = buildDMNotification(jd);
+        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
+        dmNotification.setExecutionId("stats");
+        dmNotification.setPartitionKey(quotedPartitionKeys(dmFormat.getSchema()));
+        dmNotification.setPartitionValue(""); // partition values not required for gather stats job as it runs for all partitions
 
-        log.info( "Herd Notification DB request: \n{}", dmNotification );
-        jobProcessorDAO.addDMNotification( dmNotification );
+        log.info("Herd Notification DB request: \n{}", dmNotification);
+        jobProcessorDAO.addDMNotification(dmNotification);
+    }catch ( Exception e ) {
+        log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
+
+
+    }
 
 //        if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
 //            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
@@ -300,12 +316,10 @@ public class HiveHqlGenerator {
 
 	protected DMNotification buildDMNotification( JobDefinition jd ) {
         return DMNotification.builder()
-            .namespace( jd.getNamespace() )
-            .objDefName( jd.getObjectName() )
-            .formatUsage( jd.getUsage() )
-            .fileType( jd.getFileType() )
-            .workflowType( jd.getWorkflowType() )
-            .executionId( jd.getExecutionId() )
+            .namespace( jd.getObjectDefinition().getNameSpace() )
+            .objDefName( jd.getObjectDefinition().getObjectName() )
+            .formatUsage( jd.getObjectDefinition().getUsageCode() )
+            .fileType( jd.getObjectDefinition().getFileType() )
             .clusterName( jd.getClusterName() )
             .correlationData( jd.getCorrelation() )
             .build();

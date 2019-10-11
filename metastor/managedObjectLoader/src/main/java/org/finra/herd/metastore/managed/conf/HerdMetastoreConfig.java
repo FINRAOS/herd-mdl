@@ -65,7 +65,7 @@ public class HerdMetastoreConfig {
     protected String validationQuery;
 
     @Value("${analyaze.stats:false}")
-    boolean isAnalyzestats;
+    protected boolean isAnalyzeStats;
 
 
 
@@ -149,7 +149,7 @@ public class HerdMetastoreConfig {
     }
 
     @Bean
-    public boolean isIsAnalyzeStats(){ return isAnalyzeStats;}
+    public boolean isAnalyzeStats(){ return isAnalyzeStats;}
 
     @Bean (name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {

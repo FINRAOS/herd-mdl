@@ -82,12 +82,13 @@ public class JobPicker {
 
 		try {
 			deleteExpiredLocks();
-			if (isAnalyzestats){
-                List<JobDefinition> result = template.query(FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry,
+            List<JobDefinition> result ;
+            if (isAnalyzestats){
+                 result = template.query(FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry,
                         jobRetryIntervalInSecs, clusterID},
                     new JobDefinition.ObjectDefinitionMapper());
             }else {
-                List<JobDefinition> result = template.query(FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
+                 result = template.query(FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
                         jobRetryIntervalInSecs, clusterID},
                     new JobDefinition.ObjectDefinitionMapper());
             }
