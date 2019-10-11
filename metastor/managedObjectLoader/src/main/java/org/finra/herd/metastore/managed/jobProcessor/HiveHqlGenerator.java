@@ -32,7 +32,6 @@ import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
-import org.finra.herd.sdk.model.Schema;
 
 
 import java.io.IOException;
@@ -41,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -271,24 +271,23 @@ public class HiveHqlGenerator {
 		}
 	}
 
-	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
+    protected void addAnalyzeStats(JobDefinition jd, List<String> partitions, List<String> schemaHql) {
 
-        log.info( "Adding gather Stats job" );
-    try {
-        BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat(jd);
-        DMNotification dmNotification = buildDMNotification(jd);
-        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
-        dmNotification.setExecutionId("stats");
-        dmNotification.setPartitionKey(quotedPartitionKeys(dmFormat.getSchema()));
-        dmNotification.setPartitionValue(""); // partition values not required for gather stats job as it runs for all partitions
+        log.info("Adding gather Stats job");
+        try {
+            DMNotification dmNotification = buildDMNotification(jd);
 
-        log.info("Herd Notification DB request: \n{}", dmNotification);
-        jobProcessorDAO.addDMNotification(dmNotification);
-    }catch ( Exception e ) {
-        log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
+            dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
+            dmNotification.setExecutionId("stats");
 
+            dmNotification.setPartitionKey(jd.partitionKeysForStats());
+            dmNotification.setPartitionValue(jd.partitionValuesForStats());
 
-    }
+            log.info("Herd Notification DB request: \n{}", dmNotification);
+            jobProcessorDAO.addDMNotification(dmNotification);
+        } catch (Exception e) {
+            log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
+        }
 
 //        if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
 //            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
@@ -309,8 +308,10 @@ public class HiveHqlGenerator {
 
 	}
 
-    protected String quotedPartitionKeys( Schema schema ) {
-        return schema.getPartitions().stream().map( p -> p.getName() ).collect( Collectors.joining( "`,`", "`", "`" ) );
+
+
+    protected String partition(Set<String> partitionKeys ) {
+        return partitionKeys.stream().collect( Collectors.joining( "`,`", "`", "`" ) );
     }
 
 

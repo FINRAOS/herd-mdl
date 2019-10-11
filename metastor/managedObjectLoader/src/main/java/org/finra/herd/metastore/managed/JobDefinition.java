@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-**/
+ **/
 package org.finra.herd.metastore.managed;
 
 import com.google.common.collect.Lists;
@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
+import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.StringUtils;
 
@@ -29,10 +31,8 @@ import javax.json.JsonReader;
 import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.StringJoiner;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.finra.herd.metastore.managed.util.JobProcessorConstants.SUB_PARTITION_VAL_SEPARATOR;
 
@@ -52,10 +52,10 @@ public class JobDefinition {
     String clusterName;
     String actualObjectName;
     String tableName;
-	String partitionKey;
+    String partitionKey;
     String partitionValue;
-	List<String> partitionValues;
-	Map<String, String> partitionsKeyValue;
+    List<String> partitionValues;
+    Map<String, String> partitionsKeyValue;
 
     ObjectDefinition objectDefinition;
 
@@ -65,14 +65,14 @@ public class JobDefinition {
         if (o == null || getClass() != o.getClass()) return false;
         JobDefinition that = (JobDefinition) o;
         return id == that.id &&
-                wfType == that.wfType &&
-                numOfRetry == that.numOfRetry &&
-                Objects.equals(objectDefinition, that.objectDefinition) &&
-                Objects.equals(partitionValue, that.partitionValue) &&
-                Objects.equals(correlation, that.correlation) &&
-                Objects.equals(executionID, that.executionID) &&
-                Objects.equals(clusterName, that.clusterName) &&
-                Objects.equals(partitionKey, that.partitionKey);
+            wfType == that.wfType &&
+            numOfRetry == that.numOfRetry &&
+            Objects.equals(objectDefinition, that.objectDefinition) &&
+            Objects.equals(partitionValue, that.partitionValue) &&
+            Objects.equals(correlation, that.correlation) &&
+            Objects.equals(executionID, that.executionID) &&
+            Objects.equals(clusterName, that.clusterName) &&
+            Objects.equals(partitionKey, that.partitionKey);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class JobDefinition {
                          String fileType, String partitionValue, String correlation,
                          String executionID, String partitionKey) {
         this.id = id;
-        objectDefinition=new ObjectDefinition();
+        objectDefinition = new ObjectDefinition();
         objectDefinition.nameSpace = nameSpace;
         objectDefinition.objectName = objectName;
         objectDefinition.usageCode = usageCode;
@@ -99,14 +99,35 @@ public class JobDefinition {
     public JobDefinition() {
     }
 
-    public String getPartitionsSpecForStats(){
-    	StringJoiner partitionStats = new StringJoiner( "," , "(", ")");
-    	partitionsKeyValue.forEach( (k, v) -> {
-    		partitionStats.add( String.format( "`%s`='%s'", k, v ) );
-		} );
+    public String partitionSpecForStats() {
+        if (Objects.isNull(partitionValue) || partitionValue.isEmpty()) { //Singleton
+            return String.format("`%s`", partitionKey);
+        } else if (MetastoreUtil.isNonPartitionedSingleton(wfType, partitionKey)) {
+            return JobProcessorConstants.NON_PARTITIONED_SINGLETON_VALUE;
+        }
 
-    	return partitionStats.toString();
-	}
+        //TODO: Merge partition key and values
+
+        return String.format("`%s`='%s'", partitionKey, partitionValue);
+    }
+
+    public String partitionKeysForStats() {
+        if (partitionsKeyValue.isEmpty()) {
+            return String.format("%s", partitionKey);
+        }
+
+        return partitionsKeyValue.keySet().stream().collect(Collectors.joining(","));
+    }
+
+    public String partitionValuesForStats() {
+        if (partitionsKeyValue.isEmpty()) {
+            return partitionValue;
+        } else if (MetastoreUtil.isPartitionedSingleton(wfType, partitionKey)) {
+            return "";
+        }
+        //TODO: handle one partitionKey with multiple values - date range
+        return partitionsKeyValue.values().stream().collect(Collectors.joining(","));
+    }
 
     @Slf4j
     public static class ObjectDefinitionMapper implements RowMapper<JobDefinition> {
@@ -116,72 +137,72 @@ public class JobDefinition {
             JobDefinition jobDefinition = new JobDefinition();
 
             jobDefinition.id = resultSet.getLong("ID");
-            jobDefinition.objectDefinition=new ObjectDefinition();
-            jobDefinition.objectDefinition.nameSpace=resultSet.getString("NAMESPACE");
-            jobDefinition.objectDefinition.objectName=resultSet.getString(("OBJECT_DEF_NAME"));
-            jobDefinition.objectDefinition.usageCode=resultSet.getString("USAGE_CODE");
-            jobDefinition.objectDefinition.fileType=resultSet.getString("FILE_TYPE");
+            jobDefinition.objectDefinition = new ObjectDefinition();
+            jobDefinition.objectDefinition.nameSpace = resultSet.getString("NAMESPACE");
+            jobDefinition.objectDefinition.objectName = resultSet.getString(("OBJECT_DEF_NAME"));
+            jobDefinition.objectDefinition.usageCode = resultSet.getString("USAGE_CODE");
+            jobDefinition.objectDefinition.fileType = resultSet.getString("FILE_TYPE");
 
-			jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
-			if ( jobDefinition.getPartitionValue().contains( SUB_PARTITION_VAL_SEPARATOR ) ) {
-				jobDefinition.subPartitionLevelProcessing = true;
-				jobDefinition.partitionValues = Lists.newArrayList( jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR ));
-			}
+            jobDefinition.partitionValue = resultSet.getString("PARTITION_VALUES");
+            if (jobDefinition.getPartitionValue().contains(SUB_PARTITION_VAL_SEPARATOR)) {
+                jobDefinition.subPartitionLevelProcessing = true;
+                jobDefinition.partitionValues = Lists.newArrayList(jobDefinition.getPartitionValue().split(SUB_PARTITION_VAL_SEPARATOR));
+            }
 
             // Execution ID not being used, other than filenaming .hql files it just have to unique
-            jobDefinition.executionID=resultSet.getString("ID");
-            jobDefinition.partitionKey=resultSet.getString("PARTITION_KEY");
-            jobDefinition.wfType=resultSet.getInt("WF_TYPE");
-            jobDefinition.numOfRetry=resultSet.getInt("c");
-            jobDefinition.clusterName=resultSet.getString("CLUSTER_NAME");
+            jobDefinition.executionID = resultSet.getString("ID");
+            jobDefinition.partitionKey = resultSet.getString("PARTITION_KEY");
+            jobDefinition.wfType = resultSet.getInt("WF_TYPE");
+            jobDefinition.numOfRetry = resultSet.getInt("c");
+            jobDefinition.clusterName = resultSet.getString("CLUSTER_NAME");
 
-			jobDefinition.correlation 		= resultSet.getString( "CORRELATION_DATA" );
-			jobDefinition.actualObjectName	= getActualObjectName( jobDefinition );
-			jobDefinition.tableName 		= identifyTableName( jobDefinition );
+            jobDefinition.correlation = resultSet.getString("CORRELATION_DATA");
+            jobDefinition.actualObjectName = getActualObjectName(jobDefinition);
+            jobDefinition.tableName = identifyTableName(jobDefinition);
 
             return jobDefinition;
         }
 
-		private String identifyTableName(JobDefinition jobDef){
-			return new StringJoiner( "_" )
-					.add( identifyObjectName(jobDef))
-					.add( jobDef.getObjectDefinition().usageCode )
-					.add( jobDef.getObjectDefinition().fileType )
-					.toString()
-					.replaceAll("\\.", "_")
-					.replaceAll(" ","_")
-					.replaceAll("-","_");
-		}
+        private String identifyTableName(JobDefinition jobDef) {
+            return new StringJoiner("_")
+                .add(identifyObjectName(jobDef))
+                .add(jobDef.getObjectDefinition().usageCode)
+                .add(jobDef.getObjectDefinition().fileType)
+                .toString()
+                .replaceAll("\\.", "_")
+                .replaceAll(" ", "_")
+                .replaceAll("-", "_");
+        }
 
-		private String identifyObjectName( JobDefinition jobDef ) {
-			String originalObjectName = "original_object_name";
+        private String identifyObjectName(JobDefinition jobDef) {
+            String originalObjectName = "original_object_name";
 
-			if ( !StringUtils.isEmpty(jobDef.getCorrelation()) && jobDef.getCorrelation().contains( originalObjectName ) ) {
-				return Json.createReader( new StringReader( jobDef.getCorrelation() ) )
-						.readObject().getJsonObject( "businessObject" )
-						.getString( originalObjectName );
-			}
+            if (!StringUtils.isEmpty(jobDef.getCorrelation()) && jobDef.getCorrelation().contains(originalObjectName)) {
+                return Json.createReader(new StringReader(jobDef.getCorrelation()))
+                    .readObject().getJsonObject("businessObject")
+                    .getString(originalObjectName);
+            }
 
-			return getActualObjectName(jobDef);
-		}
+            return getActualObjectName(jobDef);
+        }
 
-		private String getActualObjectName( JobDefinition jobDef ) {
-			try {
-				if (!StringUtils.isEmpty(jobDef.getCorrelation()) && !jobDef.getCorrelation().equals("null")) {
-					JsonReader reader = Json.createReader(new StringReader(jobDef.getCorrelation()));
-					JsonObject object = reader.readObject();
-					if (object.containsKey("businessObject")) {
-						JsonObject bo = object.getJsonObject("businessObject");
-						if (bo.containsKey("late_reporting_for")) {
-							String objName = bo.getString("late_reporting_for");
-							return objName;
-						}
-					}
-				}
-			} catch (Exception ex) {
-				log.warn("Error parsing correlation:"+jobDef.getCorrelation());
-			}
-			return jobDef.getObjectDefinition().getObjectName();
-		}
+        private String getActualObjectName(JobDefinition jobDef) {
+            try {
+                if (!StringUtils.isEmpty(jobDef.getCorrelation()) && !jobDef.getCorrelation().equals("null")) {
+                    JsonReader reader = Json.createReader(new StringReader(jobDef.getCorrelation()));
+                    JsonObject object = reader.readObject();
+                    if (object.containsKey("businessObject")) {
+                        JsonObject bo = object.getJsonObject("businessObject");
+                        if (bo.containsKey("late_reporting_for")) {
+                            String objName = bo.getString("late_reporting_for");
+                            return objName;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Error parsing correlation:" + jobDef.getCorrelation());
+            }
+            return jobDef.getObjectDefinition().getObjectName();
+        }
     }
 }
