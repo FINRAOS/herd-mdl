@@ -32,8 +32,11 @@ import javax.json.JsonReader;
 import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.finra.herd.metastore.managed.util.JobProcessorConstants.SUB_PARTITION_VAL_SEPARATOR;
 
@@ -103,13 +106,22 @@ public class JobDefinition {
     public String partitionSpecForStats() {
         if (Objects.isNull(partitionValue) || partitionValue.isEmpty()) { //Singleton
             return String.format("`%s`", partitionKey);
-        } else if (MetastoreUtil.isNonPartitionedSingleton( partitionKey)) {
+        } else if (MetastoreUtil.isNonPartitionedSingleton(partitionKey)) {
             return JobProcessorConstants.NON_PARTITIONED_SINGLETON_VALUE;
+        } else if (partitionKey.contains(",") && partitionValue.contains(",")) {
+            StringJoiner partitionSpec = new StringJoiner(",");
+            List<String> statsPartitionKeys = Lists.newArrayList(partitionKey.split(","));
+            log.info("statsPartitionKeys:\n{}",statsPartitionKeys);
+            List<String> statsValues = Lists.newArrayList(partitionValue.split(","));
+            log.info("statsValues:\n{}",statsValues);
+            IntStream.range(0, statsPartitionKeys.size())
+                .forEach(i -> {
+                    partitionSpec.add(String.format("`%s`='%s'", statsPartitionKeys.get(i), statsValues.get(i)));
+                });
+            return partitionSpec.toString();
         }
-
-        //TODO: Merge partition key and values
-
         return String.format("`%s`='%s'", partitionKey, partitionValue);
+
     }
 
     public String partitionKeysForStats() {
@@ -124,10 +136,8 @@ public class JobDefinition {
         if (partitionsKeyValue.isEmpty()) {
             return partitionValue;
         } else if (MetastoreUtil.isPartitionedSingleton(wfType, partitionKey)) {
-            //if partitionKey=partition and partitionKeyValue=none
             return "";
         }
-        //TODO: handle one partitionKey with multiple values - date range
         return partitionsKeyValue.values().stream().collect(Collectors.joining(","));
     }
 
@@ -186,6 +196,16 @@ public class JobDefinition {
             }
 
             return getActualObjectName(jobDef);
+        }
+
+        public   List<LocalDate> getDatesBetweenRanges(
+            LocalDate startDate, LocalDate endDate) {
+
+            long numOfDaysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+            return IntStream.iterate(0, i -> i + 1)
+                .limit(numOfDaysBetween)
+                .mapToObj(i -> startDate.plusDays(i))
+                .collect(Collectors.toList());
         }
 
         private String getActualObjectName(JobDefinition jobDef) {

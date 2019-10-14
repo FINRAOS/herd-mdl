@@ -82,7 +82,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 			identifyPartitionsAndBackLoad( od, jsi );
 
-			addGatherStatsJob( jsi );
+//			addGatherStatsJob( jsi );
 
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in Back loading processor: {}", e.getMessage(), e );
@@ -156,7 +156,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		log.info( "Adding gather Stats job" );
 		DMNotification dmNotification = buildDMNotification( jsi );
 		dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
-		dmNotification.setExecutionId( "stats" );
+		dmNotification.setExecutionId( "SUBMITTED_BY_BACKLOADING" );
 		dmNotification.setPartitionKey( quotedPartitionKeys( jsi.getTableSchema() ) );
 		dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
 		log.info( "Herd Notification DB request: \n{}", dmNotification );

@@ -52,6 +52,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 @Slf4j
 public class HiveHqlGenerator {
 
+    public static final String SUBMITTED_BY_JOB_PROCESSOR = "SUBMITTED_BY_JOB_PROCESSOR";
     @Autowired
     protected DataMgmtSvc dataMgmtSvc;
 
@@ -240,7 +241,7 @@ public class HiveHqlGenerator {
         addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
         //Stats
-		addAnalyzeStats( jd, partitions, schemaHql );
+		addAnalyzeStats( jd, partitions);
 
 		// Create file
 		Path hqlFilePath = createHqlFile( jd );
@@ -272,24 +273,17 @@ public class HiveHqlGenerator {
 		}
 	}
 
-    protected void addAnalyzeStats(JobDefinition jd, List<String> partitions, List<String> schemaHql) {
+    protected void addAnalyzeStats(JobDefinition jd,List<String> partitions) {
 
         log.info("Adding gather Stats job");
         try {
-            DMNotification dmNotification = buildDMNotification(jd);
 
-            dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
-            dmNotification.setExecutionId("stats");
-
-            dmNotification.setPartitionKey(jd.partitionKeysForStats());
-            dmNotification.setPartitionValue(jd.partitionValuesForStats());
-            log.info("partitionKeys in stats: \n{}",jd.partitionKeysForStats());
-            log.info("partitionValues in stats: \n{}",jd.partitionValuesForStats());
-            log.info("partitionSpecForStats :\n {}",jd.partitionSpecForStats());
-
-
-            log.info("Herd Notification DB request: \n{}", dmNotification);
-            jobProcessorDAO.addDMNotification(dmNotification);
+            if(partitions.size()==1) {
+                submitStatsJob(jd, jd.partitionValuesForStats());
+            }else{
+                partitions.stream()
+                    .forEach( s -> submitStatsJob(jd, s));
+            }
         } catch (Exception e) {
             log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
         }
@@ -313,6 +307,24 @@ public class HiveHqlGenerator {
 
 	}
 
+    private void submitStatsJob(JobDefinition jd, String partitionValue) {
+        DMNotification dmNotification = buildDMNotification(jd);
+
+        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
+        dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
+
+        dmNotification.setPartitionKey(jd.partitionKeysForStats());
+        dmNotification.setPartitionValue(partitionValue);
+
+
+        log.info("partitionKeys in stats: \n{}", jd.partitionKeysForStats());
+        log.info("partitionValues in stats: \n{}", partitionValue);
+        log.info("partitionSpecForStats :\n {}", jd.partitionSpecForStats());
+
+
+        log.info("Herd Notification DB request: \n{}", dmNotification);
+        jobProcessorDAO.addDMNotification(dmNotification);
+    }
 
 
     protected String partition(Set<String> partitionKeys ) {
