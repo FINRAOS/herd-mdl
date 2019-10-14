@@ -16,6 +16,7 @@
 package org.finra.herd.metastore.managed;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -54,8 +55,8 @@ public class JobDefinition {
     String tableName;
     String partitionKey;
     String partitionValue;
-    List<String> partitionValues;
-    Map<String, String> partitionsKeyValue;
+    List<String> partitionValues=Lists.newArrayList();
+    Map<String, String> partitionsKeyValue= Maps.newLinkedHashMap();
 
     ObjectDefinition objectDefinition;
 
@@ -102,7 +103,7 @@ public class JobDefinition {
     public String partitionSpecForStats() {
         if (Objects.isNull(partitionValue) || partitionValue.isEmpty()) { //Singleton
             return String.format("`%s`", partitionKey);
-        } else if (MetastoreUtil.isNonPartitionedSingleton(wfType, partitionKey)) {
+        } else if (MetastoreUtil.isNonPartitionedSingleton( partitionKey)) {
             return JobProcessorConstants.NON_PARTITIONED_SINGLETON_VALUE;
         }
 
@@ -123,6 +124,7 @@ public class JobDefinition {
         if (partitionsKeyValue.isEmpty()) {
             return partitionValue;
         } else if (MetastoreUtil.isPartitionedSingleton(wfType, partitionKey)) {
+            //if partitionKey=partition and partitionKeyValue=none
             return "";
         }
         //TODO: handle one partitionKey with multiple values - date range

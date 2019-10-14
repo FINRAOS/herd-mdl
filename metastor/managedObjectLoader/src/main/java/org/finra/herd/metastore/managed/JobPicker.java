@@ -74,8 +74,8 @@ public class JobPicker {
 	int jobRetryIntervalInSecs;
 
 
-    @Value("${analyaze.stats:false}")
-    boolean isAnalyzestats;
+    @Autowired
+    boolean analyzeStats;
 
 	List<JobDefinition> findJob( String clusterID, String workerID ) {
 		List<JobDefinition> jobs = new ArrayList<JobDefinition>();
@@ -83,7 +83,9 @@ public class JobPicker {
 		try {
 			deleteExpiredLocks();
             List<JobDefinition> result ;
-            if (isAnalyzestats){
+            logger.info("Get Stats: " + analyzeStats);
+            if (analyzeStats){
+                logger.info("Running for stats");
                  result = template.query(FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry,
                         jobRetryIntervalInSecs, clusterID},
                     new JobDefinition.ObjectDefinitionMapper());

@@ -47,6 +47,7 @@ public class HerdMetastoreConfig {
     public static final String homeDir = System.getenv( "HOME" );
     public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
     public static final String CRED_FILE_PATH = "cred.file.path";
+    public static final String ANALYZE_STATS  = "analyze.stats";
 
 
     @Value( "${MYSQL_URL}" )
@@ -63,10 +64,6 @@ public class HerdMetastoreConfig {
 
     @Value( "${JDBC_VALIDATE_QUERY}" )
     protected String validationQuery;
-
-    @Value("${analyaze.stats:false}")
-    protected boolean isAnalyzeStats;
-
 
 
     @Autowired
@@ -149,7 +146,11 @@ public class HerdMetastoreConfig {
     }
 
     @Bean
-    public boolean isAnalyzeStats(){ return isAnalyzeStats;}
+    public boolean analyzeStats() {
+        String stats = environment.getProperty(ANALYZE_STATS);
+        log.info("Analyze Stats from CMD: {}", stats);
+        return "true".equalsIgnoreCase(stats);
+    }
 
     @Bean (name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {

@@ -29,6 +29,7 @@ import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
+import org.finra.herd.sdk.model.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
@@ -282,6 +283,10 @@ public class HiveHqlGenerator {
 
             dmNotification.setPartitionKey(jd.partitionKeysForStats());
             dmNotification.setPartitionValue(jd.partitionValuesForStats());
+            log.info("partitionKeys in stats: \n{}",jd.partitionKeysForStats());
+            log.info("partitionValues in stats: \n{}",jd.partitionValuesForStats());
+            log.info("partitionSpecForStats :\n {}",jd.partitionSpecForStats());
+
 
             log.info("Herd Notification DB request: \n{}", dmNotification);
             jobProcessorDAO.addDMNotification(dmNotification);
@@ -312,6 +317,10 @@ public class HiveHqlGenerator {
 
     protected String partition(Set<String> partitionKeys ) {
         return partitionKeys.stream().collect( Collectors.joining( "`,`", "`", "`" ) );
+    }
+
+    protected String quotedPartitionKeys( Schema schema ) {
+        return schema.getPartitions().stream().map( p -> p.getName() ).collect( Collectors.joining( "`,`", "`", "`" ) );
     }
 
 

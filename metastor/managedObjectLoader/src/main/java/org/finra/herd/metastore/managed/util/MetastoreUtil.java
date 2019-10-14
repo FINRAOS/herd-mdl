@@ -20,10 +20,18 @@ public class MetastoreUtil {
     }
 
     public static boolean isNonPartitionedSingleton(int wfType, String partitionKey) {
+        //logical error . WF_Type will be always 5. We loose the ability to figure out the type since for stats everything will be 5.
         return isSingletonWF(wfType) && NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase(partitionKey);
     }
 
+
+    public static boolean isNonPartitionedSingleton( String partitionKey) {
+
+        return  NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase(partitionKey);
+    }
+
     public static boolean isPartitionedSingleton(int wfType, String partitionKey) {
+        //logical error . WF_Type will be always 5. We loose the ability to figure out the type since for stats everything will be 5.
         return isSingletonWF(wfType) && !(NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase(partitionKey));
     }
 }

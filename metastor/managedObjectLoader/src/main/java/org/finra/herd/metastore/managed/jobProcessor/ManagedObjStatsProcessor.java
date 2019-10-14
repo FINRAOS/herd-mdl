@@ -39,8 +39,13 @@ public class ManagedObjStatsProcessor extends JobProcessor {
 
 		ProcessBuilder pb = null;
 		try {
-			BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
-			String quotedPartitionKeys = quotedPartitionKeys( dmFormat.getSchema() );
+			//BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
+			//String quotedPartitionKeys = quotedPartitionKeys( dmFormat.getSchema() );
+            log.info("partitionKeys in stats: \n{}",od.partitionKeysForStats());
+            log.info("partitionValues in stats: \n{}",od.partitionValuesForStats());
+            log.info("partitionSpecForStats :\n {}",od.partitionSpecForStats());
+
+            String quotedPartitionKeys=od.partitionSpecForStats();
 			if ( Strings.isNullOrEmpty( quotedPartitionKeys ) ) {
 				log.error( "ERROR: PARTITION_COLUMNS is empty for {}", tblName );
 				return pb;
@@ -51,7 +56,7 @@ public class ManagedObjStatsProcessor extends JobProcessor {
 					, tblName
 					, quotedPartitionKeys
 			);
-		} catch ( ApiException e ) {
+		} catch ( Exception e ) {
 			log.error( "Could not get BO format due to: {}", e.getMessage(), e );
 		}
 
