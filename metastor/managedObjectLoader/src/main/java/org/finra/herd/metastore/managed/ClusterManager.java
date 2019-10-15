@@ -25,6 +25,7 @@ import com.amazonaws.services.elasticmapreduce.model.ClusterState;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
@@ -102,6 +103,9 @@ public class ClusterManager implements InitializingBean {
 
     @Value("${AGS}")
     private String ags;
+
+	@Autowired
+	boolean analyzeStats;
 
 	@Autowired
 	NotificationSender notificationSender;
@@ -483,10 +487,15 @@ public class ClusterManager implements InitializingBean {
 		return (createClusterRetryCounter < createClusterMaxRetryCount);
 	}
 
-	private String proposedName( int created ) {
-		return new StringBuilder( ags )
+	private String proposedName( int num ) {
+		StringBuilder clusterName = new StringBuilder( JobProcessorConstants.METASTOR_CLUSTER_NAME );
+		if ( analyzeStats ) {
+			clusterName = new StringBuilder( JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
+		}
+
+		return clusterName
 				.append( CLUSTER_NM_DELIMITER )
-				.append( created )
+				.append( num )
 				.toString();
 	}
 

@@ -85,16 +85,16 @@ public class JobPicker {
 			deleteExpiredLocks();
             List<JobDefinition> result ;
             logger.info("Get Stats: " + analyzeStats);
-            if (analyzeStats){
-                logger.info("Running for stats");
-                 result = template.query(FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry,
-                        jobRetryIntervalInSecs, clusterID},
-                    new JobDefinition.ObjectDefinitionMapper());
-            }else {
-                 result = template.query(FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
-                        jobRetryIntervalInSecs, clusterID},
-                    new JobDefinition.ObjectDefinitionMapper());
-            }
+			if ( analyzeStats ) {
+				logger.info( "Running for stats" );
+				result = template.query(
+						FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry, jobRetryIntervalInSecs, clusterID},
+						new JobDefinition.ObjectDefinitionMapper() );
+			} else {
+				result = template.query(
+						FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry, jobRetryIntervalInSecs, clusterID},
+						new JobDefinition.ObjectDefinitionMapper() );
+			}
 			//Locking
 			//1. Delete expired locks
 			ObjectDefinition lockedJd = null;

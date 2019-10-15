@@ -290,7 +290,7 @@ public class HiveHqlGenerator {
 			}
 
 			// Start Stats cluster is not running
-			dataMgmtSvc.createCluster( clusterDefNameStats, JobProcessorConstants.METASTOR_CLUSTER_NAME );
+			dataMgmtSvc.createCluster( clusterDefNameStats, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
 		}
