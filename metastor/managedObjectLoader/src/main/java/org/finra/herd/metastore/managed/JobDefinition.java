@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.finra.herd.metastore.managed.util.JobProcessorConstants.SUB_PARTITION_VAL_SEPARATOR;
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 
 @Slf4j
 @ToString
@@ -108,12 +108,10 @@ public class JobDefinition {
             return String.format("`%s`", partitionKey);
         } else if (MetastoreUtil.isNonPartitionedSingleton(partitionKey)) {
             return JobProcessorConstants.NON_PARTITIONED_SINGLETON_VALUE;
-        } else if (partitionKey.contains(",") && partitionValue.contains(",")) {
-            StringJoiner partitionSpec = new StringJoiner(",");
-            List<String> statsPartitionKeys = Lists.newArrayList(partitionKey.split(","));
-            log.info("statsPartitionKeys:\n{}",statsPartitionKeys);
-            List<String> statsValues = Lists.newArrayList(partitionValue.split(","));
-            log.info("statsValues:\n{}",statsValues);
+        } else if (partitionKey.contains(COMMA) && partitionValue.contains(COMMA)) {
+            StringJoiner partitionSpec = new StringJoiner(COMMA);
+            List<String> statsPartitionKeys = Lists.newArrayList(partitionKey.split(COMMA));
+            List<String> statsValues = Lists.newArrayList(partitionValue.split(COMMA));
             IntStream.range(0, statsPartitionKeys.size())
                 .forEach(i -> {
                     partitionSpec.add(String.format("`%s`='%s'", statsPartitionKeys.get(i), statsValues.get(i)));
@@ -129,7 +127,7 @@ public class JobDefinition {
             return String.format("%s", partitionKey);
         }
 
-        return partitionsKeyValue.keySet().stream().collect(Collectors.joining(","));
+        return partitionsKeyValue.keySet().stream().collect(Collectors.joining(COMMA));
     }
 
     public String partitionValuesForStats() {
@@ -138,7 +136,7 @@ public class JobDefinition {
         } else if (MetastoreUtil.isPartitionedSingleton(wfType, partitionKey)) {
             return "";
         }
-        return partitionsKeyValue.values().stream().collect(Collectors.joining(","));
+        return partitionsKeyValue.values().stream().collect(Collectors.joining(COMMA));
     }
 
     @Slf4j
@@ -176,14 +174,14 @@ public class JobDefinition {
         }
 
         private String identifyTableName(JobDefinition jobDef) {
-            return new StringJoiner("_")
+            return new StringJoiner(UNDERSCORE)
                 .add(identifyObjectName(jobDef))
                 .add(jobDef.getObjectDefinition().usageCode)
                 .add(jobDef.getObjectDefinition().fileType)
                 .toString()
-                .replaceAll("\\.", "_")
-                .replaceAll(" ", "_")
-                .replaceAll("-", "_");
+                .replaceAll("\\.", UNDERSCORE)
+                .replaceAll(" ", UNDERSCORE)
+                .replaceAll("-", UNDERSCORE);
         }
 
         private String identifyObjectName(JobDefinition jobDef) {

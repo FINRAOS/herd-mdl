@@ -40,7 +40,7 @@ public class JobPicker {
         " FROM (DM_NOTIFICATION n left outer join " +
         "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
         "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
-        "where WF_TYPE =5  and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
+        "where WF_TYPE = 5  and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
         "METASTOR_OBJECT_LOCKS lc where lc.NAMESPACE=n.NAMESPACE and lc.OBJ_NAME=n.OBJECT_DEF_NAME and lc.USAGE_CODE=n.USAGE_CODE and" +
         " lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=?)  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
 
@@ -139,7 +139,7 @@ public class JobPicker {
 		} else {
 			unlockWorker( clusterID, threadID );
 			int updated = template.update( LOCK_QUERY, od.getNameSpace(), objectName,
-					od.getUsageCode(), od.getFileType(), clusterID, threadID,jd.getWfType() );
+					od.getUsageCode(), od.getFileType(), clusterID, threadID, jd.getWfType() );
 			return updated == 1;
 		}
 	}
