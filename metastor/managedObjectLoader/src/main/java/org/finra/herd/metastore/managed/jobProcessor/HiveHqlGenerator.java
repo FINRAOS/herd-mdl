@@ -305,12 +305,6 @@ public class HiveHqlGenerator {
         dmNotification.setPartitionKey(jd.partitionKeysForStats());
         dmNotification.setPartitionValue(partitionValue);
 
-
-        log.info("partitionKeys in stats: \n{}", jd.partitionKeysForStats());
-        log.info("partitionValues in stats: \n{}", partitionValue);
-        log.info("partitionSpecForStats :\n {}", jd.partitionSpecForStats());
-
-
         log.info("Herd Notification DB request: \n{}", dmNotification);
         jobProcessorDAO.addDMNotification(dmNotification);
     }
