@@ -57,10 +57,10 @@ public class JobPicker {
 			"EXPIRATION_DT) VALUES (?,?,?,?,?,?,?, TIMESTAMPADD(MINUTE, 5, now()));";
 
 	static final String FIND_LOCK = "SELECT * FROM METASTOR_OBJECT_LOCKS WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and " +
-			"FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=?";
+			"FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=? and WF_TYPE=?";
 
 	static final String UPDATE_LOCK_EXPIRATION = "UPDATE METASTOR_OBJECT_LOCKS SET EXPIRATION_DT=TIMESTAMPADD(MINUTE, 5, now())  " +
-			"WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=?";
+			"WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=? and WF_TYPE=?";
 
 	static final String UNLOCK = "delete from METASTOR_OBJECT_LOCKS where CLUSTER_ID=? and WORKER_ID=?";
 
@@ -134,7 +134,7 @@ public class JobPicker {
 
 		ObjectDefinition od = jd.getObjectDefinition();
 		if ( template.queryForList( FIND_LOCK, od.getNameSpace(), objectName,
-				od.getUsageCode(), od.getFileType(), clusterID, threadID ).size() > 0 ) {
+				od.getUsageCode(), od.getFileType(), clusterID, threadID,jd.getWfType() ).size() > 0 ) {
 			return extendLock( jd, clusterID, threadID );
 		} else {
 			unlockWorker( clusterID, threadID );
@@ -154,7 +154,7 @@ public class JobPicker {
 		String objectName = jd.getActualObjectName();
 
 		int updated = template.update( UPDATE_LOCK_EXPIRATION, od.getNameSpace(), objectName, od.getUsageCode(),
-				od.getFileType(), clusterID, workerID );
+				od.getFileType(), clusterID, workerID ,jd.getWfType());
 		return updated > 0;
 	}
 
