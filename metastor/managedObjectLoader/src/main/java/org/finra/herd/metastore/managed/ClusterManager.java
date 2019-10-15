@@ -24,6 +24,7 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuild
 import com.amazonaws.services.elasticmapreduce.model.ClusterState;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
+import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
@@ -104,6 +105,9 @@ public class ClusterManager implements InitializingBean {
 
 	@Autowired
 	NotificationSender notificationSender;
+
+	@Autowired
+	protected DataMgmtSvc dataMgmtSvc;
 
 	int createClusterRetryCounter = 0;
 
@@ -437,7 +441,7 @@ public class ClusterManager implements InitializingBean {
 			if ( maxRetriesNotReached() ) {
 				try {
 					// Call to Herd to create cluster
-					createCluster( emrApi, proposedName );
+					dataMgmtSvc.createCluster( clusterDef, proposedName );
 					existingCluster.add( proposedName );
 
 					Thread.sleep(500);
@@ -477,17 +481,6 @@ public class ClusterManager implements InitializingBean {
 
 	private boolean maxRetriesNotReached() {
 		return (createClusterRetryCounter < createClusterMaxRetryCount);
-	}
-
-	private void createCluster( EmrApi emrApi, String proposedName ) throws ApiException {
-		EmrClusterCreateRequest request = new EmrClusterCreateRequest();
-		request.setNamespace( ags );
-		request.setDryRun(false);
-		request.setEmrClusterDefinitionName(clusterDef);
-		request.setEmrClusterName(proposedName);
-
-		EmrCluster cluster = emrApi.eMRCreateEmrCluster(request);
-		logger.info(cluster.toString());
 	}
 
 	private String proposedName( int created ) {
