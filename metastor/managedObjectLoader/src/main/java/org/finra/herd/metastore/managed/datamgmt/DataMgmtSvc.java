@@ -24,6 +24,7 @@ import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.api.BusinessObjectDataNotificationRegistrationApi;
 import org.finra.herd.sdk.api.BusinessObjectFormatApi;
+import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.*;
@@ -49,6 +50,10 @@ public class DataMgmtSvc {
 
     @Autowired
     ApiClient dmApiClient;
+
+
+    @Value("${CLUSTER_DEF_NAME_STATS}")
+    String clusterDef;
 
     @Autowired
     BusinessObjectDataApi businessObjectDataApi;
@@ -199,6 +204,18 @@ public class DataMgmtSvc {
     public BusinessObjectDataNotificationRegistration getBORegisteredNotificationDetails(String notificationName) throws ApiException {
         return new BusinessObjectDataNotificationRegistrationApi(dmApiClient)
                 .businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration(ags, notificationName);
+    }
+
+
+    public void createCluster( String proposedName ) throws ApiException {
+        EmrApi emrApi = new EmrApi(dmApiClient);
+        EmrClusterCreateRequest request = new EmrClusterCreateRequest();
+        request.setNamespace( ags );
+        request.setDryRun(false);
+        request.setEmrClusterDefinitionName(clusterDef);
+        request.setEmrClusterName(proposedName);
+        EmrCluster cluster = emrApi.eMRCreateEmrCluster(request);
+        log.info(cluster.toString());
     }
 
     public BusinessObjectDataSearchResult searchBOData(JobDefinition jd, int pageNum, int pageSize, Boolean filterOnValidLatestVersions) throws ApiException {

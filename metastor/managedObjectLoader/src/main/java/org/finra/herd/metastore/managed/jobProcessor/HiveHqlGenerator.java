@@ -31,6 +31,7 @@ import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.finra.herd.sdk.model.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
 
@@ -64,6 +65,10 @@ public class HiveHqlGenerator {
 
     @Autowired
     JobProcessorDAO jobProcessorDAO;
+
+
+    @Value("${CLUSTER_DEF_NAME_STATS}")
+    String clusterDef;
 
 
 
@@ -284,6 +289,7 @@ public class HiveHqlGenerator {
                 partitions.stream()
                     .forEach( s -> submitStatsJob(jd, s));
             }
+            dataMgmtSvc.createCluster("metastor_stats");
         } catch (Exception e) {
             log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
         }
