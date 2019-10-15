@@ -53,7 +53,8 @@ public class JobPicker {
 			"FILE_TYPE,\n" +
 			"CLUSTER_ID,\n" +
 			"WORKER_ID,\n" +
-			"EXPIRATION_DT) VALUES (?,?,?,?,?,?, TIMESTAMPADD(MINUTE, 5, now()));";
+            "WF_TYPE,\n" +
+			"EXPIRATION_DT) VALUES (?,?,?,?,?,?,?, TIMESTAMPADD(MINUTE, 5, now()));";
 
 	static final String FIND_LOCK = "SELECT * FROM METASTOR_OBJECT_LOCKS WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and " +
 			"FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=?";
@@ -138,7 +139,7 @@ public class JobPicker {
 		} else {
 			unlockWorker( clusterID, threadID );
 			int updated = template.update( LOCK_QUERY, od.getNameSpace(), objectName,
-					od.getUsageCode(), od.getFileType(), clusterID, threadID );
+					od.getUsageCode(), od.getFileType(), clusterID, threadID,jd.getWfType() );
 			return updated == 1;
 		}
 	}
