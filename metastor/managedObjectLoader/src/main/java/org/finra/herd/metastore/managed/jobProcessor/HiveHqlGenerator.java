@@ -25,6 +25,7 @@ import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
@@ -54,6 +55,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 public class HiveHqlGenerator {
 
     public static final String SUBMITTED_BY_JOB_PROCESSOR = "SUBMITTED_BY_JOB_PROCESSOR";
+
     @Autowired
     protected DataMgmtSvc dataMgmtSvc;
 
@@ -66,11 +68,8 @@ public class HiveHqlGenerator {
     @Autowired
     JobProcessorDAO jobProcessorDAO;
 
-
-    @Value("${CLUSTER_DEF_NAME_STATS}")
-    String clusterDef;
-
-
+	@Value("${CLUSTER_DEF_NAME_STATS}")
+	String clusterDefNameStats;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -278,39 +277,23 @@ public class HiveHqlGenerator {
 		}
 	}
 
-    protected void addAnalyzeStats(JobDefinition jd,List<String> partitions) {
+	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions ) {
 
-        log.info("Adding gather Stats job");
-        try {
+		log.info( "Adding gather Stats job" );
+		try {
 
-            if(partitions.size()==1) {
-                submitStatsJob(jd, jd.partitionValuesForStats());
-            }else{
-                partitions.stream()
-                    .forEach( s -> submitStatsJob(jd, s));
-            }
-            dataMgmtSvc.createCluster("metastor_stats");
-        } catch (Exception e) {
-            log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
-        }
+			if ( partitions.size() == 1 ) {
+				submitStatsJob( jd, jd.partitionValuesForStats() );
+			} else {
+				partitions.stream()
+						.forEach( s -> submitStatsJob( jd, s ) );
+			}
 
-//        if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
-//            if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
-//                schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
-//            } else {
-//                schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
-//            }
-//        } else if (partitions.size() == 1) {
-//            if ( jd.isSubPartitionLevelProcessing() ) {
-//                schemaHql.add( String.format( "analyze table %s partition(`%s`='%s', `%s`='%s') compute statistics noscan;"
-//                    , jd.getTableName(), jd.getPartitionKey(), jd.getTopLevelPartitionValue(), jd.getSubPartitionKey(), jd.getSubPartitionValue() ) );
-//            } else {
-//                schemaHql.add( String.format( "analyze table %s partition(`%s`='%s') compute statistics noscan;"
-//                    , jd.getTableName(), jd.getPartitionKey(), partitions.get( 0 ) )
-//                );
-//            }
-//        }
-
+			// Start Stats cluster is not running
+			dataMgmtSvc.createCluster( clusterDefNameStats, JobProcessorConstants.METASTOR_CLUSTER_NAME );
+		} catch ( Exception e ) {
+			log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
+		}
 	}
 
     private void submitStatsJob(JobDefinition jd, String partitionValue) {
