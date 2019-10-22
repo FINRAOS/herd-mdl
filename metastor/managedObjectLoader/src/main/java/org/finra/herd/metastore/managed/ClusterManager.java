@@ -82,7 +82,7 @@ public class ClusterManager implements InitializingBean {
     int singleObjPartitionThreshold = 50;
 
     @Value("${PARTITION_AGE_THRESHOLD_IN_HOURS}")
-    int ageThreshold = 10; //Hours
+    int ageThreshold = 10; //Minutes
 
     @Value("${MAX_CLUSTER}")
     int maxCluster = 10;
@@ -330,7 +330,7 @@ public class ClusterManager implements InitializingBean {
             int partCount = ((Long) record.get("count")).intValue();
             Date timeCreated = (Date) record.get("oldest");
 
-            long age = (current - timeCreated.getTime()/1000) / 3600;
+            long age = (current - timeCreated.getTime()/1000) / 60;
             if (partCount > singleObjPartitionThreshold)
             {
                 clusterNum++;
