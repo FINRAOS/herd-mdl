@@ -68,9 +68,6 @@ public class HiveHqlGenerator {
     @Autowired
     JobProcessorDAO jobProcessorDAO;
 
-	@Value("${CLUSTER_DEF_NAME_STATS}")
-	String clusterDefNameStats;
-
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -290,7 +287,7 @@ public class HiveHqlGenerator {
 			}
 
 			// Start Stats cluster is not running
-			dataMgmtSvc.createCluster( clusterDefNameStats, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
+			dataMgmtSvc.createCluster(JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
 		}

@@ -19,8 +19,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
-import org.finra.herd.metastore.managed.ObjectProcessor;
-import org.finra.herd.metastore.managed.jobProcessor.JobProcessor;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
@@ -49,6 +47,15 @@ public class DataMgmtSvc {
 
     @Value("${AGS}")
     private String ags;
+
+    @Autowired
+    boolean analyzeStats;
+
+    @Value("${CLUSTER_DEF_NAME}")
+    String clusterDef;
+
+    @Value("${CLUSTER_DEF_NAME_STATS}")
+    String clusterDefNameStats;
 
     @Autowired
     ApiClient dmApiClient;
@@ -206,12 +213,17 @@ public class DataMgmtSvc {
     }
 
 
-    public void createCluster( String clusterDef, String proposedName) throws ApiException {
+    public void createCluster(String proposedName) throws ApiException {
         EmrApi emrApi = new EmrApi(dmApiClient);
         EmrClusterCreateRequest request = new EmrClusterCreateRequest();
         request.setNamespace( ags );
         request.setDryRun(false);
+
         request.setEmrClusterDefinitionName(clusterDef);
+        if ( analyzeStats ) {
+            request.setEmrClusterDefinitionName(clusterDefNameStats);
+        }
+
         request.setEmrClusterName( proposedName);
         EmrCluster cluster = emrApi.eMRCreateEmrCluster(request);
         log.info(cluster.toString());

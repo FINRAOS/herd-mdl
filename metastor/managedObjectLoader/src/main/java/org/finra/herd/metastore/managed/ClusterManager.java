@@ -28,19 +28,11 @@ import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
-import org.finra.herd.sdk.invoker.ApiException;
-import org.finra.herd.sdk.model.EmrCluster;
-import org.finra.herd.sdk.model.EmrClusterCreateRequest;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import javax.annotation.PreDestroy;
 import javax.json.Json;
@@ -334,11 +326,10 @@ public class ClusterManager implements InitializingBean {
             int partCount = ((Long) record.get("count")).intValue();
             Date timeCreated = (Date) record.get("oldest");
 
-            long age = (current - timeCreated.getTime()/1000) / 60;
             if (partCount > singleObjPartitionThreshold)
             {
                 clusterNum++;
-            } else if ((age > ageThreshold) && (!ageIncrement)) {
+            } else if (ageCheck(current, timeCreated)&& (!ageIncrement)) {
                 clusterNum++;
                 ageIncrement = true;
             }
@@ -358,6 +349,11 @@ public class ClusterManager implements InitializingBean {
         return clusterNum;
     }
 
+
+    protected boolean ageCheck( long current, Date timeCreated ){
+        long age = (current - timeCreated.getTime()/1000) / 3600;
+        return (age > ageThreshold);
+    }
 
     public void clusterAutoScale()
     {
@@ -445,7 +441,7 @@ public class ClusterManager implements InitializingBean {
 			if ( maxRetriesNotReached() ) {
 				try {
 					// Call to Herd to create cluster
-					dataMgmtSvc.createCluster( clusterDef, proposedName );
+					dataMgmtSvc.createCluster(proposedName );
 					existingCluster.add( proposedName );
 
 					Thread.sleep(500);
