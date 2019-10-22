@@ -458,7 +458,7 @@ public class ClusterManager implements InitializingBean {
 			if ( maxRetriesNotReached() ) {
 				try {
 					// Call to Herd to create cluster
-					dataMgmtSvc.createCluster(proposedName );
+					dataMgmtSvc.createCluster( analyzeStats, proposedName );
 					existingCluster.add( proposedName );
 
 					Thread.sleep(500);

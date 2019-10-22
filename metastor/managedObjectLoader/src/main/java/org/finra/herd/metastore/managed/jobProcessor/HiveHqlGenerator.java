@@ -32,7 +32,6 @@ import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.finra.herd.sdk.model.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
 
@@ -287,7 +286,7 @@ public class HiveHqlGenerator {
 			}
 
 			// Start Stats cluster is not running
-			dataMgmtSvc.createCluster(JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
+			dataMgmtSvc.createCluster( true , JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
 		}
