@@ -105,6 +105,8 @@ public class ClusterManager implements InitializingBean {
 	@Autowired
 	protected DataMgmtSvc dataMgmtSvc;
 
+
+
 	int createClusterRetryCounter = 0;
 
 	Set<String> errors = new HashSet<String>( 5 );
@@ -114,10 +116,18 @@ public class ClusterManager implements InitializingBean {
     public static final String FIND_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
             "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
             "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
-            "where WF_TYPE != 3 and ( l.success is null or (l.success like '%N' and l.count<? ))";
+            "where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success like '%N' and l.count<? ))";
+
+    public static final String FIND_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
+            "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
+            "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
+            "where WF_TYPE = 5 and ( l.success is null or (l.success like '%N' and l.count<? ))";
 
     public static final String JOB_GROUP_QUERY = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
             "min(DATE_CREATED) as oldest from (" + FIND_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
+
+    public static final String JOB_GROUP_QUERY_STATS = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
+            "min(DATE_CREATED) as oldest from (" + FIND_STATS_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
 
     public static final String AUTO_SCALE_QUERY = "select ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE order by ID DESC limit 1;";
 
@@ -311,7 +321,14 @@ public class ClusterManager implements InitializingBean {
     }
 
     int calculateNumberOfClustersNeeded() {
-        List<Map<String, Object>> result = template.queryForList(JOB_GROUP_QUERY, maxRetry);
+        List<Map<String, Object>> result ;
+        if(analyzeStats) {
+            result=template.queryForList(JOB_GROUP_QUERY_STATS, maxRetry);
+        }
+        else {
+            result=template.queryForList(JOB_GROUP_QUERY, maxRetry);
+        }
+
         int clusterNum = 0;
         if(result.size() > 1)
         {
