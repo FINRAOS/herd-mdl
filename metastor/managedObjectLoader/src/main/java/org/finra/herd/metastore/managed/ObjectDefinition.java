@@ -27,6 +27,7 @@ public class ObjectDefinition {
     String objectName;
     String usageCode;
     String fileType;
+    int wfType;
 
     public String getDbName()
     {

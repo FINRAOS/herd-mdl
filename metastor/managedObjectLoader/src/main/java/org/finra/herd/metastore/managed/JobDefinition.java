@@ -152,6 +152,7 @@ public class JobDefinition {
             jobDefinition.objectDefinition.objectName = resultSet.getString(("OBJECT_DEF_NAME"));
             jobDefinition.objectDefinition.usageCode = resultSet.getString("USAGE_CODE");
             jobDefinition.objectDefinition.fileType = resultSet.getString("FILE_TYPE");
+            jobDefinition.objectDefinition.wfType = resultSet.getInt("WF_TYPE");
 
             jobDefinition.partitionValue = resultSet.getString("PARTITION_VALUES");
             if (jobDefinition.getPartitionValue().contains(SUB_PARTITION_VAL_SEPARATOR)) {
