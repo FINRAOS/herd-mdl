@@ -64,6 +64,8 @@ public class JobPicker {
 
 	static final String UNLOCK = "delete from METASTOR_OBJECT_LOCKS where CLUSTER_ID=? and WORKER_ID=?";
 
+	static final String DELETE_NOT_PROCESSING_NOTIFICATIONS = "DELETE FROM DM_NOTIFICATION WHERE WF_TYPE IN (3, 33)";
+
 
 	@Autowired
 	JdbcTemplate template;
@@ -82,6 +84,7 @@ public class JobPicker {
 		List<JobDefinition> jobs = new ArrayList<JobDefinition>();
 
 		try {
+			deleteNotProcessingNotifications();
 			deleteExpiredLocks();
             List<JobDefinition> result ;
             logger.info("Get Stats: " + analyzeStats);
@@ -122,6 +125,16 @@ public class JobPicker {
 			ex.printStackTrace();
 		}
 		return jobs;
+	}
+
+	/**
+	 * This deletes the notifications, which are marked as
+	 * 3 - object notification disabled
+	 * 33 - Business data object status marking notifications which will be excluded from Metastore processing due intermediate processing status
+	 * */
+	private void deleteNotProcessingNotifications() {
+		int numberOfRowsDeleted = template.update( DELETE_NOT_PROCESSING_NOTIFICATIONS );
+		logger.info( "Number of Not processing Notifications Deleted = " + numberOfRowsDeleted );
 	}
 
 	void deleteExpiredLocks() {

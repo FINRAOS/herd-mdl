@@ -95,11 +95,14 @@ public class NotificationSender {
 		if ( od.getPartitionValue().contains( COMMA ) ) {
 			partitionValue = Lists.newArrayList( partitionValue.split( COMMA ) ).stream().limit( 5 ).collect( Collectors.joining( COMMA ) ).concat( "..." );
 		}
-		String fullSubject = String.format( "%s for %s-%s-%s-%s-%s", subject,
+
+		sendEmail( msgBody, getFullSubject( subject, od, partitionValue ));
+	}
+
+	protected String getFullSubject( String subject, JobDefinition od, String partitionValue ) {
+		return String.format( "%s-%s %s for %s-%s-%s-%s-%s", ags, env, subject,
 				od.getObjectDefinition().getNameSpace(), od.getObjectDefinition().getObjectName(),
 				od.getObjectDefinition().getUsageCode(), od.getObjectDefinition().getFileType(), partitionValue );
-
-		sendEmail( msgBody, fullSubject );
 	}
 
 	public void sendEmail( String msgBody, String subject ) {
@@ -114,8 +117,7 @@ public class NotificationSender {
 			msg.setFrom( new InternetAddress( "donotreply@finra.org", ags ) );
 
 			msg.addRecipient( Message.RecipientType.TO, new InternetAddress( mailingList ) );
-
-			msg.setSubject( String.format( "%s-%s %s", ags, env, subject ) );
+			msg.setSubject( subject );
 
 			msg.setDataHandler( new DataHandler( new ByteArrayDataSource( msgBody, "text/plain" ) ) );
 			javax.mail.Transport.send( msg );
