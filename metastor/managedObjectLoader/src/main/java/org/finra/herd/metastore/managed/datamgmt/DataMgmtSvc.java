@@ -209,14 +209,14 @@ public class DataMgmtSvc {
     }
 
 
-    public void createCluster( boolean isStartStatsCluster, String proposedName ) throws ApiException {
+    public void createCluster( boolean startStatsCluster, String proposedName ) throws ApiException {
         EmrApi emrApi = new EmrApi(dmApiClient);
         EmrClusterCreateRequest request = new EmrClusterCreateRequest();
         request.setNamespace( ags );
         request.setDryRun(false);
 
         request.setEmrClusterDefinitionName(clusterDef);
-        if ( isStartStatsCluster ) {
+        if ( startStatsCluster ) {
             request.setEmrClusterDefinitionName(clusterDefNameStats);
         }
 
