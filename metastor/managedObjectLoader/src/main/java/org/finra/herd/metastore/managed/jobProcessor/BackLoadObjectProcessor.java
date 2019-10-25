@@ -98,6 +98,12 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		Map<String, Set<String>> partitions = partitionsAsMap( od, jsi );
 		log.info( "Total Available Partitions to load: {}", partitions.size() );
 
+		if(partitions.isEmpty()){
+			String messageBody    = String.format("NO AVAILABLE PARTITIONS TO BACK-LOAD FOR: %s", od.toString());
+			String messageSubject = "No Partitions avaiable to backload";
+			notificationSender.sendNotificationEmail(messageBody, messageSubject, od );
+		}
+
 		TreeSet<String> orderedPartitions = Sets.newTreeSet();
 		List<TreeSet<String>> chunkedPartitions = Lists.newArrayList();
 		AtomicInteger partitionCounter = new AtomicInteger( 0 );
