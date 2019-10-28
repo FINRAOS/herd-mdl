@@ -279,7 +279,7 @@ public class HiveHqlGenerator {
 		try {
 
 			if ( partitions.size() == 1 ) {
-				submitStatsJob( jd, jd.partitionValuesForStats() );
+				submitStatsJob( jd, jd.partitionValuesForStats(partitions.get( 0 )) );
 			} else {
 				partitions.stream()
 						.forEach( s -> submitStatsJob( jd, s ) );

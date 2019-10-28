@@ -16,50 +16,36 @@
 package org.finra.herd.metastore.managed.jobProcessor;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
-import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
-import org.finra.herd.sdk.invoker.ApiException;
-import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 
 @Component
 @Slf4j
 public class ManagedObjStatsProcessor extends JobProcessor {
-	@Autowired
-	DataMgmtSvc dataMgmtSvc;
 
 	@Override
 	protected ProcessBuilder createProcessBuilder( JobDefinition od ) {
-		String tblName = od.getTableName();
+		String partitionSpecsForStats = od.partitionSpecForStats();
 
-		ProcessBuilder pb = null;
-		try {
-			//BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
-			//String quotedPartitionKeys = quotedPartitionKeys( dmFormat.getSchema() );
-            log.info("partitionKeys in stats: \n{}",od.partitionKeysForStats());
-            log.info("partitionValues in stats: \n{}",od.partitionValuesForStats());
-            log.info("partitionSpecForStats :\n {}",od.partitionSpecForStats());
-
-            String quotedPartitionKeys=od.partitionSpecForStats();
-			if ( Strings.isNullOrEmpty( quotedPartitionKeys ) ) {
-				log.error( "ERROR: PARTITION_COLUMNS is empty for {}", tblName );
-				return pb;
-			}
-			pb = new ProcessBuilder( "sh"
-					, JobProcessorConstants.GATHER_STATS_SCRIPT_PATH
-					, od.getObjectDefinition().getDbName()
-					, tblName
-					, quotedPartitionKeys
-			);
-		} catch ( Exception e ) {
-			log.error( "Could not get BO format due to: {}", e.getMessage(), e );
+		if ( Strings.isNullOrEmpty( partitionSpecsForStats ) ) {
+			log.error( "ERROR: STATS PARTITION Spec is empty: {}", od );
+			return null;
 		}
 
-		return pb;
+		List<String> command = Lists.newArrayList( "sh", JobProcessorConstants.GATHER_STATS_SCRIPT_PATH );
+		command.add( od.getObjectDefinition().getDbName() );
+		command.add( od.getTableName() );
+		command.add( partitionSpecsForStats );
+
+		log.info( "Calling analyze stats with: {}", command );
+		return new ProcessBuilder( command );
 	}
 }

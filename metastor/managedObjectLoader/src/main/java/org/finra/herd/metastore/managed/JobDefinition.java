@@ -130,13 +130,14 @@ public class JobDefinition {
 		return partitionsKeyValue.keySet().stream().collect( Collectors.joining( COMMA ) );
 	}
 
-	public String partitionValuesForStats() {
-		if ( partitionsKeyValue.isEmpty() ) {
-			return partitionValue;
+	public String partitionValuesForStats( String value ) {
+		if ( !partitionsKeyValue.isEmpty() ) {
+			return partitionsKeyValue.values().stream().collect( Collectors.joining( COMMA ) );
 		} else if ( MetastoreUtil.isPartitionedSingleton( wfType, partitionKey ) ) {
 			return "";
 		}
-		return partitionsKeyValue.values().stream().collect( Collectors.joining( COMMA ) );
+
+		return value;
 	}
 
 	@Slf4j
