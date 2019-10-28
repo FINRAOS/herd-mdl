@@ -59,7 +59,7 @@ public class ObjectProcessor {
 	private BackLoadObjectProcessor backLoadObjectProcessor;
 
 	@Autowired
-	NotificationSender notificationSender;
+	protected NotificationSender notificationSender;
 
 	@Autowired
 	ClusterManager clusterManager;
