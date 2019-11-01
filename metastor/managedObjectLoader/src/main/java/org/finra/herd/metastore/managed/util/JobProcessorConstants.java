@@ -23,6 +23,8 @@ public interface JobProcessorConstants {
 
 	String SVC_ACC_PREFIX = "svc";
 	String UNDERSCORE = "_";
+	String EQUALS = "=";
+	String FORWARD_SLASH = "/";
 	String COLON = ":";
 	String NEW_LINE = "\n";
 

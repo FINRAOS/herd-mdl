@@ -3,14 +3,19 @@ package org.finra.herd.metastore.managed.hive;
 import com.google.common.base.Strings;
 import lombok.*;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
+
 @Builder
 @Data
-@EqualsAndHashCode ( of = {"partName"} )
+@EqualsAndHashCode( of = {"partName"} )
 @ToString
 public class HivePartition {
 	String location;
-	String partition;
-	String metastorePartName;
+	String partition; // Hive Partition information from DDL
+	String metastorePartName; // Hive Metastore PART_NAME column value from Metastore's PARTITIONS Table
 	String partName;
 
 	boolean exists;
@@ -42,8 +47,20 @@ public class HivePartition {
 
 		public HivePartitionBuilder constructPartName() {
 			if ( !Strings.isNullOrEmpty( partition ) ) {
-				this.partName = partition.replaceAll( "[^a-zA-Z0-9,-=_]", "" ).toLowerCase().replace( ",","/" ) ;
-			}else if( !Strings.isNullOrEmpty( metastorePartName ) ) {
+				StringJoiner partNameJoiner = new StringJoiner( FORWARD_SLASH );
+
+				Arrays.stream( partition.replaceAll( "[^a-zA-Z0-9,-=_]", "" ).split( COMMA ) ).forEach( s -> {
+					String[] partitionKeyValue = s.split( EQUALS );
+					if(partitionKeyValue.length == 2) {
+						partNameJoiner.add( String.format( "%s=%s", partitionKeyValue[0].toLowerCase(), partitionKeyValue[1] ) );
+					}else{
+						partNameJoiner.add( s );
+					}
+				} );
+
+				this.partName = partNameJoiner.toString();
+
+			} else if ( !Strings.isNullOrEmpty( metastorePartName ) ) {
 				this.partName = metastorePartName.toLowerCase();
 			}
 			return this;
