@@ -61,7 +61,7 @@ public class HivePartition {
 				this.partName = partNameJoiner.toString();
 
 			} else if ( !Strings.isNullOrEmpty( metastorePartName ) ) {
-				this.partName = metastorePartName.toLowerCase();
+				this.partName = metastorePartName;
 			}
 			return this;
 		}
