@@ -178,8 +178,8 @@ public class JobDefinition {
 		private String identifyTableName( JobDefinition jobDef ) {
 			return new StringJoiner( UNDERSCORE )
 					.add( identifyObjectName( jobDef ) )
-					.add( jobDef.getObjectDefinition().usageCode )
-					.add( jobDef.getObjectDefinition().fileType )
+					.add( jobDef.getObjectDefinition().getUsageCode() )
+					.add( jobDef.getObjectDefinition().getFileType() )
 					.toString()
 					.replaceAll( "\\.", UNDERSCORE )
 					.replaceAll( " ", UNDERSCORE )

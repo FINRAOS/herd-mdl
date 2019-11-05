@@ -91,7 +91,7 @@ public class HiveHqlGenerator {
                     FormatChange change = detectSchemaChange(jd, hiveTableSchema, format, ddl);
 
                     if (change.hasColumnChanges()) {
-                        boolean cascade = cascade(jd.getWfType());
+                        boolean cascade = cascade(jd);
                         String cascadeStr = "";
                         if(cascade)
                         {
@@ -326,7 +326,7 @@ public class HiveHqlGenerator {
             .build();
     }
 
-	protected boolean cascade( int wfType ){
+	protected boolean cascade( JobDefinition jd ){
     	return true;
 	}
 
