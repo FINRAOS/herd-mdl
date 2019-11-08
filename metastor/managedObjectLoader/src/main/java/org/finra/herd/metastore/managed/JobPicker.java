@@ -31,27 +31,40 @@ public class JobPicker {
 			" FROM (DM_NOTIFICATION n left outer join " +
 			"(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
 			"group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
-			"where WF_TYPE != 3 and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
+			"where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
 			"METASTOR_OBJECT_LOCKS lc where lc.NAMESPACE=n.NAMESPACE and lc.OBJ_NAME=n.OBJECT_DEF_NAME and lc.USAGE_CODE=n.USAGE_CODE and" +
-			" lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=?)  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
+			" lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=? and  lc.WF_TYPE NOT IN(3,5))  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
 
 
-	static final String DELETE_EXPIRED_LOCKS = "delete from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
+    public static final String FIND_UNLOCKED_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c, PRIORITY" +
+        " FROM (DM_NOTIFICATION n left outer join " +
+        "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
+        "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
+        "where WF_TYPE = 5  and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
+        "METASTOR_OBJECT_LOCKS lc where lc.NAMESPACE=n.NAMESPACE and lc.OBJ_NAME=n.OBJECT_DEF_NAME and lc.USAGE_CODE=n.USAGE_CODE and" +
+        " lc.FILE_TYPE=n.FILE_TYPE and CLUSTER_ID !=? and lc.WF_TYPE = 5 )  ORDER BY PRIORITY ASC, PARTITION_VALUES DESC";
+
+
+
+    static final String DELETE_EXPIRED_LOCKS = "delete from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
 
 	static final String LOCK_QUERY = "insert ignore into METASTOR_OBJECT_LOCKS (NAMESPACE,\n" +
 			"OBJ_NAME, USAGE_CODE,\n" +
 			"FILE_TYPE,\n" +
 			"CLUSTER_ID,\n" +
 			"WORKER_ID,\n" +
-			"EXPIRATION_DT) VALUES (?,?,?,?,?,?, TIMESTAMPADD(MINUTE, 5, now()));";
+            "WF_TYPE,\n" +
+			"EXPIRATION_DT) VALUES (?,?,?,?,?,?,?, TIMESTAMPADD(MINUTE, 5, now()));";
 
 	static final String FIND_LOCK = "SELECT * FROM METASTOR_OBJECT_LOCKS WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and " +
-			"FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=?";
+			"FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=? and WF_TYPE=?";
 
 	static final String UPDATE_LOCK_EXPIRATION = "UPDATE METASTOR_OBJECT_LOCKS SET EXPIRATION_DT=TIMESTAMPADD(MINUTE, 5, now())  " +
-			"WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=?";
+			"WHERE NAMESPACE=? and OBJ_NAME=? and USAGE_CODE=? and FILE_TYPE=? and CLUSTER_ID=? and WORKER_ID=? and WF_TYPE=?";
 
 	static final String UNLOCK = "delete from METASTOR_OBJECT_LOCKS where CLUSTER_ID=? and WORKER_ID=?";
+
+	static final String DELETE_NOT_PROCESSING_NOTIFICATIONS = "DELETE FROM DM_NOTIFICATION WHERE WF_TYPE IN (3, 33)";
 
 
 	@Autowired
@@ -63,14 +76,28 @@ public class JobPicker {
 	@Value( "${RETRY_INTERVAL}" )
 	int jobRetryIntervalInSecs;
 
+
+    @Autowired
+    boolean analyzeStats;
+
 	List<JobDefinition> findJob( String clusterID, String workerID ) {
 		List<JobDefinition> jobs = new ArrayList<JobDefinition>();
 
 		try {
+			deleteNotProcessingNotifications();
 			deleteExpiredLocks();
-			List<JobDefinition> result = template.query( FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry,
-							jobRetryIntervalInSecs, clusterID},
-					new JobDefinition.ObjectDefinitionMapper() );
+            List<JobDefinition> result ;
+            logger.info("Get Stats: " + analyzeStats);
+			if ( analyzeStats ) {
+				logger.info( "Running for stats" );
+				result = template.query(
+						FIND_UNLOCKED_STATS_JOB_QUERY, new Object[]{maxRetry, jobRetryIntervalInSecs, clusterID},
+						new JobDefinition.ObjectDefinitionMapper() );
+			} else {
+				result = template.query(
+						FIND_UNLOCKED_JOB_QUERY, new Object[]{maxRetry, jobRetryIntervalInSecs, clusterID},
+						new JobDefinition.ObjectDefinitionMapper() );
+			}
 			//Locking
 			//1. Delete expired locks
 			ObjectDefinition lockedJd = null;
@@ -100,6 +127,16 @@ public class JobPicker {
 		return jobs;
 	}
 
+	/**
+	 * This deletes the notifications, which are marked as
+	 * 3 - object notification disabled
+	 * 33 - Business data object status marking notifications which will be excluded from Metastore processing due intermediate processing status
+	 * */
+	private void deleteNotProcessingNotifications() {
+		int numberOfRowsDeleted = template.update( DELETE_NOT_PROCESSING_NOTIFICATIONS );
+		logger.info( "Number of Not processing Notifications Deleted = " + numberOfRowsDeleted );
+	}
+
 	void deleteExpiredLocks() {
 		int numberOfRowsDeleted = template.update( DELETE_EXPIRED_LOCKS );
 		logger.info( "Number of Locks Deleted = " + numberOfRowsDeleted );
@@ -110,12 +147,12 @@ public class JobPicker {
 
 		ObjectDefinition od = jd.getObjectDefinition();
 		if ( template.queryForList( FIND_LOCK, od.getNameSpace(), objectName,
-				od.getUsageCode(), od.getFileType(), clusterID, threadID ).size() > 0 ) {
+				od.getUsageCode(), od.getFileType(), clusterID, threadID,jd.getWfType() ).size() > 0 ) {
 			return extendLock( jd, clusterID, threadID );
 		} else {
 			unlockWorker( clusterID, threadID );
 			int updated = template.update( LOCK_QUERY, od.getNameSpace(), objectName,
-					od.getUsageCode(), od.getFileType(), clusterID, threadID );
+					od.getUsageCode(), od.getFileType(), clusterID, threadID, jd.getWfType() );
 			return updated == 1;
 		}
 	}
@@ -130,7 +167,7 @@ public class JobPicker {
 		String objectName = jd.getActualObjectName();
 
 		int updated = template.update( UPDATE_LOCK_EXPIRATION, od.getNameSpace(), objectName, od.getUsageCode(),
-				od.getFileType(), clusterID, workerID );
+				od.getFileType(), clusterID, workerID ,jd.getWfType());
 		return updated > 0;
 	}
 

@@ -82,7 +82,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 			identifyPartitionsAndBackLoad( od, jsi );
 
-			addGatherStatsJob( jsi );
+//			addGatherStatsJob( jsi );
 
 		} catch ( Exception e ) {
 			log.error( "Problem encountered in Back loading processor: {}", e.getMessage(), e );
@@ -97,6 +97,12 @@ public class BackLoadObjectProcessor extends JobProcessor {
 	private void identifyPartitionsAndBackLoad( JobDefinition od, JobSubmitterInfo jsi ) throws ApiException {
 		Map<String, Set<String>> partitions = partitionsAsMap( od, jsi );
 		log.info( "Total Available Partitions to load: {}", partitions.size() );
+
+		if(partitions.isEmpty()){
+			String messageBody    = String.format("NO AVAILABLE PARTITIONS TO BACK-LOAD FOR: %s", od.toString());
+			String messageSubject = "No Partitions avaiable to backload";
+			notificationSender.sendNotificationEmail(messageBody, messageSubject, od );
+		}
 
 		TreeSet<String> orderedPartitions = Sets.newTreeSet();
 		List<TreeSet<String>> chunkedPartitions = Lists.newArrayList();
@@ -156,7 +162,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		log.info( "Adding gather Stats job" );
 		DMNotification dmNotification = buildDMNotification( jsi );
 		dmNotification.setWorkflowType( ObjectProcessor.WF_TYPE_MANAGED_STATS );
-		dmNotification.setExecutionId( "stats" );
+		dmNotification.setExecutionId( "SUBMITTED_BY_BACKLOADING" );
 		dmNotification.setPartitionKey( quotedPartitionKeys( jsi.getTableSchema() ) );
 		dmNotification.setPartitionValue( "" ); // partition values not required for gather stats job as it runs for all partitions
 		log.info( "Herd Notification DB request: \n{}", dmNotification );

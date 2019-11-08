@@ -18,10 +18,13 @@ package org.finra.herd.metastore.managed.util;
 import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
 
 public interface JobProcessorConstants {
-	String METASTOR_CLUSTER_NAME = "metastor";
+	String METASTOR_CLUSTER_NAME 		= "metastore";
+	String METASTOR_STATS_CLUSTER_NAME 	= "metastore_stats";
 
 	String SVC_ACC_PREFIX = "svc";
 	String UNDERSCORE = "_";
+	String EQUALS = "=";
+	String FORWARD_SLASH = "/";
 	String COLON = ":";
 	String NEW_LINE = "\n";
 
@@ -29,6 +32,7 @@ public interface JobProcessorConstants {
 	String DOUBLE_UNDERSCORE = "__";
 	String COMMA = ",";
 	String SUB_PARTITION_VAL_SEPARATOR = ":";
+	String NON_PARTITIONED_SINGLETON_VALUE = "none";
 
 	int DM_RECORD_RETURN_MAX_LIMIT = 1000;
 
