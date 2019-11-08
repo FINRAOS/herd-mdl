@@ -34,9 +34,9 @@ Parameters:
   CreateSQS:
     Description: Create SQS - true || false
     Type: AWS::SSM::Parameter::Value<String>
-  ShepherdWebSiteBucketUrl:
-    Description: Shepherd website URL
-    Type: AWS::SSM::Parameter::Value<String>
+  DeployComponents:
+    Description: Components requested for deployment
+    Type: String
   ShepherdS3BucketName:
     Description: 'The bucket name of Shepherd '
     Type: AWS::SSM::Parameter::Value<String>
@@ -484,6 +484,10 @@ Resources:
 
                     environment=
                   - !Ref Environment
+                  - |-
+
+                    deployComponents=
+                  - !Ref DeployComponents
                   - |-
 
                     herdVersion=

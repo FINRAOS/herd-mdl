@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-**/
+ **/
 package org.finra.herd.metastore.managed.conf;
 
 import lombok.extern.slf4j.Slf4j;
@@ -44,112 +44,122 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 @Slf4j
 @Configuration
 public class HerdMetastoreConfig {
-	public static final String homeDir = System.getenv( "HOME" );
-	public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
-	public static final String CRED_FILE_PATH = "cred.file.path";
+    public static final String homeDir = System.getenv( "HOME" );
+    public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
+    public static final String CRED_FILE_PATH = "cred.file.path";
+    public static final String ANALYZE_STATS  = "analyze.stats";
 
-	@Value( "${MYSQL_URL}" )
-	protected String dburl;
 
-	@Value( "${MYSQL_USR}" )
+    @Value( "${MYSQL_URL}" )
+    protected String dburl;
+
+    @Value( "${MYSQL_USR}" )
     protected String dbUser;
 
-	@Value( "${MYSQL_PASS}" )
+    @Value( "${MYSQL_PASS}" )
     protected String dbPass;
 
-	@Value( "${DM_URL}" )
+    @Value( "${DM_URL}" )
     protected String dmUrl;
 
-	@Value( "${JDBC_VALIDATE_QUERY}" )
+    @Value( "${JDBC_VALIDATE_QUERY}" )
     protected String validationQuery;
 
-	@Autowired
+
+    @Autowired
     protected Environment environment;
 
-	@Autowired
+    @Autowired
     protected Path credentialFilePath;
 
-	@Bean(destroyMethod = "")
-	public DataSource getDataSource() {
-		BasicDataSource dataSource = new BasicDataSource();
-		dataSource.setUrl( dburl );
-		dataSource.setUsername( dbUser );
-		dataSource.setPassword( dbPass );
-		dataSource.setInitialSize( 2 );
-		dataSource.setValidationQuery( validationQuery );
+    @Bean(destroyMethod = "")
+    public DataSource getDataSource() {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setUrl( dburl );
+        dataSource.setUsername( dbUser );
+        dataSource.setPassword( dbPass );
+        dataSource.setInitialSize( 2 );
+        dataSource.setValidationQuery( validationQuery );
 
-		return dataSource;
-	}
+        return dataSource;
+    }
 
-	@Bean(name = "template")
-	public JdbcTemplate getJdbcTemplate() {
-		return new JdbcTemplate( getDataSource() );
-	}
+    @Bean(name = "template")
+    public JdbcTemplate getJdbcTemplate() {
+        return new JdbcTemplate( getDataSource() );
+    }
 
-	@Bean
-	public Path credentialFilePath() {
-		return Paths.get( DM_PASS_FILE_PATH );
-	}
+    @Bean
+    public Path credentialFilePath() {
+        return Paths.get( DM_PASS_FILE_PATH );
+    }
 
-	/**
-	 * Return herd ApiClient used to make calls to Herd Api's
-	 *
-	 * @return the Herd ApiClient {@link ApiClient}
-	 */
-	@Bean
-	public ApiClient getDMApiClient() {
-		ApiClient apiClient = new ApiClient();
-		apiClient.setBasePath( dmUrl );
-		apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
+    /**
+     * Return herd ApiClient used to make calls to Herd Api's
+     *
+     * @return the Herd ApiClient {@link ApiClient}
+     */
+    @Bean
+    public ApiClient getDMApiClient() {
+        ApiClient apiClient = new ApiClient();
+        apiClient.setBasePath( dmUrl );
+        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
 
-		return apiClient;
-	}
+        return apiClient;
+    }
 
-	/**
-	 * Reads Credentials from credential file
-	 *
-	 * @return
-	 */
-	public String getCredentials() {
-		Path path = credentialFilePath;
-		try {
+    /**
+     * Reads Credentials from credential file
+     *
+     * @return
+     */
+    public String getCredentials() {
+        Path path = credentialFilePath;
+        try {
 
-			String cmdParamCredFilePath = environment.getProperty( CRED_FILE_PATH );
+            String cmdParamCredFilePath = environment.getProperty( CRED_FILE_PATH );
 
-			// If credential file passed as parameter to the object processor script, use that
-			log.info( "Credential file Passed as parameter: {}", cmdParamCredFilePath );
-			path = Paths.get( cmdParamCredFilePath );
+            // If credential file passed as parameter to the object processor script, use that
+            log.info( "Credential file Passed as parameter: {}", cmdParamCredFilePath );
+            path = Paths.get( cmdParamCredFilePath );
 
 
-			return Files.lines( path ).findFirst().get();
-		} catch ( IOException e ) {
-			throw new RuntimeException( "Could not read Herd Credentials from: " + path, e );
-		}
-	}
+            return Files.lines( path ).findFirst().get();
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Could not read Herd Credentials from: " + path, e );
+        }
+    }
 
-	/**
-	 * Returns Herd's Business Object Data Api
-	 *
-	 * @return BusinessObjectDataApi {@link BusinessObjectDataApi}
-	 */
-	@Bean
-	public BusinessObjectDataApi businessObjectDataApi() {
-		return new BusinessObjectDataApi( getDMApiClient() );
-	}
+    /**
+     * Returns Herd's Business Object Data Api
+     *
+     * @return BusinessObjectDataApi {@link BusinessObjectDataApi}
+     */
+    @Bean
+    public BusinessObjectDataApi businessObjectDataApi() {
+        return new BusinessObjectDataApi( getDMApiClient() );
+    }
 
-	@Bean
-	public String homeDir(){
-		return homeDir;
-	}
+    @Bean
+    public String homeDir(){
+        return homeDir;
+    }
 
-	@Bean (name = "hiveJdbcTemplate")
-	public JdbcTemplate hiveJdbcTemplate() {
-		SimpleDriverDataSource dataSource = new SimpleDriverDataSource(
-				new HiveDriver()
-				, HIVE_URL
-				, HIVE_USER
-				, HIVE_PASSWORD
-		);
-		return new JdbcTemplate( dataSource );
-	}
+    @Bean
+    public boolean analyzeStats() {
+        String stats = environment.getProperty(ANALYZE_STATS);
+        log.info("Analyze Stats from CMD: {}", stats);
+        return "true".equalsIgnoreCase(stats);
+    }
+
+    @Bean (name = "hiveJdbcTemplate")
+    public JdbcTemplate hiveJdbcTemplate() {
+        SimpleDriverDataSource dataSource = new SimpleDriverDataSource(
+            new HiveDriver()
+            , HIVE_URL
+            , HIVE_USER
+            , HIVE_PASSWORD
+        );
+        return new JdbcTemplate( dataSource );
+    }
 }

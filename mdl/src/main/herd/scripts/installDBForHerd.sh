@@ -200,22 +200,14 @@ if [ "${herdRollingDeployment}" = "true" ] ; then
   echo "Requested version: ${newVersion}"
 fi
 
-while [ ${initialVersion} -lt ${newVersion} ]
+boundary=`expr ${newVersion} - 1`
+
+for i in $(seq ${initialVersion} ${boundary})
 do
-    if [ ${initialVersion} -lt 10 ]; then
-        next=$((10#${initialVersion}+1))
-        pre="0${initialVersion}"
-        if [ ${initialVersion} -eq 9 ]; then
-            post="${next}"
-        else
-            post="0${next}"
-        fi
-    else
-        pre="${initialVersion}"
-        next=$((10#${initialVersion}+1))
-        post="${next}"
-    fi
-    ((initialVersion++))
+
+  printf -v pre "%03d" $i
+  var=`expr $i + 1`
+  printf -v post "%03d" $var
 
 # Apply incremental upgrade scripts to the Herd DB
 echo "Running incremental DB script: ${deployLocation}/sql/herd.postgres.0.${pre}.0-to-0.${post}.0.upgrade.sql"
@@ -261,13 +253,14 @@ if [ "${herdRollingDeployment}" = "false" ] ; then
         # Add namespace authorization admin permissions for the app-admin user
         execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"INSERT INTO dmrowner.user_tbl VALUES ('${admin_user_url}', 'USER', 'ADMIN', current_timestamp, current_timestamp, 'SYSTEM', 'SYSTEM', '${PGUSER}', 'Y', 'Y');\""
 
-
         # Add Herd namespace-auth SNS topic configuration
-        sns_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/SNS/UserNamespaceChgTopicArn --region ${region} --output text --query Parameter.Value)
-        echo "Inserting SNS config for user-namespace authorization status changes. SNS Arn: ${sns_arn}"
-        execute_cmd "sed -i \"s/{{SNS_TOPIC_ARN}}/${sns_arn}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
-        execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
-        execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/nsAuthSnsConfig.sql"
+        if [ ${deployComponents} =  "All" ] || [ ${deployComponents} == "BDSQL" ] ; then
+          sns_arn=$(aws ssm get-parameter --name /app/MDL/${mdlInstanceName}/${environment}/Resources/SNS/UserNamespaceChgTopicArn --region ${region} --output text --query Parameter.Value)
+          echo "Inserting SNS config for user-namespace authorization status changes. SNS Arn: ${sns_arn}"
+          execute_cmd "sed -i \"s/{{SNS_TOPIC_ARN}}/${sns_arn}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
+          execute_cmd "sed -i \"s/{{ENVIRONMENT}}/${environment}/g\" ${deployLocation}/sql/nsAuthSnsConfig.sql"
+          execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -f ${deployLocation}/sql/nsAuthSnsConfig.sql"
+        fi
 
         # ensure that jms publishing is enabled
         execute_cmd "psql --set ON_ERROR_STOP=on --host ${herdDatabaseHost} --port 5432 -c \"DELETE FROM cnfgn WHERE cnfgn_key_nm = 'jms.listener.enabled';\""

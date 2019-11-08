@@ -36,11 +36,11 @@ Parameters:
     AllowedValues: [true, false]
     Type: String
   HerdVersion:
-    Default: '0.81.0'
+    Default: '0.107.0'
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
-    Default: '0.41.0'
+    Default: '0.78.0'
     Description: Herd-UI release version to use.
     Type: String
   HerdDBClass:
@@ -299,7 +299,6 @@ Resources:
         HerdSecurityGroup: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /SecurityGroup/Herd]]
         MDLServerDeploymentRole: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /IAM/MDLServerDeploymentRole]]
         CertificateArn: !Ref CertificateArn
-        ShepherdWebSiteBucketUrl: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/URL/Shepherd]]
         ShepherdS3BucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Shepherd]]
         HerdBucketName: !Join ['', [/app/MDL/, !Ref MDLInstanceName, /, !Ref Environment, /S3/Herd]]
         DeploymentBucketName: !Ref DeploymentBucketName
@@ -321,6 +320,7 @@ Resources:
         HostedZoneName: !Ref HostedZoneName
         MDLInstanceName: !Ref MDLInstanceName
         Environment: !Ref Environment
+        DeployComponents: !Ref DeployComponents
         VpcIdParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/ID']]
         PrivateSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/private']]
         PublicSubnetsParameterKey: !Join ['/', ['/global', !Ref MDLInstanceName, !Ref Environment, 'VPC/SubnetIDs/public']]

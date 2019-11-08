@@ -29,11 +29,6 @@ Parameters:
     Description: Certificate Arn for MDL
     Type: String
   EnableSSLAndAuth:
-    Default: 'false'
-    Description: Whether to enable SSL and Auth
-    ConstraintDescription: Must specify true or false
-    Type: String
-  EnableSSLAndAuth:
     Default: 'true'
     Description: Whether to enable Authentication/SSL
     Type: String

@@ -24,12 +24,17 @@ import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.hive.*;
+import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
+import org.finra.herd.sdk.model.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.finra.herd.metastore.managed.jobProcessor.dao.DMNotification;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,7 +42,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -45,6 +52,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 @Component
 @Slf4j
 public class HiveHqlGenerator {
+
+    public static final String SUBMITTED_BY_JOB_PROCESSOR = "SUBMITTED_BY_JOB_PROCESSOR";
 
     @Autowired
     protected DataMgmtSvc dataMgmtSvc;
@@ -54,6 +63,10 @@ public class HiveHqlGenerator {
 
     @Autowired
     protected NotificationSender notificationSender;
+
+    @Autowired
+    JobProcessorDAO jobProcessorDAO;
+
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -78,7 +91,7 @@ public class HiveHqlGenerator {
                     FormatChange change = detectSchemaChange(jd, hiveTableSchema, format, ddl);
 
                     if (change.hasColumnChanges()) {
-                        boolean cascade = cascade(jd.getWfType());
+                        boolean cascade = cascade(jd);
                         String cascadeStr = "";
                         if(cascade)
                         {
@@ -228,7 +241,7 @@ public class HiveHqlGenerator {
         addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
         //Stats
-		addAnalyzeStats( jd, partitions, schemaHql );
+		addAnalyzeStats( jd, partitions);
 
 		// Create file
 		Path hqlFilePath = createHqlFile( jd );
@@ -260,25 +273,60 @@ public class HiveHqlGenerator {
 		}
 	}
 
-	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions, List<String> schemaHql ) {
-		if (MetastoreUtil.isSingletonWF( jd.getWfType() )) {
-			if (jd.getPartitionKey().equalsIgnoreCase("partition")) {
-				schemaHql.add(String.format("analyze table %s compute statistics noscan;", jd.getTableName()));
+	protected void addAnalyzeStats( JobDefinition jd, List<String> partitions ) {
+
+		log.info( "Adding gather Stats job" );
+		try {
+
+			if ( partitions.size() == 1 ) {
+				submitStatsJob( jd, jd.partitionValuesForStats(partitions.get( 0 )) );
 			} else {
-				schemaHql.add(String.format("analyze table %s partition(`%s`) compute statistics noscan;", jd.getTableName(), jd.getPartitionKey()));
+				partitions.stream()
+						.forEach( s -> submitStatsJob( jd, s ) );
 			}
-		} else if (partitions.size() == 1) {
-			if ( jd.isSubPartitionLevelProcessing() ) {
-				schemaHql.add( String.format( "analyze table %s partition %s compute statistics noscan;", jd.getTableName(), jd.getPartitionsSpecForStats() ) );
-			} else {
-				schemaHql.add( String.format( "analyze table %s partition(`%s`='%s') compute statistics noscan;"
-						, jd.getTableName(), jd.getPartitionKey(), partitions.get( 0 ) )
-				);
-			}
+
+			// Start Stats cluster is not running
+			dataMgmtSvc.createCluster( true , JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
+		} catch ( Exception e ) {
+			log.error( "Problem encountered in addAnalyzeStats: {}", e.getMessage(), e );
 		}
 	}
 
-	protected boolean cascade( int wfType ){
+    private void submitStatsJob(JobDefinition jd, String partitionValue) {
+        DMNotification dmNotification = buildDMNotification(jd);
+
+        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
+        dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
+
+        dmNotification.setPartitionKey(jd.partitionKeysForStats());
+        dmNotification.setPartitionValue(partitionValue);
+
+        log.info("Herd Notification DB request: \n{}", dmNotification);
+        jobProcessorDAO.addDMNotification(dmNotification);
+    }
+
+
+    protected String partition(Set<String> partitionKeys ) {
+        return partitionKeys.stream().collect( Collectors.joining( "`,`", "`", "`" ) );
+    }
+
+    protected String quotedPartitionKeys( Schema schema ) {
+        return schema.getPartitions().stream().map( p -> p.getName() ).collect( Collectors.joining( "`,`", "`", "`" ) );
+    }
+
+
+	protected DMNotification buildDMNotification( JobDefinition jd ) {
+        return DMNotification.builder()
+            .namespace( jd.getObjectDefinition().getNameSpace() )
+            .objDefName( jd.getObjectDefinition().getObjectName() )
+            .formatUsage( jd.getObjectDefinition().getUsageCode() )
+            .fileType( jd.getObjectDefinition().getFileType() )
+            .clusterName( jd.getClusterName() )
+            .correlationData( jd.getCorrelation() )
+            .build();
+    }
+
+	protected boolean cascade( JobDefinition jd ){
     	return true;
 	}
 

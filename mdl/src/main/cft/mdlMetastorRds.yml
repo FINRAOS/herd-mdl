@@ -29,7 +29,6 @@ Parameters:
     Description: VPC Parameter key name in system store
     Type: String
   MetastorDBClass:
-    Default: db.m4.large
     Description: Database instance class
     Type: String
   MetastorDBEngine:
