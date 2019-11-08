@@ -16,10 +16,10 @@
 package org.finra.herd.metastore.managed.datamgmt;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.ObjectProcessor;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.api.BusinessObjectDataNotificationRegistrationApi;
 import org.finra.herd.sdk.api.BusinessObjectFormatApi;
@@ -27,11 +27,14 @@ import org.finra.herd.sdk.invoker.ApiClient;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
 
 /**
  * Herd Client
@@ -39,6 +42,10 @@ import java.util.List;
 @Component
 @Slf4j
 public class DataMgmtSvc {
+
+    @Value("${AGS}")
+    private String ags;
+
 	@Autowired
 	ApiClient dmApiClient;
 
@@ -62,7 +69,7 @@ public class DataMgmtSvc {
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 		request.setIncludeDropTableStatement( false );
 		request.setIncludeIfNotExistsOption( !replaceColumn );
-		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectFormatDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setReplaceColumns( replaceColumn );
 
 		request.setTableName( jd.getTableName() );
@@ -86,7 +93,7 @@ public class DataMgmtSvc {
 		BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
 
 		request.setIncludeDropTableStatement( false );
-		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.DDL );
+		request.setOutputFormat( BusinessObjectDataDdlRequest.OutputFormatEnum.HIVE_13_DDL );
 		request.setBusinessObjectFormatUsage( jd.getObjectDefinition().getUsageCode() );
 		request.setBusinessObjectFormatFileType( jd.getObjectDefinition().getFileType() );
 		request.setBusinessObjectDefinitionName( jd.getObjectDefinition().getObjectName() );
@@ -95,36 +102,77 @@ public class DataMgmtSvc {
 		request.setIncludeIfNotExistsOption( true );
 		request.setTableName( jd.getTableName() );
 
-		PartitionValueFilter filter = new PartitionValueFilter();
-
-		filter.setPartitionKey( jd.getPartitionKey() );
+		List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
 
 		if ( jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && !jd.getPartitionKey().equalsIgnoreCase( "PARTITION" ) ) {
-			Calendar c = Calendar.getInstance();
-			c.add( Calendar.DATE, 1 );
-			String date = new SimpleDateFormat( "YYYY-MM-dd" ).format( c.getTime() );
-			LatestBeforePartitionValue value = new LatestBeforePartitionValue();
-			value.setPartitionValue( date );
-			filter.setLatestBeforePartitionValue( value );
-
-			filter.setPartitionValues( null );
-			filter.setLatestAfterPartitionValue( null );
-
-
+			addPartitionedSingletonFilter( jd, partitionValueFilters );
 		} else {
 
+			log.info( "Partitions: {}", partitions );
 			if ( jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase( "PARTITION" ) ) {
-				filter.setPartitionValues( Lists.newArrayList( "none" ) );
+				addPartitionFilter( jd.getPartitionKey(), Lists.newArrayList( "none" ), partitionValueFilters );
 			} else {
-				filter.setPartitionValues( partitions );
+				if ( jd.isSubPartitionLevelProcessing() ) {
+					addSubPartitionFilter( jd, partitionValueFilters);
+				} else {
+					addPartitionFilter( jd.getPartitionKey(), partitions, partitionValueFilters );
+				}
 			}
 		}
 
-		request.setPartitionValueFilter( filter );
-		request.setPartitionValueFilters( null );
+		request.setPartitionValueFilter( null );
+		request.setPartitionValueFilters( partitionValueFilters );
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
 
+		log.info( "Get BO DDL Request: \n{}", request.toString() );
 		return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl( request );
+	}
+
+	private void addPartitionFilter( String partitionKey, List<String> partitions, List<PartitionValueFilter> partitionValueFilters ) {
+		PartitionValueFilter filter = new PartitionValueFilter();
+		filter.setPartitionKey( partitionKey );
+		filter.setPartitionValues( partitions );
+		partitionValueFilters.add( filter );
+	}
+
+	private void addPartitionedSingletonFilter( JobDefinition jd, List<PartitionValueFilter> partitionValueFilters ) {
+		Calendar c = Calendar.getInstance();
+		c.add( Calendar.DATE, 1 );
+		String date = new SimpleDateFormat( "YYYY-MM-dd" ).format( c.getTime() );
+		LatestBeforePartitionValue value = new LatestBeforePartitionValue();
+		value.setPartitionValue( date );
+
+		PartitionValueFilter filter = new PartitionValueFilter();
+		filter.setPartitionKey( jd.getPartitionKey() );
+		filter.setLatestBeforePartitionValue( value );
+		filter.setPartitionValues( null );
+		filter.setLatestAfterPartitionValue( null );
+		partitionValueFilters.add( filter );
+	}
+
+	/**
+	 * To partition filter with sub partitions
+	 *
+	 * @param jd
+	 * @param partitionValueFilters
+	 * @throws ApiException
+	 */
+	private void addSubPartitionFilter( JobDefinition jd, List<PartitionValueFilter> partitionValueFilters ) throws ApiException {
+		List<SchemaColumn> partitionKeys = getDMFormat( jd ).getSchema().getPartitions();
+		log.info( "Partition Keys {} for {}", partitionKeys, jd.getTableName() );
+		Map<String, String> partitionKeyValues = Maps.newLinkedHashMap();
+
+		IntStream.range( 0, jd.getPartitionValues().size() )
+			.forEach( i -> {
+				String partitionKey = partitionKeys.get( i ).getName();
+				String partitionValue = jd.getPartitionValues().get( i );
+				log.info( "Partition Key: {}\t Value: {}", partitionKey, partitionValue );
+				partitionKeyValues.put( partitionKey, partitionValue );
+
+				addPartitionFilter( partitionKey, Lists.newArrayList( partitionValue ), partitionValueFilters );
+			} );
+
+		jd.setPartitionsKeyValue( partitionKeyValues );
 	}
 
 	public BusinessObjectFormatKeys getBOAllFormatVersions( org.finra.herd.metastore.managed.JobDefinition od, boolean latestBusinessObjectFormatVersion ) throws ApiException {
@@ -149,7 +197,7 @@ public class DataMgmtSvc {
 
 	public BusinessObjectDataNotificationRegistration getBORegisteredNotificationDetails( String notificationName ) throws ApiException {
 		return new BusinessObjectDataNotificationRegistrationApi( dmApiClient )
-				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( JobProcessorConstants.METASTOR_NAMESPACE_NM, notificationName );
+				.businessObjectDataNotificationRegistrationGetBusinessObjectDataNotificationRegistration( ags, notificationName );
 	}
 
 	public BusinessObjectDataSearchResult searchBOData( JobDefinition jd, int pageNum, int pageSize, Boolean filterOnValidLatestVersions ) throws ApiException{

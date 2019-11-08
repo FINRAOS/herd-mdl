@@ -17,11 +17,20 @@ package org.finra.herd.metastore.managed.hive;
 
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
 
 public interface HiveClient {
 
     HiveTableSchema getExistingDDL(String dbName, String tableName) throws SQLException;
 
     boolean tableExist(String dbName, String tableName) throws SQLException;
+
+	List<HivePartition> getExistingPartitions( String database, String tableName, Set<String> partitionSpec );
+
+    List<HivePartition> getExistingPartitions( String database, String tableName);
+
+	void executeQueries(String database, List<String> schemaSql);
+
 
 }

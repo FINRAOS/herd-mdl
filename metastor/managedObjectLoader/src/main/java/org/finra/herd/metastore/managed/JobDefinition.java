@@ -15,6 +15,11 @@
 **/
 package org.finra.herd.metastore.managed;
 
+import com.google.common.collect.Lists;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.util.StringUtils;
 
@@ -24,47 +29,35 @@ import javax.json.JsonReader;
 import java.io.StringReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Logger;
+import java.util.StringJoiner;
 
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.SUB_PARTITION_VAL_SEPARATOR;
+
+@Slf4j
+@ToString
+@Getter
+@Setter
 public class JobDefinition {
     long id;
-
-    ObjectDefinition objectDefinition;
-    String partitionValue;
-    String correlation;
-    String executionID;
-
-    String clusterName;
     int wfType;
-
-
-    public int getNumOfRetry() {
-        return numOfRetry;
-    }
-
     int numOfRetry;
 
-    public String getPartitionKey() {
-        return partitionKey;
-    }
+    boolean subPartitionLevelProcessing = false;
 
-	public void setPartitionKey( String partitionKey ) {
-		this.partitionKey = partitionKey;
-	}
-
+    String correlation;
+    String executionID;
+    String clusterName;
+    String actualObjectName;
+    String tableName;
 	String partitionKey;
+    String partitionValue;
+	List<String> partitionValues;
+	Map<String, String> partitionsKeyValue;
 
-    public String getClusterName() {
-        return this.clusterName;
-    }
-
-    public ObjectDefinition getObjectDefinition() {
-        return objectDefinition;
-    }
-
-    private Logger logger = Logger.getLogger("JobDefinition");
-
+    ObjectDefinition objectDefinition;
 
     @Override
     public boolean equals(Object o) {
@@ -87,36 +80,6 @@ public class JobDefinition {
         return Objects.hash(id, objectDefinition, partitionValue, correlation, executionID, clusterName, wfType, numOfRetry, partitionKey);
     }
 
-    @Override
-    public String toString() {
-        return "JobDefinition{" +
-                "id=" + id +
-                ", objectDefinition=" + objectDefinition +
-                ", partitionValue='" + partitionValue + '\'' +
-                ", correlation='" + correlation + '\'' +
-                ", executionID='" + executionID + '\'' +
-                ", clusterName='" + clusterName + '\'' +
-                ", wfType=" + wfType +
-                ", numOfRetry=" + numOfRetry +
-                ", partitionKey='" + partitionKey + '\'' +
-                '}';
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public String getPartitionValue() {
-        return partitionValue;
-    }
-
-    public String getCorrelation() {
-        return correlation;
-    }
-
-    public String getExecutionID() {
-        return executionID;
-    }
 
     public JobDefinition(long id, String nameSpace, String objectName, String usageCode,
                          String fileType, String partitionValue, String correlation,
@@ -136,8 +99,17 @@ public class JobDefinition {
     public JobDefinition() {
     }
 
-    public static class ObjectDefinitionMapper implements RowMapper<JobDefinition>
-    {
+    public String getPartitionsSpecForStats(){
+    	StringJoiner partitionStats = new StringJoiner( "," , "(", ")");
+    	partitionsKeyValue.forEach( (k, v) -> {
+    		partitionStats.add( String.format( "`%s`='%s'", k, v ) );
+		} );
+
+    	return partitionStats.toString();
+	}
+
+    @Slf4j
+    public static class ObjectDefinitionMapper implements RowMapper<JobDefinition> {
 
         @Override
         public JobDefinition mapRow(ResultSet resultSet, int i) throws SQLException {
@@ -150,56 +122,66 @@ public class JobDefinition {
             jobDefinition.objectDefinition.usageCode=resultSet.getString("USAGE_CODE");
             jobDefinition.objectDefinition.fileType=resultSet.getString("FILE_TYPE");
 
-            jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
-            jobDefinition.correlation = resultSet.getString("CORRELATION_DATA");
+			jobDefinition.partitionValue=resultSet.getString("PARTITION_VALUES");
+			if ( jobDefinition.getPartitionValue().contains( SUB_PARTITION_VAL_SEPARATOR ) ) {
+				jobDefinition.subPartitionLevelProcessing = true;
+				jobDefinition.partitionValues = Lists.newArrayList( jobDefinition.getPartitionValue().split( SUB_PARTITION_VAL_SEPARATOR ));
+			}
+
             // Execution ID not being used, other than filenaming .hql files it just have to unique
             jobDefinition.executionID=resultSet.getString("ID");
             jobDefinition.partitionKey=resultSet.getString("PARTITION_KEY");
             jobDefinition.wfType=resultSet.getInt("WF_TYPE");
             jobDefinition.numOfRetry=resultSet.getInt("c");
             jobDefinition.clusterName=resultSet.getString("CLUSTER_NAME");
+
+			jobDefinition.correlation 		= resultSet.getString( "CORRELATION_DATA" );
+			jobDefinition.actualObjectName	= getActualObjectName( jobDefinition );
+			jobDefinition.tableName 		= identifyTableName( jobDefinition );
+
             return jobDefinition;
         }
+
+		private String identifyTableName(JobDefinition jobDef){
+			return new StringJoiner( "_" )
+					.add( identifyObjectName(jobDef))
+					.add( jobDef.getObjectDefinition().usageCode )
+					.add( jobDef.getObjectDefinition().fileType )
+					.toString()
+					.replaceAll("\\.", "_")
+					.replaceAll(" ","_")
+					.replaceAll("-","_");
+		}
+
+		private String identifyObjectName( JobDefinition jobDef ) {
+			String originalObjectName = "original_object_name";
+
+			if ( !StringUtils.isEmpty(jobDef.getCorrelation()) && jobDef.getCorrelation().contains( originalObjectName ) ) {
+				return Json.createReader( new StringReader( jobDef.getCorrelation() ) )
+						.readObject().getJsonObject( "businessObject" )
+						.getString( originalObjectName );
+			}
+
+			return getActualObjectName(jobDef);
+		}
+
+		private String getActualObjectName( JobDefinition jobDef ) {
+			try {
+				if (!StringUtils.isEmpty(jobDef.getCorrelation()) && !jobDef.getCorrelation().equals("null")) {
+					JsonReader reader = Json.createReader(new StringReader(jobDef.getCorrelation()));
+					JsonObject object = reader.readObject();
+					if (object.containsKey("businessObject")) {
+						JsonObject bo = object.getJsonObject("businessObject");
+						if (bo.containsKey("late_reporting_for")) {
+							String objName = bo.getString("late_reporting_for");
+							return objName;
+						}
+					}
+				}
+			} catch (Exception ex) {
+				log.warn("Error parsing correlation:"+jobDef.getCorrelation());
+			}
+			return jobDef.getObjectDefinition().getObjectName();
+		}
     }
-
-    public String getActualObjectName()
-    {
-        try {
-
-            if (!StringUtils.isEmpty(correlation) && !correlation.equals("null")) {
-                JsonReader reader = Json.createReader(new StringReader(correlation));
-                JsonObject object = reader.readObject();
-                if (object.containsKey("businessObject")) {
-                    JsonObject bo = object.getJsonObject("businessObject");
-                    if (bo.containsKey("late_reporting_for")) {
-                        String objName = bo.getString("late_reporting_for");
-                        return objName;
-                    }
-                }
-            }
-        } catch (Exception ex)
-        {
-            logger.warning("Error parsing correlation:"+correlation);
-        }
-        return objectDefinition.objectName;
-    }
-
-    public int getWfType() {
-        return wfType;
-    }
-
-    public void setWfType(int wfType) {
-        this.wfType = wfType;
-    }
-
-    public String getTableName()
-    {
-        StringBuilder sb = new StringBuilder(getActualObjectName()).append("_")
-                .append(objectDefinition.usageCode).append("_")
-                .append(objectDefinition.fileType);
-        String tblName = sb.toString().replaceAll("\\.", "_").replaceAll(" ","_").replaceAll("-","_");
-
-        return tblName;
-    }
-
 }

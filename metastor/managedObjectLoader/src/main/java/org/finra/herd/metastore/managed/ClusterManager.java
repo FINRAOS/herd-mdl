@@ -33,7 +33,12 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import javax.annotation.PreDestroy;
 import javax.json.Json;
@@ -51,7 +56,6 @@ import java.util.logging.Logger;
 @Component
 public class ClusterManager implements InitializingBean {
 
-	public static final String NAMESPACE = "METASTOR";
 	public static final String CLUSTER_NM_DELIMITER = "_";
 	public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
 
@@ -93,6 +97,10 @@ public class ClusterManager implements InitializingBean {
 
 	@Value( "${CREATE_CLUSTER_RETRY_COUNT}" )
 	int createClusterMaxRetryCount = 5;
+
+
+    @Value("${AGS}")
+    private String ags;
 
 	@Autowired
 	NotificationSender notificationSender;
@@ -157,7 +165,16 @@ public class ClusterManager implements InitializingBean {
 		createClusterRetryCounter = 0;
 	}
 
-	public boolean registerCluster() {
+    public void setAgs(String ags) {
+        this.ags = ags;
+    }
+
+    public void setClusterDef(String clusterDef) {
+        this.clusterDef = clusterDef;
+    }
+
+
+    public boolean registerCluster() {
         String sql = "INSERT IGNORE INTO `EMR_CLUSTER` (`CLUSTER_NAME`,`CLUSTER_ID`, CREATE_TIME, STATUS) VALUES (?, ?, now(), 'R')";
 
         template.update(sql, clusterName, clusterID);
@@ -464,7 +481,7 @@ public class ClusterManager implements InitializingBean {
 
 	private void createCluster( EmrApi emrApi, String proposedName ) throws ApiException {
 		EmrClusterCreateRequest request = new EmrClusterCreateRequest();
-		request.setNamespace( NAMESPACE );
+		request.setNamespace( ags );
 		request.setDryRun(false);
 		request.setEmrClusterDefinitionName(clusterDef);
 		request.setEmrClusterName(proposedName);
@@ -474,10 +491,12 @@ public class ClusterManager implements InitializingBean {
 	}
 
 	private String proposedName( int created ) {
-		return new StringBuilder( NAMESPACE )
+		return new StringBuilder( ags )
 				.append( CLUSTER_NM_DELIMITER )
 				.append( created )
 				.toString();
 	}
+
+
 
 }
