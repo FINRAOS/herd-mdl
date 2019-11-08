@@ -26,7 +26,6 @@ Parameters:
     AllowedPattern: '[a-zA-Z_][a-zA-Z0-9_]*'
     ConstraintDescription: must begin with a letter and contain alphanumeric characters and _.
   HerdDBClass:
-    Default: db.m4.large
     Description: Database instance class
     Type: String
   HerdDBEngine:
@@ -34,7 +33,7 @@ Parameters:
     Description: Postgres RDS database Engine
     Type: String
   HerdDBEngineVersion:
-    Default: 9.5.4
+    Default: 9.5.15
     Description: Postgres database version
     Type: String
   HerdDBSize:
