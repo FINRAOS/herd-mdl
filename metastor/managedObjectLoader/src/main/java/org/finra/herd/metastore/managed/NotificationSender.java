@@ -56,6 +56,9 @@ public class NotificationSender {
 	@Value( "${email_host}" )
 	private String emailHost;
 
+	@Value( "${AGS}" )
+	protected String ags;
+
 	PebbleEngine engine = new PebbleEngine.Builder().autoEscaping( false ).strictVariables( true ).build();
 
 	public void sendFailureEmail( JobDefinition od, int numRetry, String errorLog, String clusterID ) {
@@ -108,17 +111,21 @@ public class NotificationSender {
 		try {
 
 			Message msg = new MimeMessage( session );
-			msg.setFrom( new InternetAddress( "donotreply@finra.org", "METASTOR" ) );
+			msg.setFrom( new InternetAddress( "donotreply@finra.org", ags ) );
 
 			msg.addRecipient( Message.RecipientType.TO, new InternetAddress( mailingList ) );
 
-			msg.setSubject( String.format( "METASTOR-%s %s", env, subject ) );
+			msg.setSubject( getUpdatedSubject( subject ) );
 
 			msg.setDataHandler( new DataHandler( new ByteArrayDataSource( msgBody, "text/plain" ) ) );
 			javax.mail.Transport.send( msg );
 		} catch ( Exception ex ) {
 			log.error( ex.getMessage() );
 		}
+	}
+
+	protected String getUpdatedSubject( String subject ) {
+		return String.format( "%s-%s %s", ags, env, subject );
 	}
 
 	public void sendFormatChangeEmail( FormatChange change, int version, JobDefinition job,
@@ -132,7 +139,7 @@ public class NotificationSender {
 	}
 
 	protected String getFormatChangeMsg( FormatChange change, int version, JobDefinition job,
-							   HiveTableSchema existing, HiveTableSchema newColumns )
+										 HiveTableSchema existing, HiveTableSchema newColumns )
 			throws PebbleException, IOException {
 		PebbleTemplate template = engine.getTemplate( "templates/formatChangeNotificationTemplate.txt" );
 

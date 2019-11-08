@@ -24,11 +24,10 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuild
 import com.amazonaws.services.elasticmapreduce.model.ClusterState;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
+import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
-import org.finra.herd.sdk.invoker.ApiException;
-import org.finra.herd.sdk.model.EmrCluster;
-import org.finra.herd.sdk.model.EmrClusterCreateRequest;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,7 +50,6 @@ import java.util.logging.Logger;
 @Component
 public class ClusterManager implements InitializingBean {
 
-	public static final String NAMESPACE = "METASTOR";
 	public static final String CLUSTER_NM_DELIMITER = "_";
 	public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
 
@@ -77,7 +75,7 @@ public class ClusterManager implements InitializingBean {
     int singleObjPartitionThreshold = 50;
 
     @Value("${PARTITION_AGE_THRESHOLD_IN_HOURS}")
-    int ageThreshold = 10; //Hours
+    int ageThreshold = 10; //Minutes
 
     @Value("${MAX_CLUSTER}")
     int maxCluster = 10;
@@ -94,8 +92,20 @@ public class ClusterManager implements InitializingBean {
 	@Value( "${CREATE_CLUSTER_RETRY_COUNT}" )
 	int createClusterMaxRetryCount = 5;
 
+
+    @Value("${AGS}")
+    private String ags;
+
+	@Autowired
+	boolean analyzeStats;
+
 	@Autowired
 	NotificationSender notificationSender;
+
+	@Autowired
+	protected DataMgmtSvc dataMgmtSvc;
+
+
 
 	int createClusterRetryCounter = 0;
 
@@ -106,10 +116,18 @@ public class ClusterManager implements InitializingBean {
     public static final String FIND_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
             "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
             "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
-            "where WF_TYPE != 3 and ( l.success is null or (l.success like '%N' and l.count<? ))";
+            "where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success like '%N' and l.count<? ))";
+
+    public static final String FIND_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
+            "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
+            "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
+            "where WF_TYPE = 5 and ( l.success is null or (l.success like '%N' and l.count<? ))";
 
     public static final String JOB_GROUP_QUERY = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
             "min(DATE_CREATED) as oldest from (" + FIND_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
+
+    public static final String JOB_GROUP_QUERY_STATS = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
+            "min(DATE_CREATED) as oldest from (" + FIND_STATS_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
 
     public static final String AUTO_SCALE_QUERY = "select ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE order by ID DESC limit 1;";
 
@@ -157,7 +175,16 @@ public class ClusterManager implements InitializingBean {
 		createClusterRetryCounter = 0;
 	}
 
-	public boolean registerCluster() {
+    public void setAgs(String ags) {
+        this.ags = ags;
+    }
+
+    public void setClusterDef(String clusterDef) {
+        this.clusterDef = clusterDef;
+    }
+
+
+    public boolean registerCluster() {
         String sql = "INSERT IGNORE INTO `EMR_CLUSTER` (`CLUSTER_NAME`,`CLUSTER_ID`, CREATE_TIME, STATUS) VALUES (?, ?, now(), 'R')";
 
         template.update(sql, clusterName, clusterID);
@@ -294,7 +321,14 @@ public class ClusterManager implements InitializingBean {
     }
 
     int calculateNumberOfClustersNeeded() {
-        List<Map<String, Object>> result = template.queryForList(JOB_GROUP_QUERY, maxRetry);
+        List<Map<String, Object>> result ;
+        if(analyzeStats) {
+            result=template.queryForList(JOB_GROUP_QUERY_STATS, maxRetry);
+        }
+        else {
+            result=template.queryForList(JOB_GROUP_QUERY, maxRetry);
+        }
+
         int clusterNum = 0;
         if(result.size() > 1)
         {
@@ -309,11 +343,10 @@ public class ClusterManager implements InitializingBean {
             int partCount = ((Long) record.get("count")).intValue();
             Date timeCreated = (Date) record.get("oldest");
 
-            long age = (current - timeCreated.getTime()/1000) / 3600;
             if (partCount > singleObjPartitionThreshold)
             {
                 clusterNum++;
-            } else if ((age > ageThreshold) && (!ageIncrement)) {
+            } else if (ageCheck(current, timeCreated)&& (!ageIncrement)) {
                 clusterNum++;
                 ageIncrement = true;
             }
@@ -333,6 +366,11 @@ public class ClusterManager implements InitializingBean {
         return clusterNum;
     }
 
+
+    protected boolean ageCheck( long current, Date timeCreated ){
+        long age = (current - timeCreated.getTime()/1000) / 3600;
+        return (age > ageThreshold);
+    }
 
     public void clusterAutoScale()
     {
@@ -420,7 +458,7 @@ public class ClusterManager implements InitializingBean {
 			if ( maxRetriesNotReached() ) {
 				try {
 					// Call to Herd to create cluster
-					createCluster( emrApi, proposedName );
+					dataMgmtSvc.createCluster( analyzeStats, proposedName );
 					existingCluster.add( proposedName );
 
 					Thread.sleep(500);
@@ -462,22 +500,18 @@ public class ClusterManager implements InitializingBean {
 		return (createClusterRetryCounter < createClusterMaxRetryCount);
 	}
 
-	private void createCluster( EmrApi emrApi, String proposedName ) throws ApiException {
-		EmrClusterCreateRequest request = new EmrClusterCreateRequest();
-		request.setNamespace( NAMESPACE );
-		request.setDryRun(false);
-		request.setEmrClusterDefinitionName(clusterDef);
-		request.setEmrClusterName(proposedName);
+	private String proposedName( int num ) {
+		StringBuilder clusterName = new StringBuilder( JobProcessorConstants.METASTOR_CLUSTER_NAME );
+		if ( analyzeStats ) {
+			clusterName = new StringBuilder( JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
+		}
 
-		EmrCluster cluster = emrApi.eMRCreateEmrCluster(request);
-		logger.info(cluster.toString());
-	}
-
-	private String proposedName( int created ) {
-		return new StringBuilder( NAMESPACE )
+		return clusterName
 				.append( CLUSTER_NM_DELIMITER )
-				.append( created )
+				.append( num )
 				.toString();
 	}
+
+
 
 }
