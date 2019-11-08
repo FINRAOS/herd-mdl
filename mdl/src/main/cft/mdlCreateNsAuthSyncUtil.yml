@@ -97,6 +97,16 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess'
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaENIManagementAccess'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Action:
+                  - 'ec2:DetachNetworkInterface'
+                Effect: Allow
+                Resource: '*'
   NsAuthUtilityArnParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -127,65 +137,6 @@ Resources:
       Principal: sns.amazonaws.com
       SourceArn: !Ref NsAuthChangeNotificationSnsTopic
       FunctionName: !GetAtt 'NsAuthSyncLambdaFunction.Arn'
-  ManageEniLifecycleFunction:
-      Type: AWS::Lambda::Function
-      DependsOn: NsAuthSyncLambdaFunction
-      Properties:
-        Handler: index.handler
-        Role: !GetAtt LambdaExecutionRole.Arn
-        Code:
-          ZipFile: !Sub |
-            var response = require('cfn-response');
-            var AWS = require('aws-sdk');
-
-            exports.handler = function(event, context) {
-              if (event.RequestType != 'Delete') {
-                response.send(event, context, response.SUCCESS, {});
-                return;
-              }
-              var ec2 = new AWS.EC2();
-              var params = {
-                Filters: [
-                  {
-                    Name: 'group-id',
-                    Values: event.ResourceProperties.SecurityGroups
-                  },
-                  {
-                    Name: 'description',
-                    Values: ['AWS Lambda VPC ENI: *']
-                  }
-                ]
-              };
-
-              console.log("Deleting attachments!");
-              // Detach, then delete ENIs which were spinned up by AWS for our VPC Lambda
-              ec2.describeNetworkInterfaces(params).promise().then(function(data) {
-                console.log("Got Interfaces:\n", JSON.stringify(data));
-                return Promise.all(data.NetworkInterfaces.map(function(networkInterface) {
-                  var networkInterfaceId = networkInterface.NetworkInterfaceId;
-                  var attachmentId = networkInterface.Attachment.AttachmentId;
-                  return ec2.detachNetworkInterface({AttachmentId: attachmentId}).promise().then(function(data) {
-                    return ec2.waitFor('networkInterfaceAvailable', {NetworkInterfaceIds: [networkInterfaceId]}).promise();
-                  }).then(function(data) {
-                    console.log("Detached Interface, deleting:\n", networkInterfaceId);
-                    return ec2.deleteNetworkInterface({NetworkInterfaceId: networkInterfaceId}).promise();
-                  });
-                }));
-              }).then(function(data) {
-                console.log("Success!");
-                response.send(event, context, response.SUCCESS, {});
-              }).catch(function(err) {
-                console.log("Failure:\n", JSON.stringify(err));
-                response.send(event, context, response.FAILED, {});
-              });
-            };
-        Timeout: 300
-        Runtime: nodejs4.3
-  VPCDestroyENI:
-    Type: Custom::VPCDestroyENI
-    Properties:
-      ServiceToken: !GetAtt 'ManageEniLifecycleFunction.Arn'
-      SecurityGroups: [!Ref NsAuthSyncUtilitySecurityGroupParameter]
 Outputs:
   LambdaFunctionName:
     Description: Function name of the ns-auth sync utility lambda.

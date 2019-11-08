@@ -208,22 +208,6 @@ Resources:
       Type: String
       Value: !If [EnableSSLAndAuth, !Ref CloudfrontS3Bucket, !Ref S3BucketForStaticPages]
       Description: Name of Shepherd S3 bucket
-  ShepherdS3BucketDomainParameter:
-    Type: 'AWS::SSM::Parameter'
-    Condition: EnableSSLAndAuth
-    Properties:
-      Name: !Join
-        - ''
-        - - /app/MDL/
-          - !Ref MDLInstanceName
-          - /
-          - !Ref Environment
-          - /S3/Domain/Shepherd
-      Type: String
-      Value: !GetAtt
-        - CloudfrontS3Bucket
-        - DomainName
-      Description: Domain name of Shepherd S3 bucket
   ShepherdS3BucketURLParameter:
     Type: 'AWS::SSM::Parameter'
     Condition: EnableSSLAndAuth

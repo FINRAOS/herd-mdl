@@ -20,7 +20,7 @@ Parameters:
     Description: >
       MDL release version to use. [REQUIRED]
     Type: String
-    Default: '1.4.0'
+    Default: '1.5.0'
   DeployComponents:
     Type: String
     Default: All
@@ -44,11 +44,11 @@ Parameters:
       - 'false'
     Type: String
   HerdDBClass:
-    Default: db.t2.medium
+    Default: db.m4.large
     Description: Database instance class for Herd
     Type: String
   MetastorDBClass:
-    Default: db.m3.medium
+    Default: db.m4.large
     Description: Database instance class for Metastor
     Type: String
   HerdDBSize:

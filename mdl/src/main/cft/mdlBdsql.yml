@@ -233,7 +233,6 @@ Resources:
             hive.stats.autogather: 'false'
             javax.jdo.option.ConnectionUserName: 'MS_Hive_0_13'
             javax.jdo.option.ConnectionPassword: '{{HIVE_PASSWORD}}'
-            hive.metastore.schema.verification: false
             javax.jdo.option.ConnectionURL: !Sub 'jdbc:mysql://${MetastorDBHostName}:3306/metastor?trustServerCertificate=true&createDatabaseIfNotExist=false&useSSL=true&requireSSL=true'
             hive.metastore.warehouse.dir: !Join
               - ''
