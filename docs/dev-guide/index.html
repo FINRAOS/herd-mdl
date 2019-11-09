@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-2.5.4">
     
     
       
@@ -169,7 +169,7 @@
 
 
   <li class="md-nav__item">
-    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+    <a href="" title="What is Herd-MDL?" class="md-nav__link">
       What is Herd-MDL?
     </a>
   </li>
@@ -181,7 +181,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+    <a href="basic-install/" title="Basic Install" class="md-nav__link">
       Basic Install
     </a>
   </li>
@@ -193,7 +193,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+    <a href="user-guide/" title="User Guide" class="md-nav__link">
       User Guide
     </a>
   </li>
@@ -217,7 +217,7 @@
         Developer guide
       </label>
     
-    <a href="./" title="Developer guide" class="md-nav__link md-nav__link--active">
+    <a href="dev-guide/" title="Developer guide" class="md-nav__link md-nav__link--active">
       Developer guide
     </a>
     
@@ -294,7 +294,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+    <a href="admin-guide/" title="Administration" class="md-nav__link">
       Administration
     </a>
   </li>
@@ -306,7 +306,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+    <a href="tech-overview/" title="Technical Overview" class="md-nav__link">
       Technical Overview
     </a>
   </li>
@@ -318,7 +318,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+    <a href="ldap-tree/" title="Users and Groups" class="md-nav__link">
       Users and Groups
     </a>
   </li>
@@ -330,7 +330,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+    <a href="authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
       Authorizations and Security
     </a>
   </li>
@@ -342,7 +342,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+    <a href="advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
     </a>
   </li>
@@ -354,7 +354,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+    <a href="mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
       MDLTests (MDLT)
     </a>
   </li>
@@ -366,7 +366,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+    <a href="tutorials/" title="Tutorials" class="md-nav__link">
       Tutorials
     </a>
   </li>
@@ -478,15 +478,16 @@ environment- please skip the steps below and read the instructions <a href="#run
 <p>This step is needed because the <em>build-script</em> needs a parameter-file which has default values for
   CloudFormation when bringing up a stack, and this directory has one which you can modify and use.</p>
 <p>Verify that the folder-structure looks like this: </p>
-<pre class="codehilite"><code>.
+<div class="codehilite"><pre><span></span>.
 ├── Dockerfile
 ├── build_and_deploy.py
 ├── default-parameters.json
-└── env.list</code></pre>
+└── env.list
+</pre></div>
 
 
 <p>5. Make changes to the <code>env.list</code> file according to your needs, this file gets passed to the docker container as an env-file  </p>
-<pre class="codehilite"><code>action=deploy              
+<div class="codehilite"><pre><span></span>action=deploy              
 build_from=remote          
 branch=develop
 s3_bucket=s3_bucket_name
@@ -494,10 +495,11 @@ s3_bucket_prefix=prefix
 default_stack_name=demo-stack
 proxy=&lt;proxy-host&gt;          
 parameter_file_name=default-parameters.json  
-custom_tags=[{'Key': 'CustomKey','Value': 'CustomValue'}]      
+custom_tags=[{&#39;Key&#39;: &#39;CustomKey&#39;,&#39;Value&#39;: &#39;CustomValue&#39;}]      
 local_repo_path=/path/to/your/repo
 remote_repo_path=https://github.com/&lt;username&gt;/herd-mdl.git
-show_output=True          </code></pre>
+show_output=True          
+</pre></div>
 
 
 <h4 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h4>
@@ -586,14 +588,15 @@ show_output=True          </code></pre>
 </tbody>
 </table>
 <p>6. Prepare to launch your docker container</p>
-<pre class="codehilite"><code>docker create --name &lt;container-name&gt; \
+<div class="codehilite"><pre><span></span>docker create --name &lt;container-name&gt; \
               --env-file env.list \
               --mount=&quot;--mount src=&quot;&lt;local_repo_path&gt;&quot;,target=&quot;&lt;local_repo_path&gt;&quot;,type=bind &quot; \  
               --env AWS_DEFAULT_REGION=&lt;aws_region&gt; \
               --env AWS_ACCESS_KEY_ID=&lt;aws_access_key_id&gt; \
               --env AWS_SECRET_ACCESS_KEY=&lt;aws_secret_access_key&gt; \
               --env AWS_SESSION_TOKEN=&lt;aws_session_token&gt; \
-              &lt;image-name&gt;</code></pre>
+              &lt;image-name&gt;
+</pre></div>
 
 
 <blockquote>
@@ -659,7 +662,7 @@ follow the instructions below.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../user-guide/" title="User Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="user-guide/" title="User Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -674,7 +677,7 @@ follow the instructions below.</p>
           </a>
         
         
-          <a href="../admin-guide/" title="Administration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="admin-guide/" title="Administration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
@@ -697,7 +700,7 @@ follow the instructions below.</p>
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
       
     
     

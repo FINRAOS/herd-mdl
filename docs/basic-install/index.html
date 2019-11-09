@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-2.5.4">
     
     
       
@@ -169,7 +169,7 @@
 
 
   <li class="md-nav__item">
-    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+    <a href="" title="What is Herd-MDL?" class="md-nav__link">
       What is Herd-MDL?
     </a>
   </li>
@@ -193,7 +193,7 @@
         Basic Install
       </label>
     
-    <a href="./" title="Basic Install" class="md-nav__link md-nav__link--active">
+    <a href="basic-install/" title="Basic Install" class="md-nav__link md-nav__link--active">
       Basic Install
     </a>
     
@@ -236,7 +236,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+    <a href="user-guide/" title="User Guide" class="md-nav__link">
       User Guide
     </a>
   </li>
@@ -248,7 +248,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+    <a href="dev-guide/" title="Developer guide" class="md-nav__link">
       Developer guide
     </a>
   </li>
@@ -260,7 +260,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+    <a href="admin-guide/" title="Administration" class="md-nav__link">
       Administration
     </a>
   </li>
@@ -272,7 +272,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+    <a href="tech-overview/" title="Technical Overview" class="md-nav__link">
       Technical Overview
     </a>
   </li>
@@ -284,7 +284,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+    <a href="ldap-tree/" title="Users and Groups" class="md-nav__link">
       Users and Groups
     </a>
   </li>
@@ -296,7 +296,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+    <a href="authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
       Authorizations and Security
     </a>
   </li>
@@ -308,7 +308,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+    <a href="advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
     </a>
   </li>
@@ -320,7 +320,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+    <a href="mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
       MDLTests (MDLT)
     </a>
   </li>
@@ -332,7 +332,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+    <a href="tutorials/" title="Tutorials" class="md-nav__link">
       Tutorials
     </a>
   </li>
@@ -399,14 +399,14 @@ mechanisms and provides detailed specifications on what to create and how to pro
 <li>An <a href="https://aws.amazon.com">AWS</a> account </li>
 <li>User who has power user access as per this policy - <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_developer-power-user">arn:aws:iam::aws:policy/PowerUserAccess</a><ul>
 <li>MDL deployment creates various AWS resources like Cloudformation, EC2, IAM, Security Groups, S3 etc, and power user access is needed for creating these resources</li>
-<li>Sample IAM policy for <a href="../attachments/1070290969/1070291504.txt">PowerUserAccess</a></li>
+<li>Sample IAM policy for <a href="attachments/1070290969/1070291504.txt">PowerUserAccess</a></li>
 </ul>
 </li>
 </ul>
 <h2 id="steps">Steps<a class="headerlink" href="#steps" title="Permanent link">&para;</a></h2>
 <p>Installation is automated through CloudFormation templates in AWS. The stack creates all the resources required by MDL application. This takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html">AWS documentation</a> for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.</p>
 <ol>
-<li>Download release artefact: <a href="https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.4.0/installMDL.yml">installMDL.yml</a> to your local file system, this will install version <code>1.4.0</code>.</li>
+<li>Download release artefact: <a href="https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.5.0/installMDL.yml">installMDL.yml</a> to your local file system, this will install version <code>1.5.0</code>.</li>
 <li>Login to AWS console and navigate to the <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html">Cloudformation</a> service.</li>
 <li>Create a new stack using the option: "Upload a template to Amazon S3" - Refer to <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html">AWS documentation</a> on how to select a local template.</li>
 <li>Select the same <code>installMDL.yml</code> file from your local file system (which was downloaded in step 1).</li>
@@ -449,7 +449,7 @@ mechanisms and provides detailed specifications on what to create and how to pro
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href=".." title="What is Herd-MDL?" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="" title="What is Herd-MDL?" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -464,7 +464,7 @@ mechanisms and provides detailed specifications on what to create and how to pro
           </a>
         
         
-          <a href="../user-guide/" title="User Guide" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="user-guide/" title="User Guide" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
@@ -487,7 +487,7 @@ mechanisms and provides detailed specifications on what to create and how to pro
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
       
     
     

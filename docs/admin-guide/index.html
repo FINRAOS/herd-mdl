@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-2.5.4">
     
     
       
@@ -169,7 +169,7 @@
 
 
   <li class="md-nav__item">
-    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+    <a href="" title="What is Herd-MDL?" class="md-nav__link">
       What is Herd-MDL?
     </a>
   </li>
@@ -181,7 +181,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+    <a href="basic-install/" title="Basic Install" class="md-nav__link">
       Basic Install
     </a>
   </li>
@@ -193,7 +193,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+    <a href="user-guide/" title="User Guide" class="md-nav__link">
       User Guide
     </a>
   </li>
@@ -205,7 +205,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+    <a href="dev-guide/" title="Developer guide" class="md-nav__link">
       Developer guide
     </a>
   </li>
@@ -229,7 +229,7 @@
         Administration
       </label>
     
-    <a href="./" title="Administration" class="md-nav__link md-nav__link--active">
+    <a href="admin-guide/" title="Administration" class="md-nav__link md-nav__link--active">
       Administration
     </a>
     
@@ -348,7 +348,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+    <a href="tech-overview/" title="Technical Overview" class="md-nav__link">
       Technical Overview
     </a>
   </li>
@@ -360,7 +360,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+    <a href="ldap-tree/" title="Users and Groups" class="md-nav__link">
       Users and Groups
     </a>
   </li>
@@ -372,7 +372,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+    <a href="authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
       Authorizations and Security
     </a>
   </li>
@@ -384,7 +384,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+    <a href="advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
     </a>
   </li>
@@ -396,7 +396,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
+    <a href="mdlt/" title="MDLTests (MDLT)" class="md-nav__link">
       MDLTests (MDLT)
     </a>
   </li>
@@ -408,7 +408,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+    <a href="tutorials/" title="Tutorials" class="md-nav__link">
       Tutorials
     </a>
   </li>
@@ -620,16 +620,16 @@
 </ul>
 <h2 id="how-tos-for-initial-creation-of-herd-metadata">How-tos for initial creation of Herd metadata<a class="headerlink" href="#how-tos-for-initial-creation-of-herd-metadata" title="Permanent link">&para;</a></h2>
 <p>Refer to <a href="https://github.com/FINRAOS/herd/wiki/quick-start-to-registering-data#create-a-new-storage-instance">Herd Documentation</a> for details on the following:
-<em>  Add Storage in Herd
-</em>  Create New Namespace in Herd
-<em>  Create New Business Object in Herd
-</em>  Create New Format in Herd
+*  Add Storage in Herd
+*  Create New Namespace in Herd
+*  Create New Business Object in Herd
+*  Create New Format in Herd
 *  Register Data in Herd</p>
 <h2 id="how-to-propagate-an-object-from-herd-to-metastor">How to propagate an 'Object' from Herd to Metastor<a class="headerlink" href="#how-to-propagate-an-object-from-herd-to-metastor" title="Permanent link">&para;</a></h2>
 <p>Once Business Object is created in Herd, there is an additional step to include the Object in Metastor so that the Object is query-able in BDSQL. This step registers a Notification for the Object such that an Activity workflow is triggered for every Data Registration to this Object. This is a one time step for the Object. Once Object is registered for the Notification, all the future partitions registered for the Object will be available in BDSQL.</p>
 <p>Here is the XML to add the Notification in Herd</p>
 <p><strong>objectNotification.xml</strong></p>
-<pre class="codehilite"><code>&lt;businessObjectDataNotificationRegistrationCreateRequest&gt;
+<div class="codehilite"><pre><span></span>&lt;businessObjectDataNotificationRegistrationCreateRequest&gt;
     &lt;businessObjectDataNotificationRegistrationKey&gt;
         &lt;namespace&gt;MDL&lt;/namespace&gt;
         &lt;notificationName&gt;METASTOR_{{NAMESPACE}}_{{USAGE}}_{{OBJECT_NAME}}_{{FILE_FORMAT}}&lt;/notificationName&gt;
@@ -650,7 +650,8 @@
         &lt;/jobAction&gt;
     &lt;/jobActions&gt;
     &lt;notificationRegistrationStatus&gt;ENABLED&lt;/notificationRegistrationStatus&gt;
-&lt;/businessObjectDataNotificationRegistrationCreateRequest&gt;</code></pre>
+&lt;/businessObjectDataNotificationRegistrationCreateRequest&gt;
+</pre></div>
 
 
 <p>NOTE: 
@@ -660,7 +661,8 @@ Replace {{OBJECT_NAME}} with the actual Object Name
 Replace {{FILE_FORMAT}} with the actual File Type for the Object</p>
 <p>Here is the cURL syntax to add the Notification for the Object:</p>
 <p><strong>cURL Command</strong></p>
-<pre class="codehilite"><code>cat objectNotification.xml | curl -H &quot;Content-Type: application/xml&quot; -d @- -X POST http://HERD_DNS_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -</code></pre>
+<div class="codehilite"><pre><span></span>cat objectNotification.xml | curl -H &quot;Content-Type: application/xml&quot; -d @- -X POST http://HERD_DNS_NAME/herd-app/rest/notificationRegistrations/businessObjectDataNotificationRegistrations | xmllint --format -
+</pre></div>
 
 
 <h2 id="how-to-query-the-data-in-bdsql">How To Query the Data in BDSQL<a class="headerlink" href="#how-to-query-the-data-in-bdsql" title="Permanent link">&para;</a></h2>
@@ -715,7 +717,7 @@ Replace {{FILE_FORMAT}} with the actual File Type for the Object</p>
 <p>Usage:
 <code>manageLdap.sh --action [create_user|create_group|add_attribute|replace_attribute|add_user_to_group|remove_user_from_group|delete_user|delete_group|delete_object|show_directory] [--user name] [--password password] [--group name] [--dn distinguishedname]</code></p>
 <p>Examples:</p>
-<pre class="codehilite"><code>  manageLdap.sh --action create_user --user userA --password password --email test@gmail.com --phone 1-234-567-8901
+<div class="codehilite"><pre><span></span>  manageLdap.sh --action create_user --user userA --password password --email test@gmail.com --phone 1-234-567-8901
   manageLdap.sh --action add_attribute --user userA --attribute telephoneNumber --value 1-234-567-8901
   manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com
   manageLdap.sh --action create_group --user userA --group groupA
@@ -725,13 +727,15 @@ Replace {{FILE_FORMAT}} with the actual File Type for the Object</p>
   manageLdap.sh --action delete_user --user userA
   manageLdap.sh --action delete_group --group groupA
   manageLdap.sh --action show_directory
-  manageLdap.sh --help</code></pre>
+  manageLdap.sh --help
+</pre></div>
 
 
 <p><strong>Create new user:</strong></p>
-<pre class="codehilite"><code>\# ./manageLdap.sh --action create_user --user userA --password password
+<div class="codehilite"><pre><span></span>\# ./manageLdap.sh --action create_user --user userA --password password
 \# ./manageLdap.sh --action create_user --user userB --password password --email test@gmail.com 
-\# ./manageLdap.sh --action create_user --user userC --password password --email test@gmail.com --phone 1-234-567-8901</code></pre>
+\# ./manageLdap.sh --action create_user --user userC --password password --email test@gmail.com --phone 1-234-567-8901
+</pre></div>
 
 
 <p>adding new entry "cn=$username,ou=People,dc=finra,dc=org"</p>
@@ -761,7 +765,7 @@ modifying entry "cn=groupA,ou=Groups,dc=finra,dc=org"</p>
 <p><strong>Modify existing user attribute value:</strong></p>
 <p><code>`\# ./manageLdap.sh --action replace_attribute --user userA --attribute mail --value new@gmail.com</code></p>
 <p><strong>Show directory information:</strong></p>
-<pre class="codehilite"><code>\# ./manageLdap.sh --action show_directory
+<div class="codehilite"><pre><span></span>\# ./manageLdap.sh --action show_directory
 # extended LDIF
 #
 # LDAPv3
@@ -903,7 +907,8 @@ search: 2
 result: 0 Success
 
 # numResponses: 15
-# numEntries: 14</code></pre>
+# numEntries: 14
+</pre></div>
 
 
 <h2 id="how-to-find-herd-mdl-logs-in-cloudwatch">How to find Herd-MDL logs in CloudWatch<a class="headerlink" href="#how-to-find-herd-mdl-logs-in-cloudwatch" title="Permanent link">&para;</a></h2>
@@ -1108,9 +1113,10 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
 <p>Invoke the lambda function with the following event (payload):</p>
 </li>
 </ol>
-<pre class="codehilite"><code class="language-json">    {
-      &quot;RequestedVersion&quot;: &quot;&lt;desired-herd-version&gt;&quot;
-    }</code></pre>
+<div class="codehilite"><pre><span></span>    <span class="p">{</span>
+      <span class="nt">&quot;RequestedVersion&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;desired-herd-version&gt;&quot;</span>
+    <span class="p">}</span>
+</pre></div>
 
 
 <p>The lambda function can be invoked in the following ways:</p>
@@ -1123,7 +1129,7 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
   <p class="admonition-title">Try it out!</p>
   <p>
   <b> 
-  To try out a zero-downtime deployment, check out our <a href="../tutorials/#performing-a-zero-downtime-upgrade-on-herd">walk-through</a> tutorial which will guide you through a sample deployment using the AWS Lambda console.
+  To try out a zero-downtime deployment, check out our <a href="/tutorials/#performing-a-zero-downtime-upgrade-on-herd">walk-through</a> tutorial which will guide you through a sample deployment using the AWS Lambda console.
   </b>
   <p><br />
   </div></p>
@@ -1134,7 +1140,7 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
 <p>The account has reached the maximum number of EIPs. EIPs are needed while configuring VPC for NatGateway.</p>
 <p><em>Solution</em></p>
 <ol>
-<li>Recreate the MDL stack with option "VPC=false". In this case, user needs to create SSM parameters as per "CreateVPC" section in <a href="../advanced-install.md/#conditional-parameters">Herd-MDL CFT Specifications</a>   </li>
+<li>Recreate the MDL stack with option "VPC=false". In this case, user needs to create SSM parameters as per "CreateVPC" section in <a href="advanced-install.md/#conditional-parameters">Herd-MDL CFT Specifications</a>   </li>
 <li>Increase the account level limit for EIPs so that NatGateway doesn't fail while allocating EIP in the account</li>
 </ol>
 <hr />
@@ -1187,7 +1193,7 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../dev-guide/" title="Developer guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="dev-guide/" title="Developer guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1202,7 +1208,7 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
           </a>
         
         
-          <a href="../tech-overview/" title="Technical Overview" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="tech-overview/" title="Technical Overview" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
@@ -1225,7 +1231,7 @@ below are steps on how to use the aforementioned Lambda function to perform a ro
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
       
     
     

@@ -30,7 +30,7 @@
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
       <link rel="shortcut icon" href="../">
-      <meta name="generator" content="mkdocs-0.17.4, mkdocs-material-2.5.4">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-2.5.4">
     
     
       
@@ -169,7 +169,7 @@
 
 
   <li class="md-nav__item">
-    <a href=".." title="What is Herd-MDL?" class="md-nav__link">
+    <a href="" title="What is Herd-MDL?" class="md-nav__link">
       What is Herd-MDL?
     </a>
   </li>
@@ -181,7 +181,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../basic-install/" title="Basic Install" class="md-nav__link">
+    <a href="basic-install/" title="Basic Install" class="md-nav__link">
       Basic Install
     </a>
   </li>
@@ -193,7 +193,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../user-guide/" title="User Guide" class="md-nav__link">
+    <a href="user-guide/" title="User Guide" class="md-nav__link">
       User Guide
     </a>
   </li>
@@ -205,7 +205,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../dev-guide/" title="Developer guide" class="md-nav__link">
+    <a href="dev-guide/" title="Developer guide" class="md-nav__link">
       Developer guide
     </a>
   </li>
@@ -217,7 +217,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../admin-guide/" title="Administration" class="md-nav__link">
+    <a href="admin-guide/" title="Administration" class="md-nav__link">
       Administration
     </a>
   </li>
@@ -229,7 +229,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tech-overview/" title="Technical Overview" class="md-nav__link">
+    <a href="tech-overview/" title="Technical Overview" class="md-nav__link">
       Technical Overview
     </a>
   </li>
@@ -241,7 +241,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../ldap-tree/" title="Users and Groups" class="md-nav__link">
+    <a href="ldap-tree/" title="Users and Groups" class="md-nav__link">
       Users and Groups
     </a>
   </li>
@@ -253,7 +253,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
+    <a href="authorizations-overview/" title="Authorizations and Security" class="md-nav__link">
       Authorizations and Security
     </a>
   </li>
@@ -265,7 +265,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../advanced-install/" title="Advanced Install" class="md-nav__link">
+    <a href="advanced-install/" title="Advanced Install" class="md-nav__link">
       Advanced Install
     </a>
   </li>
@@ -289,7 +289,7 @@
         MDLTests (MDLT)
       </label>
     
-    <a href="./" title="MDLTests (MDLT)" class="md-nav__link md-nav__link--active">
+    <a href="mdlt/" title="MDLTests (MDLT)" class="md-nav__link md-nav__link--active">
       MDLTests (MDLT)
     </a>
     
@@ -449,7 +449,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../tutorials/" title="Tutorials" class="md-nav__link">
+    <a href="tutorials/" title="Tutorials" class="md-nav__link">
       Tutorials
     </a>
   </li>
@@ -660,7 +660,7 @@
 <h2 id="mdlt-with-auth-stack">MDLT with Auth stack<a class="headerlink" href="#mdlt-with-auth-stack" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Same steps as above Simple Installation, but in stack parameters edit page, filling valid values for following parameters.<ul>
-<li><a href="../(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a>:  empty parameter value for MdlNoAuthStackName, and enter auth stack name in parameter MdlAuthStackName</li>
+<li><a href="(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a>:  empty parameter value for MdlNoAuthStackName, and enter auth stack name in parameter MdlAuthStackName</li>
 <li><a href="https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html">CertificateArn</a>:  valid aws certificate ARN, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
 <li><a href="https://docs.aws.amazon.com/acm/latest/userguide/setup-domain.html">DomainNameSuffix</a>:  domain name suffix, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
 <li><a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/CreatingHostedZone.html">HostedZoneName</a>:  hosted zone name, refer to Herd-MDL Advanced install[advanced-install.md] for more information</li>
@@ -670,7 +670,7 @@
 <h2 id="mdlt-against-existing-stack">MDLT against Existing stack<a class="headerlink" href="#mdlt-against-existing-stack" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Same steps as above Simple Installation, but in stack parameters edit page, filling different values for following parameters<ul>
-<li>If existing stack is noAuth stack, enter existing stack name in parameter <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html">MdlNoAuthStackName</a> ; if existing stack is auth stack, empty parameter value for MdlNoAuthStackName, and enter existing stack name in parameter <a href="../(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a></li>
+<li>If existing stack is noAuth stack, enter existing stack name in parameter <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html">MdlNoAuthStackName</a> ; if existing stack is auth stack, empty parameter value for MdlNoAuthStackName, and enter existing stack name in parameter <a href="(https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-parameters.html)">MdlAuthStackName</a></li>
 <li>set parameter CreateVPC value to false</li>
 <li>set parameter ExistingStack value to true</li>
 <li>Enter correct value for <a href="https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html">MdlPrivateSubnets</a>, which is the existing stack PrivateSubnets value(can be found in existing stack VPC SSM parameter, please refer to Herd-MDL docs for more info)</li>
@@ -1318,7 +1318,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../advanced-install/" title="Advanced Install" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="advanced-install/" title="Advanced Install" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1333,7 +1333,7 @@
           </a>
         
         
-          <a href="../tutorials/" title="Tutorials" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="tutorials/" title="Tutorials" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
@@ -1356,7 +1356,7 @@
     
       <script src="../assets/javascripts/application.js"></script>
       
-      <script>app.initialize({version:"0.17.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
       
     
     

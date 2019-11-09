@@ -22,7 +22,7 @@ These are prerequisites that are necessary for installing MDL components for Bas
 
 Installation is automated through CloudFormation templates in AWS. The stack creates all the resources required by MDL application. This takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html) for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.
 
-1.  Download release artefact: [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.4.0/installMDL.yml) to your local file system, this will install version `1.4.0`.
+1.  Download release artefact: [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.5.0/installMDL.yml) to your local file system, this will install version `1.5.0`.
 2.  Login to AWS console and navigate to the [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html) service.
 3.  Create a new stack using the option: "Upload a template to Amazon S3" - Refer to [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) on how to select a local template.
 4.  Select the same `installMDL.yml` file from your local file system (which was downloaded in step 1).

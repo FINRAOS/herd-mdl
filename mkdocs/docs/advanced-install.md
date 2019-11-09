@@ -51,7 +51,7 @@ These are prerequisites that are necessary for installing MDL components for Adv
 
 Installation is automated through Cloudformation templates in AWS. The stack creates all the resources required by MDL application. This roughly takes a couple of hours to create all the resources needed for MDL. A stack can be created using AWS console, or AWS CLI, or AWS SDK. Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacks.html) for creating stacks using Cloudformation templates. In this section, steps are described for creating the stack using AWS console.
 
-*   Download the attached [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.1.0/installMDL.yml) file to local file system
+*   Download the attached [installMDL.yml](https://github.com/FINRAOS/herd-mdl/releases/download/mdl-v1.5.0/installMDL.yml) file to local file system
 *   Login to AWS console and navigate to [Cloudformation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-login.html)
 *   Create the stack using option "Upload a template to Amazon S3" - Refer [AWS documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-console-create-stack-template.html) for selecting a local template
 *   Choose the installMDL.yml file from local file system
