@@ -40,7 +40,7 @@ Parameters:
     Description: Herd release version to use.
     Type: String
   HerdUIVersion:
-    Default: '0.78.0'
+    Default: '0.73.0'
     Description: Herd-UI release version to use.
     Type: String
   HerdDBClass:
