@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-**/
+ **/
 package org.finra.herd.metastore.managed;
 
 import com.amazonaws.auth.AWSCredentials;
@@ -50,10 +50,12 @@ import java.util.logging.Logger;
 @Component
 public class ClusterManager implements InitializingBean {
 
-	public static final String CLUSTER_NM_DELIMITER = "_";
-	public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
+    public static final String CLUSTER_NM_DELIMITER = "_";
+    public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
+    public static final String CLUSTER_TYPE_STATS = "STATS";
+    public static final String CLUSTER_TYPE_NON_STATS = "NON_STATS";
 
-	@Autowired
+    @Autowired
     JdbcTemplate template;
 
     @Autowired
@@ -61,6 +63,7 @@ public class ClusterManager implements InitializingBean {
 
     String clusterName;
     String clusterID;
+    String clusterType;
 
     @Value("${JOBFLOW_JSON_PATH}")
     String jobFlowJson;
@@ -81,35 +84,34 @@ public class ClusterManager implements InitializingBean {
     int maxCluster = 10;
 
     @Value("${AUTO_SCALE_INTERVAL_IN_MINUTES}")
-    int autoScaleIntervalInMin=10;
+    int autoScaleIntervalInMin = 10;
 
     @Value("${MAX_CLUSTER_TO_START}")
-    int maxClusterToStart=2;
+    int maxClusterToStart = 2;
 
     @Value("${CLUSTER_DEF_NAME}")
     String clusterDef;
 
-	@Value( "${CREATE_CLUSTER_RETRY_COUNT}" )
-	int createClusterMaxRetryCount = 5;
+    @Value("${CREATE_CLUSTER_RETRY_COUNT}")
+    int createClusterMaxRetryCount = 5;
 
 
     @Value("${AGS}")
     private String ags;
 
-	@Autowired
-	boolean analyzeStats;
+    @Autowired
+    boolean analyzeStats;
 
-	@Autowired
-	NotificationSender notificationSender;
+    @Autowired
+    NotificationSender notificationSender;
 
-	@Autowired
-	protected DataMgmtSvc dataMgmtSvc;
+    @Autowired
+    protected DataMgmtSvc dataMgmtSvc;
 
 
+    int createClusterRetryCounter = 0;
 
-	int createClusterRetryCounter = 0;
-
-	Set<String> errors = new HashSet<String>( 5 );
+    Set<String> errors = new HashSet<String>(5);
 
     Logger logger = Logger.getLogger("ClusterManager");
 
@@ -129,14 +131,14 @@ public class ClusterManager implements InitializingBean {
     public static final String JOB_GROUP_QUERY_STATS = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
             "min(DATE_CREATED) as oldest from (" + FIND_STATS_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
 
-    public static final String AUTO_SCALE_QUERY = "select ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE order by ID DESC limit 1;";
+    public static final String AUTO_SCALE_QUERY = "select ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE WHERE CLUSTER_TYPE=? order by ID DESC limit 1;";
 
     public static final String SELECT_CLUSTER_ID_SQL = "select CLUSTER_ID from EMR_CLUSTER where CLUSTER_NAME = ?";
 
 
     private AmazonElasticMapReduce emrClient;
 
-	private ScheduledExecutorService es = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService es = Executors.newScheduledThreadPool(1);
 
 
     public void setClusterName(String clusterName) {
@@ -163,17 +165,17 @@ public class ClusterManager implements InitializingBean {
         this.emrClient = emrClient;
     }
 
-	public void setDmRestClient( ApiClient dmRestClient ) {
-		this.dmRestClient = dmRestClient;
-	}
+    public void setDmRestClient(ApiClient dmRestClient) {
+        this.dmRestClient = dmRestClient;
+    }
 
-	private void incrementCreateClusterRetryCounter(){
-		createClusterRetryCounter++;
-	}
+    private void incrementCreateClusterRetryCounter() {
+        createClusterRetryCounter++;
+    }
 
-	private void resetCreateClusterRetryCounter(){
-		createClusterRetryCounter = 0;
-	}
+    private void resetCreateClusterRetryCounter() {
+        createClusterRetryCounter = 0;
+    }
 
     public void setAgs(String ags) {
         this.ags = ags;
@@ -181,6 +183,14 @@ public class ClusterManager implements InitializingBean {
 
     public void setClusterDef(String clusterDef) {
         this.clusterDef = clusterDef;
+    }
+
+    public void setClusterType(String clusterType) {
+        this.clusterType = clusterType;
+    }
+
+    public String getClusterType() {
+        return clusterType;
     }
 
 
@@ -248,42 +258,40 @@ public class ClusterManager implements InitializingBean {
      * Clean up before terminates.
      */
     @PreDestroy
-    public void deleteCluster()
-    {
+    public void deleteCluster() {
         template.update(REMOVE_CLUSTER, this.clusterID);
-		logger.info( this.clusterID + " deleted from running cluster list before destroy" );
+        logger.info(this.clusterID + " deleted from running cluster list before destroy");
 
-        shutdownAutoscaleService( 1 );
-	}
+        shutdownAutoscaleService(1);
+    }
 
-	void shutdownAutoscaleService(int counter){
-		if ( counter >= 5 ) {
-			logger.info("Max Retries reached, might have to manually terminate cluster!");
-			return;
-		}
+    void shutdownAutoscaleService(int counter) {
+        if (counter >= 5) {
+            logger.info("Max Retries reached, might have to manually terminate cluster!");
+            return;
+        }
 
-		es.shutdownNow();
+        es.shutdownNow();
 
-		try {
-			es.awaitTermination( 5, TimeUnit.SECONDS );
-		} catch ( InterruptedException e ) {
-			logger.info( "Autoscale thread shutting down, wait interrupted" );
-		}finally {
-			if(es.isTerminated()){
-				logger.info( "Autoscale service shutdown successfully!" );
-			}else{
-				logger.info( "Autoscale service is still running, trying again to shutdown" );
-				counter++;
-				logger.info( "Retry #: " + counter );
-				shutdownAutoscaleService( counter );
-			}
-		}
-	}
+        try {
+            es.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.info("Autoscale thread shutting down, wait interrupted");
+        } finally {
+            if (es.isTerminated()) {
+                logger.info("Autoscale service shutdown successfully!");
+            } else {
+                logger.info("Autoscale service is still running, trying again to shutdown");
+                counter++;
+                logger.info("Retry #: " + counter);
+                shutdownAutoscaleService(counter);
+            }
+        }
+    }
 
-    public void deleteCluster(String clusterIDToBeDeleted)
-    {
+    public void deleteCluster(String clusterIDToBeDeleted) {
         template.update(REMOVE_CLUSTER, clusterIDToBeDeleted);
-        logger.info( clusterIDToBeDeleted + " deleted from running cluster list via autoscale" );
+        logger.info(clusterIDToBeDeleted + " deleted from running cluster list via autoscale");
     }
 
     @Override
@@ -293,15 +301,20 @@ public class ClusterManager implements InitializingBean {
         String emrInfo = new String(Files.readAllBytes(Paths.get(jobFlowJson)));
         JsonReader reader = Json.createReader(new StringReader(emrInfo));
         JsonObject object = reader.readObject();
-        if(object.containsKey("jobFlowId"))
-        {
+        if (object.containsKey("jobFlowId")) {
             setClusterID(object.getString("jobFlowId"));
-            logger.info("Cluster ID = "+ clusterID);
+            logger.info("Cluster ID = " + clusterID);
             DescribeClusterRequest req = new DescribeClusterRequest().withClusterId(clusterID);
             DescribeClusterResult result = emrClient.describeCluster(req);
             String name = result.getCluster().getName();
-            logger.info("Cluster Name = "+ name);
-            setClusterName(name.substring(name.lastIndexOf(".")+1));
+                logger.info("Cluster Name = " + name);
+            setClusterName(name.substring(name.lastIndexOf(".") + 1));
+            if (analyzeStats)
+                setClusterType(CLUSTER_TYPE_STATS);
+            else
+                setClusterType(CLUSTER_TYPE_NON_STATS);
+            logger.info("Cluster Type =" + getClusterType());
+
         }
 
     }
@@ -309,29 +322,27 @@ public class ClusterManager implements InitializingBean {
     AmazonElasticMapReduce createEmrClient() {
         DefaultAWSCredentialsProviderChain defaultAWSCredentialsProviderChain = new DefaultAWSCredentialsProviderChain();
         AWSCredentials credentials = defaultAWSCredentialsProviderChain.getCredentials();
-        emrClient =  AmazonElasticMapReduceClientBuilder.standard()
-				.withCredentials(new AWSStaticCredentialsProvider(credentials))
-				.build();
+        emrClient = AmazonElasticMapReduceClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .build();
         return emrClient;
     }
 
     void setupClusterAutoscaleSchedule() {
-		Runnable task = () -> clusterAutoScale();
-		es.scheduleWithFixedDelay(task, 0, autoScaleIntervalInMin, TimeUnit.MINUTES);
+        Runnable task = () -> clusterAutoScale();
+        es.scheduleWithFixedDelay(task, 0, autoScaleIntervalInMin, TimeUnit.MINUTES);
     }
 
     int calculateNumberOfClustersNeeded() {
-        List<Map<String, Object>> result ;
-        if(analyzeStats) {
-            result=template.queryForList(JOB_GROUP_QUERY_STATS, maxRetry);
-        }
-        else {
-            result=template.queryForList(JOB_GROUP_QUERY, maxRetry);
+        List<Map<String, Object>> result;
+        if (analyzeStats) {
+            result = template.queryForList(JOB_GROUP_QUERY_STATS, maxRetry);
+        } else {
+            result = template.queryForList(JOB_GROUP_QUERY, maxRetry);
         }
 
         int clusterNum = 0;
-        if(result.size() > 1)
-        {
+        if (result.size() > 1) {
             clusterNum = 1; //start from 1
         }
 
@@ -343,14 +354,12 @@ public class ClusterManager implements InitializingBean {
             int partCount = ((Long) record.get("count")).intValue();
             Date timeCreated = (Date) record.get("oldest");
 
-            if (partCount > singleObjPartitionThreshold)
-            {
+            if (partCount > singleObjPartitionThreshold) {
                 clusterNum++;
-            } else if (ageCheck(current, timeCreated)&& (!ageIncrement)) {
+            } else if (ageCheck(current, timeCreated) && (!ageIncrement)) {
                 clusterNum++;
                 ageIncrement = true;
-            }
-            else {
+            } else {
                 totalPartition += partCount;
 
                 if (totalPartition > totalPartitionThreshold) {
@@ -362,25 +371,25 @@ public class ClusterManager implements InitializingBean {
         }
 
         if (clusterNum == 0) clusterNum = 1;
-        if(clusterNum > maxCluster) clusterNum=maxCluster;
+        if (clusterNum > maxCluster) clusterNum = maxCluster;
         return clusterNum;
     }
 
 
-    protected boolean ageCheck( long current, Date timeCreated ){
-        long age = (current - timeCreated.getTime()/1000) / 3600;
+    protected boolean ageCheck(long current, Date timeCreated) {
+        long age = (current - timeCreated.getTime() / 1000) / 3600;
         return (age > ageThreshold);
     }
 
-    public void clusterAutoScale()
-    {
+    public void clusterAutoScale() {
         logger.info("Auto Scale Job started");
-        Map<String, Object> lastCheck = template.queryForMap(AUTO_SCALE_QUERY);
+
+
+        Map<String, Object> lastCheck = template.queryForMap(AUTO_SCALE_QUERY, new Object[]{clusterType}, String.class);
         long minutes = (Long) lastCheck.get("age");
-        if(minutes >= autoScaleIntervalInMin) {
-            long id = (Long)lastCheck.get("ID") + 1;
-            int updated = template.update("INSERT IGNORE INTO METASTOR_EMR_AUTOSCALE (`ID`," +
-                    "`CLUSTER_ID`) VALUES (?, ?)", id, clusterID);
+        if (minutes >= autoScaleIntervalInMin) {
+            long id = (Long) lastCheck.get("ID") + 1;
+            int updated = template.update("INSERT IGNORE INTO METASTOR_EMR_AUTOSCALE (`ID`," + "`CLUSTER_ID`," + "`CLUSTER_TYPE`) VALUES (?, ?,?)", id, clusterID, clusterType);
 
             if (updated > 0) {
 
@@ -421,97 +430,96 @@ public class ClusterManager implements InitializingBean {
                 }
 
                 // Start Additional if required
-				startAdditionalClusters( clusterNumber, existingCluster );
-			}
+                startAdditionalClusters(clusterNumber, existingCluster);
+            }
         }
-		logger.info("Auto Scale Job completed");
+        logger.info("Auto Scale Job completed");
 
     }
 
-	public void startAdditionalClusters( int clusterNumber, List<String> existingCluster ) {
-		if (existingCluster.size() < clusterNumber) {
-			int clusterToCreate = clusterNumber - existingCluster.size();
+    public void startAdditionalClusters(int clusterNumber, List<String> existingCluster) {
+        if (existingCluster.size() < clusterNumber) {
+            int clusterToCreate = clusterNumber - existingCluster.size();
 
-			if ( clusterToCreate > maxClusterToStart ) clusterToCreate = maxClusterToStart;
-			logger.info("Creating clusters, total number to create = " + clusterToCreate);
+            if (clusterToCreate > maxClusterToStart) clusterToCreate = maxClusterToStart;
+            logger.info("Creating clusters, total number to create = " + clusterToCreate);
 
-			EmrApi emrApi = new EmrApi(dmRestClient);
+            EmrApi emrApi = new EmrApi(dmRestClient);
 
-			// Create new additional cluster
-			String proposedName = "";
-			for ( int i = 1, created = 0; created < clusterToCreate; i++ ) {
-				proposedName = proposedName( i );
-				if ( !existingCluster.contains( proposedName ) ) {
-					logger.info( "Creating cluster: " + proposedName );
-					createAdditionalCluster( proposedName, emrApi, existingCluster );
-					created++;
-				}
-			}
+            // Create new additional cluster
+            String proposedName = "";
+            for (int i = 1, created = 0; created < clusterToCreate; i++) {
+                proposedName = proposedName(i);
+                if (!existingCluster.contains(proposedName)) {
+                    logger.info("Creating cluster: " + proposedName);
+                    createAdditionalCluster(proposedName, emrApi, existingCluster);
+                    created++;
+                }
+            }
 
-			resetCreateClusterRetryCounter();
-		}
-	}
+            resetCreateClusterRetryCounter();
+        }
+    }
 
-	private void createAdditionalCluster( String proposedName, EmrApi emrApi, List<String> existingCluster ) {
+    private void createAdditionalCluster(String proposedName, EmrApi emrApi, List<String> existingCluster) {
 
-		try {
-			if ( maxRetriesNotReached() ) {
-				try {
-					// Call to Herd to create cluster
-					dataMgmtSvc.createCluster( analyzeStats, proposedName );
-					existingCluster.add( proposedName );
+        try {
+            if (maxRetriesNotReached()) {
+                try {
+                    // Call to Herd to create cluster
+                    dataMgmtSvc.createCluster(analyzeStats, proposedName);
+                    existingCluster.add(proposedName);
 
-					Thread.sleep(500);
-				} catch ( Exception ex ) {
-					logger.severe( "Error calling Herd rest: " + ex.getMessage() );
-					try {
-						errors.add( ex.getMessage() );
-						// increment retry counter
-						incrementCreateClusterRetryCounter();
-						Thread.sleep( 30000 );
-					} catch ( InterruptedException e ) {
-						logger.warning( "Error while waiting for retry: " + e.getMessage() );
-					}
+                    Thread.sleep(500);
+                } catch (Exception ex) {
+                    logger.severe("Error calling Herd rest: " + ex.getMessage());
+                    try {
+                        errors.add(ex.getMessage());
+                        // increment retry counter
+                        incrementCreateClusterRetryCounter();
+                        Thread.sleep(30000);
+                    } catch (InterruptedException e) {
+                        logger.warning("Error while waiting for retry: " + e.getMessage());
+                    }
 
-					// Try again to create cluster
-					createAdditionalCluster( proposedName, emrApi, existingCluster );
-				}
-			} else {
-				String message = String.format( "Create Cluster Retries reached max limit of %d for proposed cluster name: %s"
-						, createClusterMaxRetryCount
-						, proposedName );
-				resetCreateClusterRetryCounter();
-				sendNotificationEmail(proposedName);
-				throw new RuntimeException( message );
-			}
-		} catch ( Exception ex ) {
-			logger.severe( ex.getMessage() );
-		}
-	}
+                    // Try again to create cluster
+                    createAdditionalCluster(proposedName, emrApi, existingCluster);
+                }
+            } else {
+                String message = String.format("Create Cluster Retries reached max limit of %d for proposed cluster name: %s"
+                        , createClusterMaxRetryCount
+                        , proposedName);
+                resetCreateClusterRetryCounter();
+                sendNotificationEmail(proposedName);
+                throw new RuntimeException(message);
+            }
+        } catch (Exception ex) {
+            logger.severe(ex.getMessage());
+        }
+    }
 
-	private void sendNotificationEmail( String proposedName ) {
-		String subject = String.format( "Create Cluster Failed for Cluster Name - %s", proposedName );
-		String msgBody = errors.toString().replace("[","").replace("]","");
-		notificationSender.sendEmail( msgBody, subject );
-		errors.clear();
-	}
+    private void sendNotificationEmail(String proposedName) {
+        String subject = String.format("Create Cluster Failed for Cluster Name - %s", proposedName);
+        String msgBody = errors.toString().replace("[", "").replace("]", "");
+        notificationSender.sendEmail(msgBody, subject);
+        errors.clear();
+    }
 
-	private boolean maxRetriesNotReached() {
-		return (createClusterRetryCounter < createClusterMaxRetryCount);
-	}
+    private boolean maxRetriesNotReached() {
+        return (createClusterRetryCounter < createClusterMaxRetryCount);
+    }
 
-	private String proposedName( int num ) {
-		StringBuilder clusterName = new StringBuilder( JobProcessorConstants.METASTOR_CLUSTER_NAME );
-		if ( analyzeStats ) {
-			clusterName = new StringBuilder( JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME );
-		}
+    private String proposedName(int num) {
+        StringBuilder clusterName = new StringBuilder(JobProcessorConstants.METASTOR_CLUSTER_NAME);
+        if (analyzeStats) {
+            clusterName = new StringBuilder(JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME);
+        }
 
-		return clusterName
-				.append( CLUSTER_NM_DELIMITER )
-				.append( num )
-				.toString();
-	}
-
+        return clusterName
+                .append(CLUSTER_NM_DELIMITER)
+                .append(num)
+                .toString();
+    }
 
 
 }
