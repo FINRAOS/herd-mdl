@@ -312,6 +312,7 @@ public class ClusterManager implements InitializingBean {
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		setClusterType();
+		setQueryEmrCluster();
 		logger.info( "Cluster Type =" + getClusterType() );
 		logger.info( "autoScaleIntervalInMin = " + autoScaleIntervalInMin );
 
