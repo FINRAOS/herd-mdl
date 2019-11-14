@@ -131,7 +131,9 @@ public class ClusterManager implements InitializingBean {
     public static final String JOB_GROUP_QUERY_STATS = "select NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, count(*) as count, " +
             "min(DATE_CREATED) as oldest from (" + FIND_STATS_JOB_QUERY + ") as t GROUP BY NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE";
 
-    public static final String AUTO_SCALE_QUERY = "select ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE WHERE CLUSTER_TYPE=? order by ID DESC limit 1;";
+    public static final String AUTO_SCALE_QUERY = "select ID,STATS_ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE WHERE CLUSTER_TYPE=? order by ID DESC,STATS_ID DESC limit 1;";
+
+    public static final String AUTO_SCALE_QUERY_STATS = "select ID,STATS_ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE WHERE CLUSTER_TYPE=? order by STATS_ID DESC,ID DESC limit 1;";
 
     public static final String SELECT_CLUSTER_ID_SQL = "select CLUSTER_ID from EMR_CLUSTER where CLUSTER_NAME = ?";
 
@@ -381,20 +383,45 @@ public class ClusterManager implements InitializingBean {
         return (age > ageThreshold);
     }
 
+    protected Map<String,Object> getAgeAndId(){
+        if(analyzeStats) {
+            Map<String, Object> lastCheck = template.queryForMap(AUTO_SCALE_QUERY_STATS, clusterType);
+            return lastCheck;
+        }else
+        {
+            Map<String, Object> lastCheck = template.queryForMap(AUTO_SCALE_QUERY, clusterType);
+            return lastCheck;
+        }
+
+    }
     public void clusterAutoScale() {
         logger.info("Auto Scale Job started");
+        logger.info("Cluster Type ="+clusterType);
 
-
-        Map<String, Object> lastCheck = template.queryForMap(AUTO_SCALE_QUERY, new Object[]{clusterType}, String.class);
+        Map<String, Object> lastCheck = getAgeAndId();
         long minutes = (Long) lastCheck.get("age");
+        logger.info("Cluster Age="+minutes);
+        logger.info("autoScaleIntervalInMin"+autoScaleIntervalInMin);
         if (minutes >= autoScaleIntervalInMin) {
-            long id = (Long) lastCheck.get("ID") + 1;
-            int updated = template.update("INSERT IGNORE INTO METASTOR_EMR_AUTOSCALE (`ID`," + "`CLUSTER_ID`," + "`CLUSTER_TYPE`) VALUES (?, ?,?)", id, clusterID, clusterType);
+
+            long id = (Long) lastCheck.get("ID");
+            long stats_id=(Long) lastCheck.get("STATS_ID");
+            if(analyzeStats){
+                stats_id=stats_id+1;
+            }else{
+                id=id+1;
+            }
+
+            logger.info("ID ="+id);
+            logger.info("STATS_ID"+stats_id);
+            int updated = template.update("INSERT IGNORE INTO METASTOR_EMR_AUTOSCALE (ID,STATS_ID,CLUSTER_ID,CLUSTER_TYPE) VALUES (?, ?,?,?)", id,stats_id, clusterID, clusterType);
+            logger.info("No. of rows updated"+updated);
 
             if (updated > 0) {
 
                 int clusterNumber = calculateNumberOfClustersNeeded();
-                template.update("UPDATE METASTOR_EMR_AUTOSCALE SET TOTAL_CLUSTER= ? WHERE ID=?", clusterNumber, id);
+                logger.info("Number of clustersNeeded ="+clusterNumber);
+                template.update("UPDATE METASTOR_EMR_AUTOSCALE SET TOTAL_CLUSTER= ? WHERE ID=? AND STATS_ID=?", clusterNumber, id,stats_id);
                 if (clusterNumber <= 1) return;
 
                 List<Map<String, Object>> clusters = template.queryForList("select * from EMR_CLUSTER");
@@ -438,6 +465,7 @@ public class ClusterManager implements InitializingBean {
     }
 
     public void startAdditionalClusters(int clusterNumber, List<String> existingCluster) {
+        logger.info("Starting Additional Clusters");
         if (existingCluster.size() < clusterNumber) {
             int clusterToCreate = clusterNumber - existingCluster.size();
 
