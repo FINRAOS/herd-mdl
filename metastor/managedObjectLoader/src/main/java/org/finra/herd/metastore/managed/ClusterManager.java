@@ -98,6 +98,9 @@ public class ClusterManager implements InitializingBean {
 	int createClusterMaxRetryCount = 5;
 
 
+    String queryEmrCluster;
+
+
 	@Value( "${AGS}" )
 	private String ags;
 
@@ -136,6 +139,8 @@ public class ClusterManager implements InitializingBean {
 	public static final String AUTO_SCALE_QUERY = "select ID, STATS_ID, TIMESTAMPDIFF(MINUTE, PROCESSED_DT, now()) as age from METASTOR_EMR_AUTOSCALE WHERE CLUSTER_TYPE=? order by ID DESC,STATS_ID DESC limit 1;";
 
 	public static final String SELECT_CLUSTER_ID_SQL = "select CLUSTER_ID from EMR_CLUSTER where CLUSTER_NAME = ?";
+
+
 
 
 	private AmazonElasticMapReduce emrClient;
@@ -194,6 +199,14 @@ public class ClusterManager implements InitializingBean {
 	public String getClusterType() {
 		return clusterType;
 	}
+
+    public String getQueryEmrCluster() {
+        return queryEmrCluster;
+    }
+
+    private void setQueryEmrCluster() {
+        this.queryEmrCluster = (analyzeStats) ? "select * from EMR_CLUSTER where CLUSTER_NAME like '%stats%'":"select * from EMR_CLUSTER where CLUSTER_NAME not like '%stats%'";
+    }
 
 
 	public boolean registerCluster() {
@@ -411,7 +424,7 @@ public class ClusterManager implements InitializingBean {
 				template.update( "UPDATE METASTOR_EMR_AUTOSCALE SET TOTAL_CLUSTER= ? WHERE ID=? AND STATS_ID=?", clusterNumber, id, stats_id );
 				if ( clusterNumber <= 1 ) return;
 
-				List<Map<String, Object>> clusters = template.queryForList( "select * from EMR_CLUSTER" );
+				List<Map<String, Object>> clusters = template.queryForList(getQueryEmrCluster());
 				List<String> existingCluster = new ArrayList<>();
 
 				createEmrClient();
