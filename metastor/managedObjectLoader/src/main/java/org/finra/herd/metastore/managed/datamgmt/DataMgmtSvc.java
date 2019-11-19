@@ -167,14 +167,12 @@ public class DataMgmtSvc {
      */
     private void addSubPartitionFilter(JobDefinition jd, List<PartitionValueFilter> partitionValueFilters) throws ApiException {
         List<SchemaColumn> partitionKeys = getDMFormat(jd).getSchema().getPartitions();
-        log.info("Partition Keys {} for {}", partitionKeys, jd.getTableName());
         Map<String, String> partitionKeyValues = Maps.newLinkedHashMap();
 
         IntStream.range(0, jd.getPartitionValues().size())
                 .forEach(i -> {
                     String partitionKey = partitionKeys.get(i).getName();
                     String partitionValue = jd.getPartitionValues().get(i);
-                    log.info("Partition Key: {}\t Value: {}", partitionKey, partitionValue);
                     partitionKeyValues.put(partitionKey, partitionValue);
 
                     addPartitionFilter(partitionKey, Lists.newArrayList(partitionValue), partitionValueFilters);
