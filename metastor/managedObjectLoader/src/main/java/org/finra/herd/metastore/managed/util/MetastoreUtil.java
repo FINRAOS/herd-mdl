@@ -19,17 +19,22 @@ public class MetastoreUtil {
 		return (ObjectProcessor.WF_TYPE_MANAGED_STATS == wfType);
 	}
 
-	public static boolean isNonPartitionedSingleton( int wfType, String partitionKey ) {
-		return isSingletonWF( wfType ) && NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase( partitionKey );
-	}
-
-
-	public static boolean isNonPartitionedSingleton( String partitionKey ) {
-		return NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase( partitionKey );
-	}
-
 	public static boolean isPartitionedSingleton( int wfType, String partitionKey ) {
 		return isSingletonWF( wfType ) && !(NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase( partitionKey ));
 	}
 
+	public static boolean isNonPartitionedSingleton( int wfType, String partitionKey ) {
+		return isSingletonWF( wfType ) && NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase( partitionKey );
+	}
+
+	/**
+	 * Overridden method to identify if WF is Non Partitioned Singleton for STATS
+	 * Can't use the other method as WF_TYPE for stats would be 5
+	 *
+	 * @param partitionKey
+	 * @return
+	 */
+	public static boolean isNonPartitionedSingleton( String partitionKey ) {
+		return NON_SINGLETON_PARTITION_KEY.equalsIgnoreCase( partitionKey );
+	}
 }
