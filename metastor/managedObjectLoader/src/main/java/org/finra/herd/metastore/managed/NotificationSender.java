@@ -113,7 +113,7 @@ public class NotificationSender {
 			Message msg = new MimeMessage( session );
 			msg.setFrom( new InternetAddress( "donotreply@finra.org", ags ) );
 
-			msg.addRecipient( Message.RecipientType.TO, new InternetAddress( mailingList ) );
+			msg.addRecipients( Message.RecipientType.TO, InternetAddress.parse( mailingList ) );
 
 			msg.setSubject( getUpdatedSubject( subject ) );
 

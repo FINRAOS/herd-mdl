@@ -36,7 +36,7 @@ public class ManagedObjStatsProcessor extends JobProcessor {
 		String partitionSpecsForStats = od.partitionSpecForStats();
 
 		if ( Strings.isNullOrEmpty( partitionSpecsForStats ) ) {
-			log.error( "ERROR: STATS PARTITION Spec is empty: {}", od );
+			log.error( "ERROR: CLUSTER_TYPE_STATS PARTITION Spec is empty: {}", od );
 			return null;
 		}
 

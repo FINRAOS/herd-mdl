@@ -15,6 +15,7 @@
 **/
 package org.finra.herd.metastore.managed.jobProcessor;
 
+import com.google.common.base.Strings;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
@@ -63,9 +64,9 @@ public abstract class JobProcessor {
 	}
 
 	protected void setPartitionKeyIfNotPresent( JobDefinition od ) {
-		if ( Objects.isNull( od.getPartitionKey() ) ) {
+		if ( Strings.isNullOrEmpty( od.getPartitionKey() ) ) {
 			try {
-				logger.info( "Partition Key empty!" );
+				logger.info( "Partition Key NULL or EMPTY, calling Herd to get Partition Key" );
 				BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
 				od.setPartitionKey( dmFormat.getPartitionKey() );
 			} catch ( ApiException e ) {

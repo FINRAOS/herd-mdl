@@ -35,14 +35,11 @@ import java.util.Objects;
 public class ManagedJobProcessor extends JobProcessor {
 
 	@Autowired
-	HiveClient hiveClient;
-
-	@Autowired
 	HiveHqlGenerator hiveHqlGenerator;
 
 	@Override
 	public ProcessBuilder createProcessBuilder( JobDefinition od ) {
-		Objects.requireNonNull( od.getPartitionKey(), "PartitionKey is null" );
+		Objects.requireNonNull( od.getPartitionKey(), "PartitionKey is required for DDL call but found it NULL or EMPTY....EXITING!!!" );
 
 		List<String> partitionVal = Lists.newArrayList();
 

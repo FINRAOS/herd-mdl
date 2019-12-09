@@ -50,6 +50,7 @@ public class HerdMetastoreConfig {
     public static final String ANALYZE_STATS  = "analyze.stats";
 
 
+
     @Value( "${MYSQL_URL}" )
     protected String dburl;
 
@@ -151,6 +152,8 @@ public class HerdMetastoreConfig {
         log.info("Analyze Stats from CMD: {}", stats);
         return "true".equalsIgnoreCase(stats);
     }
+
+
 
     @Bean (name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {
