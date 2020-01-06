@@ -281,6 +281,9 @@ public class HiveHqlGenerator {
 			if ( partitions.size() == 1 ) {
 				submitStatsJob( jd, jd.partitionValuesForStats(partitions.get( 0 )) );
 			} else {
+				//Filter not available Partitions
+				dataMgmtSvc.filterPartitionsAsPerAvailability( jd, partitions );
+
 				partitions.stream()
 						.forEach( s -> submitStatsJob( jd, s ) );
 			}
