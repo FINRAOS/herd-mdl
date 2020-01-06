@@ -113,7 +113,6 @@ public class DataMgmtSvc {
 
 		List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
 
-		log.info( "PartitionKey: {} \t Partitions: {}", jd.getPartitionKey(), partitions );
 		if ( MetastoreUtil.isPartitionedSingleton( jd.getWfType(), jd.getPartitionKey() ) ) {
 			addPartitionedSingletonFilter( jd, partitionValueFilters );
 		} else {
@@ -247,8 +246,7 @@ public class DataMgmtSvc {
 	}
 
 	public void filterPartitionsAsPerAvailability( JobDefinition jd, List<String> partitions ) throws ApiException {
-		log.info( "Checking Partitions Availability: {}", partitions );
-
+		int numberofPartitions = partitions.size();
 		BusinessObjectDataAvailabilityRequest request = new BusinessObjectDataAvailabilityRequest();
 
 		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
@@ -266,10 +264,9 @@ public class DataMgmtSvc {
 				.getNotAvailableStatuses()
 				.stream()
 				.forEach( as -> {
-					log.info( "Removing => " + as.getPartitionValue() );
 					partitions.remove( as.getPartitionValue() );
 				} );
 
-		log.info( "Filtered Partitions: {}", partitions );
+		log.info( "Remaining Partitions: {} out of {}", partitions.size(), numberofPartitions );
 	}
 }
