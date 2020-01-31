@@ -20,7 +20,11 @@
 	<parent>
 		<artifactId>metastore</artifactId>
 		<groupId>org.finra.herd-mdl.metastore</groupId>
+<<<<<<< HEAD
 		<version>1.2.41</version>
+=======
+		<version>1.2.43</version>
+>>>>>>> metastore_1_2_43
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 
