@@ -19,7 +19,7 @@
 	<parent>
 		<artifactId>metastore</artifactId>
 		<groupId>org.finra.herd-mdl.metastore</groupId>
-		<version>1.2.45</version>
+		<version>1.2.46</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -38,7 +38,7 @@
 		<guava.version>23.0</guava.version>
 		<common.dpcp.version>2.2.0</common.dpcp.version>
 		<pebble.version>2.3.0</pebble.version>
-		<hive.jdbc.version>2.1.1</hive.jdbc.version>
+		<hive.jdbc.version>3.1.1</hive.jdbc.version>
 		<hadoop.common.version>2.7.3</hadoop.common.version>
 
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
