@@ -39,7 +39,7 @@
 		<common.dpcp.version>2.2.0</common.dpcp.version>
 		<pebble.version>2.3.0</pebble.version>
 		<hive.jdbc.version>3.1.1</hive.jdbc.version>
-		<hadoop.common.version>2.7.3</hadoop.common.version>
+		<hadoop.common.version>3.1.0</hadoop.common.version>
 
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>2.20</maven-surefire-plugin.version>
