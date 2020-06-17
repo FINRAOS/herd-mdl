@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -44,21 +45,21 @@ import java.util.stream.IntStream;
 @Slf4j
 public class DataMgmtSvc {
 
-    @Value("${AGS}")
-    private String ags;
+	@Value( "${AGS}" )
+	private String ags;
 
-    @Value("${CLUSTER_DEF_NAME}")
-    String clusterDef;
+	@Value( "${CLUSTER_DEF_NAME}" )
+	String clusterDef;
 
-    @Value("${CLUSTER_DEF_NAME_STATS}")
-    String clusterDefNameStats;
+	@Value( "${CLUSTER_DEF_NAME_STATS}" )
+	String clusterDefNameStats;
 
-    @Autowired
-    ApiClient dmApiClient;
+	@Autowired
+	ApiClient dmApiClient;
 
 
-    @Autowired
-    BusinessObjectDataApi businessObjectDataApi;
+	@Autowired
+	BusinessObjectDataApi businessObjectDataApi;
 
     static {
         javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
@@ -242,4 +243,35 @@ public class DataMgmtSvc {
                 , pageNum
                 , pageSize);
     }
+	static {
+		javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
+				( hostname, sslSession ) -> true );
+	}
+
+	public void filterPartitionsAsPerAvailability( JobDefinition jd, List<String> partitions ) throws ApiException {
+		log.info( "Checking Partitions Availability: {}", partitions );
+
+		BusinessObjectDataAvailabilityRequest request = new BusinessObjectDataAvailabilityRequest();
+
+		request.setNamespace( jd.getObjectDefinition().getNameSpace() );
+		request.setBusinessObjectDefinitionName( jd.getObjectDefinition().getObjectName() );
+		request.setBusinessObjectFormatFileType( jd.getObjectDefinition().getFileType() );
+		request.setBusinessObjectFormatUsage( jd.getObjectDefinition().getUsageCode() );
+
+		PartitionValueFilter partitionValueFilter = new PartitionValueFilter();
+		partitionValueFilter.setPartitionKey( jd.getPartitionKey() );
+		partitionValueFilter.setPartitionValues( partitions );
+
+		request.setPartitionValueFilter( partitionValueFilter );
+
+		businessObjectDataApi.businessObjectDataCheckBusinessObjectDataAvailability( request )
+				.getNotAvailableStatuses()
+				.stream()
+				.forEach( as -> {
+					log.info( "Removing => " + as.getPartitionValue() );
+					partitions.remove( as.getPartitionValue() );
+				} );
+
+		log.info( "Filtered Partitions: {}", partitions );
+	}
 }

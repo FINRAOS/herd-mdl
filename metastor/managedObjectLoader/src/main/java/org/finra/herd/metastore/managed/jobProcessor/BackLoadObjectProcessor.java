@@ -133,15 +133,9 @@ public class BackLoadObjectProcessor extends JobProcessor {
 					if ( !ts.isEmpty() ) {
 
 						if ( jsi.isPartitionDateType() ) {
-							if ( Strings.isNullOrEmpty( startDate.get() ) ) {
-								startDate.set( ts.first() );
-							}
-
 							// To include skipped partition dates - using end date of the previous chunk
-							String endDate = ts.last();
-							jsi.setPartitionValues( String.format( "%s%s%s", endDate, JobProcessorConstants.DOUBLE_UNDERSCORE, startDate ) );
+							jsi.setPartitionValues( String.format( "%s%s%s", ts.last(), JobProcessorConstants.DOUBLE_UNDERSCORE, ts.first() ) );
 							addPartitions( jsi );
-							startDate.set( endDate );
 						} else {
 							jsi.setPartitionValues( delimitedPartitionValues( ts.descendingSet() ) );
 							addPartitions( jsi );
