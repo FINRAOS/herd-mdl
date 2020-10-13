@@ -42,7 +42,7 @@
     <aws-sdk.version>1.11.339</aws-sdk.version>
     <commons.io.version>2.6</commons.io.version>
     <slf4j-log4j.version>1.7.25</slf4j-log4j.version>
-    <junit.version>4.12</junit.version>
+    <junit.version>4.13.1</junit.version>
     <junit.jupiter.version>5.2.0</junit.jupiter.version>
     <junit.platform.version>1.1.0</junit.platform.version>
     <open.csv.version>4.1</open.csv.version>
