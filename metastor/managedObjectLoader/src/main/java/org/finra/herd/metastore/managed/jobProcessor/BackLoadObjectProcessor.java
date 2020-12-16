@@ -297,7 +297,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		if ( Objects.nonNull( pb ) ) {
 			ExecutorService pool = Executors.newSingleThreadExecutor();
 			try {
-				log.info( "Start Task " + pb.command() );
+				log.info( "Start Task  " + pb.command() );
 				Process process = pb.start();
 				Callable task = () -> new BufferedReader( new InputStreamReader( process.getInputStream() ) )
 						.lines()
@@ -312,8 +312,11 @@ public class BackLoadObjectProcessor extends JobProcessor {
 				log.info( "Task completed" + pb.command() );
 
 			} catch ( Exception e ) {
-				log.info( "Exception in smHql runProcess" + e.getMessage() );
-				throw new RuntimeException( "Update schema failed" );
+				log.error( "Exception in createTable:{} " , e );
+				String messageBody    = String.format("Unable to create table: %s", jd.toString());
+				String messageSubject = "Create table failed";
+				notificationSender.sendNotificationEmail(messageBody, messageSubject, jd );
+				throw new RuntimeException( "Create table Failed",e );
 			} finally {
 				pool.shutdown();
 			}
