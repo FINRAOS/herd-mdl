@@ -314,7 +314,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 			} catch ( Exception e ) {
 				log.error( "Exception in createTable:{} " , e );
 				String messageBody    = String.format("Unable to create table: %s", jd.toString());
-				String messageSubject = "Create table failed";
+				String messageSubject = "Create table failed"+e.getMessage();
 				notificationSender.sendNotificationEmail(messageBody, messageSubject, jd );
 				throw new RuntimeException( "Create table Failed",e );
 			} finally {
