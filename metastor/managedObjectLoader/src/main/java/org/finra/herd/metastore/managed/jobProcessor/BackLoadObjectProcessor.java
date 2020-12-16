@@ -35,12 +35,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 
 @Slf4j
 @Component
@@ -94,6 +105,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		return true;
 	}
 
+
 	private void identifyPartitionsAndBackLoad( JobDefinition od, JobSubmitterInfo jsi ) throws ApiException {
 		Map<String, Set<String>> partitions = partitionsAsMap( od, jsi );
 		log.info( "Total Available Partitions to load: {}", partitions.size() );
@@ -102,6 +114,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 			String messageBody    = String.format("NO AVAILABLE PARTITIONS TO BACK-LOAD FOR: %s", od.toString());
 			String messageSubject = "No Partitions avaiable to backload";
 			notificationSender.sendNotificationEmail(messageBody, messageSubject, od );
+			runProcess(od);
 		}
 
 		TreeSet<String> orderedPartitions = Sets.newTreeSet();
@@ -165,8 +178,23 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 	@Override
 	protected ProcessBuilder createProcessBuilder( JobDefinition od ) {
-		// Keeping it empty as no ProcessBuilder need to run from this processor.
-		throw new RuntimeException( "Invalid call, as Back Load process do not create any sub process." );
+		ProcessBuilder processBuilder=null;
+		try {
+			String ddl = dataMgmtSvc.getTableSchema(od,false);
+			String useDb = "use "+od.getObjectDefinition().getNameSpace()+";";
+
+			log.info("DDL :{} ",ddl);
+			File hqlFilePath = File.createTempFile("/tmp/backload-createtable-", ".hql", new File("/tmp"));
+			Path path = Paths.get(hqlFilePath.getAbsolutePath());
+			Files.write(path,useDb.getBytes(),CREATE,APPEND);
+			Files.write(path, ddl.getBytes(), APPEND);
+
+			processBuilder = new ProcessBuilder("hive", "-v", "-f", hqlFilePath.getAbsolutePath());
+		}catch (Exception ioe){
+		    log.error("BackLoad Error: {}",ioe);
+		}
+		return processBuilder;
+
 	}
 
 	public boolean isBiggerThanChunkSize( int collectionSize ) {
@@ -263,5 +291,34 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 		partitions.removeAll( alreadyAddedPartitions );
 	}
+
+	void runProcess( JobDefinition jd ) throws RuntimeException {
+		ProcessBuilder pb = createProcessBuilder( jd );
+		if ( Objects.nonNull( pb ) ) {
+			ExecutorService pool = Executors.newSingleThreadExecutor();
+			try {
+				log.info( "Start Task " + pb.command() );
+				Process process = pb.start();
+				Callable task = () -> new BufferedReader( new InputStreamReader( process.getInputStream() ) )
+						.lines()
+						.collect( Collectors.toList() );
+
+				Future<List<String>> future = pool.submit( task );
+				if ( !future.isDone() ) {
+					log.info( "Waiting for task to be done" );
+					future.get( 3600, TimeUnit.SECONDS );
+				}
+
+				log.info( "Task completed" + pb.command() );
+
+			} catch ( Exception e ) {
+				log.info( "Exception in smHql runProcess" + e.getMessage() );
+				throw new RuntimeException( "Update schema failed" );
+			} finally {
+				pool.shutdown();
+			}
+		}
+	}
+
 
 }
