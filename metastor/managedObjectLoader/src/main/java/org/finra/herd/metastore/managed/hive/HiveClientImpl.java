@@ -87,6 +87,7 @@ public class HiveClientImpl implements HiveClient {
 	public static HiveTableSchema getHiveTableSchema( String ddl ) {
 		List<ColumnDef> columnList;
 		columnList = getDMSchemaColumns( ddl );
+		log.info("HiveTableSchema ddl:{}",ddl);
 		HiveTableSchema schema = new HiveTableSchema().toBuilder().ddl( ddl ).columns( columnList ).build();
 		if ( ddl.contains( "PARTITIONED BY" ) ) {
 			List<ColumnDef> partitionColumns = getPartitionColumns( ddl );

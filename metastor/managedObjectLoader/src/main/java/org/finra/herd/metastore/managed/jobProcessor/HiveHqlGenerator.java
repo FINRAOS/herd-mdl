@@ -163,6 +163,10 @@ public class HiveHqlGenerator {
             List<ColumnDef> existingColumns = hiveTableSchema.getColumns();
             List<ColumnDef> newColumns = newSchema.getColumns();
 
+
+            log.info("hivetableschame:{} format:{} ddl:{} newschema:{}",hiveTableSchema,format,ddl,newSchema);
+
+
             log.info("Existing columns = " + existingColumns.size() + ", ddl from Herd has columns = " + newColumns.size());
 
             int minColumns = Math.min(existingColumns.size(), newColumns.size());
