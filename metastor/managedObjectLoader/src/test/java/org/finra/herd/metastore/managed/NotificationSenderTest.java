@@ -50,7 +50,6 @@ public class NotificationSenderTest {
 				.delimChanged( true )
 				.escapeStrChanged( true )
 				.nullStrChanged( true )
-				.partitonColumnChanged( true )
 				.build();
 
         List columnList1 = Lists.newArrayList(new ColumnDef("REC_UNIQUE_ID", "BIGINT",0),

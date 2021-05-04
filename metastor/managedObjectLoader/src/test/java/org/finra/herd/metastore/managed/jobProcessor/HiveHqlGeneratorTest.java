@@ -219,6 +219,6 @@ public class HiveHqlGeneratorTest {
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
         TestCase.assertTrue("There is change", change.hasChange());
-        TestCase.assertTrue("There is change", change.isPartitonColumnChanged());
+        TestCase.assertTrue("There is change", change.hasPartitionColumnChanges());
     }
 }

@@ -36,6 +36,7 @@ public class FormatChange {
     boolean escapeStrChanged = false;
     boolean nullStrChanged = false;
     boolean delimChanged = false;
+    boolean partitonColumnChanged = false;
 
     public boolean hasChange()
     {
@@ -49,7 +50,9 @@ public class FormatChange {
 
     public boolean hasPartitionColumnChanges ()
     {
-        return (! (partitionColNameChanges.isEmpty() && partitionColTypeChanges.isEmpty() && newPartitionColumns.isEmpty()));
+
+        partitonColumnChanged = (! (partitionColNameChanges.isEmpty() && partitionColTypeChanges.isEmpty() && newPartitionColumns.isEmpty()));
+        return partitonColumnChanged;
     }
 
 
