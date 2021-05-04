@@ -28,20 +28,30 @@ public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
     List<Pair<ColumnDef, ColumnDef>> typeChanges = Lists.newArrayList();
+    List<Pair<ColumnDef,ColumnDef>>  partitionColNameChanges = Lists.newArrayList();
+    List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
+    List<ColumnDef> newPartitionColumns = Lists.newArrayList() ; // @ToDo at a later point when we support new Partition Column
 
-    boolean partitonColumnChanged = false;
     boolean escapeStrChanged = false;
     boolean nullStrChanged = false;
     boolean delimChanged = false;
 
     public boolean hasChange()
     {
-        return hasColumnChanges()||partitonColumnChanged;
+        return hasColumnChanges()|| hasPartitionColumnChanges();
     }
 
     public boolean hasColumnChanges()
     {
         return (! (nameChanges.isEmpty() && typeChanges.isEmpty() && newColumns.isEmpty()));
     }
+
+    public boolean hasPartitionColumnChanges ()
+    {
+        return (! (partitionColNameChanges.isEmpty() && partitionColTypeChanges.isEmpty() && newPartitionColumns.isEmpty()));
+    }
+
+
+
 }

@@ -92,6 +92,7 @@ public class HiveClientImpl implements HiveClient {
 		if ( ddl.contains( "PARTITIONED BY" ) ) {
 			List<ColumnDef> partitionColumns = getPartitionColumns( ddl );
 			schema.setPartitionColumns( partitionColumns );
+			log.info("Partition columns :{}",partitionColumns);
 		}
 
 		if ( ddl.contains( "FIELDS TERMINATED BY" ) ) {
@@ -151,6 +152,18 @@ public class HiveClientImpl implements HiveClient {
 	static List<ColumnDef> getPartitionColumns( String ddl ) {
 		String s = ddl.substring( ddl.indexOf( "PARTITIONED BY" ) + 14, ddl.indexOf( "ROW FORMAT" ) ).trim();
 		s = s.substring( s.indexOf( "(" ) + 1, s.lastIndexOf( ")" ) );
+
+		if (s.contains("CLUSTERED")){
+
+			int indexofClustered=s.indexOf("CLUSTERED");
+			s = s.substring(s.indexOf("(")+1,s.lastIndexOf(")",indexofClustered));
+
+		}else {
+			s = s.substring(s.indexOf("(") + 1, s.lastIndexOf(")"));
+		}
+
+		log.info("The partition columns are :{}",s);
+
 
 		if ( s.contains( "\n" ) ) {
 			return getColumnDefs( s, ",\n" );
