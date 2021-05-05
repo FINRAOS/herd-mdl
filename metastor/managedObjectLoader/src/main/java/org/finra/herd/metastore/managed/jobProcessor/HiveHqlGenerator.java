@@ -171,7 +171,7 @@ public class HiveHqlGenerator {
                 for (Pair<ColumnDef, ColumnDef> pair : change.getPartitionColTypeChanges()) {
                     ColumnDef existing = pair.getFirst();
                     ColumnDef newColum = pair.getSecond();
-                    list.add(String.format("Alter table %s partition column  %s %s;", tableName,
+                    list.add(String.format("Alter table %s partition column ( %s %s);", tableName,
                              newColum.getName(), newColum.getType()));
                 }
 
