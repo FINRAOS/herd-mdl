@@ -231,7 +231,6 @@ public class HiveHqlGenerator {
 //                change.setEscapeStrChanged(true);
 //            }
 
-        log.info("Format Object change is :{}", change);
 
 
         if (change.hasChange()) {
@@ -309,9 +308,6 @@ public class HiveHqlGenerator {
 
         }
 
-
-
-        log.info("Partition Column Changes partitionNameChanges:{}, partitionTypeChanges:{}",partitionColNameChanges,partitionColTypeChanges);
         change.setPartitionColNameChanges(partitionColNameChanges);
         change.setPartitionColTypeChanges(partitionColTypeChanges);
 
