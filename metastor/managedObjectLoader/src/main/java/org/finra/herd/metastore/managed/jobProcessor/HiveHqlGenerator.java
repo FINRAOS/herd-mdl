@@ -167,38 +167,13 @@ public class HiveHqlGenerator {
         if(change.hasPartitionColumnChanges())
         {
 
-            boolean cascade = cascade(jd);
-            String cascadeStr = "";
-            if (cascade) {
-                cascadeStr = "CASCADE";
-            }
-
-                for (Pair<ColumnDef, ColumnDef> pair : change.getPartitionColNameChanges()) {
-                    ColumnDef existing = pair.getFirst();
-                    ColumnDef newColum = pair.getSecond();
-
-                    list.add(String.format("Alter table %s partition column %s %s %s %s;", tableName,
-                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
-                }
 
                 for (Pair<ColumnDef, ColumnDef> pair : change.getPartitionColTypeChanges()) {
                     ColumnDef existing = pair.getFirst();
                     ColumnDef newColum = pair.getSecond();
-                    list.add(String.format("Alter table %s partition column %s %s %s %s;", tableName,
-                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
+                    list.add(String.format("Alter table %s partition column %s %s %s;", tableName,
+                            existing.getName(), newColum.getName(), newColum.getType()));
                 }
-
-                //@TODO - This logic only when we have to support adding new Partition Columns
-
-//                if (!change.getNewColumns().isEmpty()) {
-//                    StringBuffer sb = new StringBuffer();
-//                    for (ColumnDef c : change.getNewColumns()) {
-//                        sb.append(String.format("%s %s,", c.getName(), c.getType()));
-//                    }
-//                    sb.deleteCharAt(sb.length() - 1);
-//                    list.add(String.format("Alter table %s add columns (%s) %s;", tableName, sb.toString(),
-//                            cascadeStr));
-//                }
 
 
                 log.info("the formatPartitionColumn list is :{}",list);
@@ -315,7 +290,6 @@ public class HiveHqlGenerator {
     {
         List<Pair<ColumnDef, ColumnDef>> partitionColTypeChanges = Lists.newArrayList();
         List<Pair<ColumnDef, ColumnDef>> partitionColNameChanges = Lists.newArrayList();
-        List<ColumnDef> addedPartitionColumns = Lists.newArrayList();
 
 
         int minColumns = Math.min(existingPartitionColumns.size(), newPartitionColumns.size());
@@ -327,6 +301,7 @@ public class HiveHqlGenerator {
 
             if (!newColum.getName().equalsIgnoreCase(existing.getName())) {
                 partitionColNameChanges.add(new Pair<>(existing, newColum));
+                log.error("Hive does not support partition Column Name changes:{}",partitionColNameChanges);
 
             } else if (!newColum.isSameType(existing)) {
                 partitionColTypeChanges.add(new Pair<>(existing, newColum));
@@ -334,19 +309,11 @@ public class HiveHqlGenerator {
 
         }
 
-        if (newPartitionColumns.size() > existingPartitionColumns.size()) {
-            for (int i = existingPartitionColumns.size(); i < newPartitionColumns.size(); i++) {
-                ColumnDef newPartitionColumnDef = newPartitionColumns.get(i);
-                addedPartitionColumns.add(newPartitionColumnDef);
-
-            }
-        }
 
 
-        log.info("Partition Column Changes partitionNameChanges:{}, partitionTypeChanges:{}, newPartitionAddedCols:{}",partitionColNameChanges,partitionColTypeChanges,addedPartitionColumns);
+        log.info("Partition Column Changes partitionNameChanges:{}, partitionTypeChanges:{}",partitionColNameChanges,partitionColTypeChanges);
         change.setPartitionColNameChanges(partitionColNameChanges);
         change.setPartitionColTypeChanges(partitionColTypeChanges);
-        change.setNewPartitionColumns(addedPartitionColumns);
 
 
     }
