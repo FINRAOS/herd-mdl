@@ -151,7 +151,6 @@ public class HiveClientImpl implements HiveClient {
 
 	static List<ColumnDef> getPartitionColumns( String ddl ) {
 		String s = ddl.substring( ddl.indexOf( "PARTITIONED BY" ) + 14, ddl.indexOf( "ROW FORMAT" ) ).trim();
-		s = s.substring( s.indexOf( "(" ) + 1, s.lastIndexOf( ")" ) );
 
 		if (s.contains("CLUSTERED")){
 
