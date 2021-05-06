@@ -137,7 +137,9 @@ public class HiveHqlGenerator {
 
                     if(change.isClusteredSortedChange())
                     {
-                        log.info("alter table :{}",change.getClusteredDef().getClusterSql());
+                        log.info("Clustered Change :Alter table {}  {}",tableName,change.getClusteredDef().getClusterSql());
+                        list.add(String.format("Alter table %s  %s ;", tableName,
+                               change.getClusteredDef().getClusterSql() ));
                     }
 
 
@@ -195,17 +197,26 @@ public class HiveHqlGenerator {
 
     @VisibleForTesting
     FormatChange detectSchemaChange(JobDefinition jd,
-                                    HiveTableSchema hiveTableSchema,
+                                    HiveTableSchema existingHiveTableSchema,
                                     BusinessObjectFormat format, String ddl) throws ApiException {
 
 
         HiveTableSchema newSchema = HiveClientImpl.getHiveTableSchema(ddl);
-        List<ColumnDef> existingColumns = hiveTableSchema.getColumns();
-        List<ColumnDef> existingPartitionColumns = hiveTableSchema.getPartitionColumns();
+        List<ColumnDef> existingColumns = existingHiveTableSchema.getColumns();
+        List<ColumnDef> existingPartitionColumns = existingHiveTableSchema.getPartitionColumns();
         List<ColumnDef> newColumns = newSchema.getColumns();
         List<ColumnDef> newPartitionColumns = newSchema.getPartitionColumns();
-        ClusteredDef existingClusteredDef = hiveTableSchema.getClusteredDef();
+        ClusteredDef existingClusteredDef = existingHiveTableSchema.getClusteredDef();
         ClusteredDef newClusterDef = newSchema.getClusteredDef();
+
+        log.info("detectSchemaChange -> existing clustered def:{}",existingClusteredDef.getClusterCols());
+
+        log.info("detectSchemaChange ->exisint clustered def:{}",existingClusteredDef.getClusterSql());
+
+        log.info("detectSchemaChange ->new clustered def:{}",newClusterDef.getClusterCols());
+
+        log.info("detectSchemaChange ->new clustered def:{}",newClusterDef.getClusterSql());
+
 
         log.info("format:{} ", format);
 
@@ -232,17 +243,17 @@ public class HiveHqlGenerator {
 
         //@Todo - Once the fix for delimiters is done
 
-//            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), hiveTableSchema.getNullChar()))
+//            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), existingHiveTableSchema.getNullChar()))
 //            {
 //                change.setNullStrChanged(true);
 //            }
 //
-//            if(! HiveTableSchema.isSameChar(newSchema.getDelim(),hiveTableSchema.getDelim()))
+//            if(! HiveTableSchema.isSameChar(newSchema.getDelim(),existingHiveTableSchema.getDelim()))
 //            {
 //                change.setDelimChanged(true);
 //            }
 //
-//            if(! HiveTableSchema.isSameChar(newSchema.getEscape(),hiveTableSchema.getEscape()))
+//            if(! HiveTableSchema.isSameChar(newSchema.getEscape(),existingHiveTableSchema.getEscape()))
 //            {
 //                change.setEscapeStrChanged(true);
 //            }
@@ -251,7 +262,7 @@ public class HiveHqlGenerator {
 
         if (change.hasChange()) {
             notificationSender.sendFormatChangeEmail(change, format.getBusinessObjectFormatVersion(), jd,
-                    hiveTableSchema, newSchema);
+                    existingHiveTableSchema, newSchema);
         }
 
         return change;
@@ -262,8 +273,10 @@ public class HiveHqlGenerator {
         boolean isClusterSortedChg = false;
         List<ColumnDef> existingColumns = existing.getClusteredSortedColDefs();
         List<ColumnDef> newColumns = recent.getClusteredSortedColDefs();
+        log.info("clusteredDef existing Cluster Columns:{}",existingColumns);
+        log.info("clusteredDef recent Cluster Columns:{} ",newColumns);
 
-      if (!existingColumns.isEmpty() && !newColumns.isEmpty())  {
+      if ((existingColumns !=null && !existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty()) )  {
           int minColumns = Math.min(existingColumns.size(),newColumns.size());
 
           for (int i = 0; i < minColumns; i++) {

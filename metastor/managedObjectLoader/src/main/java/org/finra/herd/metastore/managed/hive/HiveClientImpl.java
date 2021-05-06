@@ -66,16 +66,20 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-    static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
+   public static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
 
-        ClusteredDef clusteredDef = null;
+        ClusteredDef clusteredDef =  null;
 
         List<String> clusteredSortedColumns = Lists.newArrayList();
+
+        log.info("getClusterByClause -> ddl:{}",ddl);
 
 
         if (ddl.contains("CLUSTERED")) {
 
             String clusterclause = ddl.substring(ddl.indexOf("CLUSTERED BY"), ddl.indexOf("ROW"));
+
+            log.info("ClusterclauseSQL:{}",clusterclause);
 
             List<String> clusterColumns = getClusteredColumns(clusterclause);
             List<String> sortedColumns = getSortedColumns(clusterclause);
@@ -86,15 +90,21 @@ public class HiveClientImpl implements HiveClient {
             clusteredSortedColumns = StreamSupport.stream(unionClusterSortedCols.spliterator(), false)
                     .collect(Collectors.toList());
 
-            clusteredDef.builder().
+            clusteredDef = clusteredDef.builder().
                     clusterCols(clusterColumns).
                     clusterSql(clusterclause).
                     sortedCols(sortedColumns).
-                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns,columnDefs));
+                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns,columnDefs)).build();
+            log.info("clusteredDef------->:{}",clusteredDef.getClusterCols());
+
+
+        }else{
+            clusteredDef = clusteredDef.builder().build();
         }
 
 
-        return clusteredDef;
+
+       return clusteredDef;
 
     }
 
@@ -178,7 +188,7 @@ public class HiveClientImpl implements HiveClient {
                 sb.append(resultSet.getString(1).trim() + "\n");
             }
             String ddl = sb.toString();
-            log.info("Hive Schema: " + ddl);
+            log.info("Existing Hive Schema: " + ddl);
 
             HiveTableSchema schema = getHiveTableSchema(ddl);
 
@@ -188,12 +198,15 @@ public class HiveClientImpl implements HiveClient {
 
     public static HiveTableSchema getHiveTableSchema(String ddl) {
         List<ColumnDef> columnList;
-        ClusteredDef clusteredDef;
+
+        log.info("getHiveTableSchema -> ddl:{}", ddl);
+
         columnList = getDMSchemaColumns(ddl);
-        clusteredDef = getClusterByClause(ddl, columnList);
 
+        ClusteredDef clusteredDef = getClusterByClause(ddl, columnList);
 
-        log.info("HiveTableSchema ddl:{}", ddl);
+        log.info("checking valid:{}",clusteredDef.getClusteredSortedColDefs());
+
         HiveTableSchema schema = new HiveTableSchema().toBuilder().ddl(ddl).columns(columnList).clusteredDef(clusteredDef).build();
         if (ddl.contains("PARTITIONED BY")) {
             List<ColumnDef> partitionColumns = getPartitionColumns(ddl);
