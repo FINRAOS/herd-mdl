@@ -134,6 +134,13 @@ public class HiveHqlGenerator {
 
                     list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
                             existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
+
+                    if(change.isClusteredSortedChange())
+                    {
+                        log.info("alter table :{}",change.getClusteredDef().getClusterSql());
+                    }
+
+
                 }
 
                 for (Pair<ColumnDef, ColumnDef> pair : change.getTypeChanges()) {
@@ -197,6 +204,8 @@ public class HiveHqlGenerator {
         List<ColumnDef> existingPartitionColumns = hiveTableSchema.getPartitionColumns();
         List<ColumnDef> newColumns = newSchema.getColumns();
         List<ColumnDef> newPartitionColumns = newSchema.getPartitionColumns();
+        ClusteredDef existingClusteredDef = hiveTableSchema.getClusteredDef();
+        ClusteredDef newClusterDef = newSchema.getClusteredDef();
 
         log.info("format:{} ", format);
 
@@ -212,6 +221,13 @@ public class HiveHqlGenerator {
 
         detectRegularColumnChanges(existingColumns,newColumns,change);
         detectPartitionColumnChanges(existingPartitionColumns,newPartitionColumns,change);
+
+        if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
+        {
+            change.setClusteredSortedChange(true);
+            change.setClusteredDef(newClusterDef);
+        }
+
 
 
         //@Todo - Once the fix for delimiters is done
@@ -239,6 +255,30 @@ public class HiveHqlGenerator {
         }
 
         return change;
+    }
+
+    boolean detectClusterSortedColChanges(ClusteredDef existing,ClusteredDef recent){
+
+        boolean isClusterSortedChg = false;
+        List<ColumnDef> existingColumns = existing.getClusteredSortedColDefs();
+        List<ColumnDef> newColumns = recent.getClusteredSortedColDefs();
+
+      if (!existingColumns.isEmpty() && !newColumns.isEmpty())  {
+          int minColumns = Math.min(existingColumns.size(),newColumns.size());
+
+          for (int i = 0; i < minColumns; i++) {
+              ColumnDef old = existingColumns.get(i);
+              ColumnDef newColum = newColumns.get(i);
+
+              if (!newColum.getName().equalsIgnoreCase(old.getName()) )
+              {
+                  isClusterSortedChg = true;
+              }
+              }
+
+      }
+
+      return isClusterSortedChg;
     }
 
     @VisibleForTesting
