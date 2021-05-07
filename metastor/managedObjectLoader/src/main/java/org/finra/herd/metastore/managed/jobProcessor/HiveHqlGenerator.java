@@ -291,6 +291,12 @@ public class HiveHqlGenerator {
 
       }
 
+      if ((existingColumns == null || existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty())  )
+      {
+          isClusterSortedChg = true;
+
+      }
+
       return isClusterSortedChg;
     }
 
