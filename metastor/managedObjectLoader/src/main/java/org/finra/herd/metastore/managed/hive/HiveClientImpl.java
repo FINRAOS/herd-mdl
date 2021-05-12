@@ -75,7 +75,7 @@ public class HiveClientImpl implements HiveClient {
         log.info("getClusterByClause -> ddl:{}",ddl);
 
 
-        if (ddl.contains("CLUSTERED")) {
+        if (ddl.contains("CLUSTERED") || ddl.contains("clustered")) {
 
             String clusterclause = ddl.substring(ddl.indexOf("CLUSTERED BY"), ddl.indexOf("ROW"));
 
@@ -138,17 +138,25 @@ public class HiveClientImpl implements HiveClient {
         log.info("SORTED BY CLAUSE FROM DDL:{}", ddl);
 
 
-        String sb = StringUtils.substringBetween(ddl, "SORTED BY ", ")");
-        log.info("SORTED BY CLAUSE :{}", sb);
+        if(ddl.contains("SORTED BY")||ddl.contains("sorted by")){
 
-        sb = StringUtils.remove(sb, "(");
-        sb = StringUtils.removeIgnoreCase(sb, "ASC");
-        sb = StringUtils.removeIgnoreCase(sb, "DESC");
-        log.info("SORTED BY CLAUSE STRIPPED OF ASC|DESC:{}", sb);
-        final String[] array1 = sb.split(",");
-        Arrays.stream(array1).map(String::trim).toArray(arr -> array1);
-        sortedColumns = Arrays.asList(array1);
+            String sb = StringUtils.substringBetween(ddl, "SORTED BY ", ")");
+            log.info("SORTED BY CLAUSE :{}", sb);
 
+            sb = StringUtils.remove(sb, "(");
+            if(sb.contains("ASC")||sb.contains("asc")){
+                sb = StringUtils.removeIgnoreCase(sb, "ASC");
+            }
+            if(sb.contains("DESC")||sb.contains("desc"))
+            {
+                sb = StringUtils.removeIgnoreCase(sb, "DESC");
+            }
+            log.info("SORTED BY CLAUSE STRIPPED OF ASC|DESC:{}", sb);
+            final String[] array1 = sb.split(",");
+            Arrays.stream(array1).map(String::trim).toArray(arr -> array1);
+            sortedColumns = Arrays.asList(array1);
+
+        }
 
         return sortedColumns;
 
