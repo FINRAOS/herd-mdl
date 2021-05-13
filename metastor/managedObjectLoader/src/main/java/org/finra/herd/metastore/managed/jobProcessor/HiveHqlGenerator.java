@@ -84,6 +84,9 @@ public class HiveHqlGenerator {
 
                 String ddl = dataMgmtSvc.getTableSchema(jd, false);
 
+                log.info("DDL from DM: " + ddl);
+
+
                 try {
 
                     FormatChange change = detectSchemaChange(jd, hiveTableSchema, format, ddl);
@@ -104,7 +107,6 @@ public class HiveHqlGenerator {
         } else {
             log.info("Table does not exist, create new " + jd.toString());
         }
-        log.info("Table Schema: " + list);
         return list;
     }
 
@@ -209,23 +211,10 @@ public class HiveHqlGenerator {
         ClusteredDef existingClusteredDef = existingHiveTableSchema.getClusteredDef();
         ClusteredDef newClusterDef = newSchema.getClusteredDef();
 
-        log.info("detectSchemaChange -> existing clustered def:{}",existingClusteredDef.getClusterCols());
-
-        log.info("detectSchemaChange ->exisint clustered def:{}",existingClusteredDef.getClusterSql());
-
-        log.info("detectSchemaChange ->new clustered def:{}",newClusterDef.getClusterCols());
-
-        log.info("detectSchemaChange ->new clustered def:{}",newClusterDef.getClusterSql());
-
-
-        log.info("format:{} ", format);
-
-        log.info("Existing Columns:{}, newColumns:{}",existingColumns,newColumns);
 
         log.info("Existing Partition columns = " + existingPartitionColumns.size() + ", ddl from Herd  Partitioncolumns = " + newPartitionColumns.size());
 
         log.info("Existing columns = " + existingColumns.size() + ", ddl from Herd has columns = " + newColumns.size());
-
 
 
         FormatChange change = FormatChange.builder().build();
@@ -273,8 +262,8 @@ public class HiveHqlGenerator {
         boolean isClusterSortedChg = false;
         List<ColumnDef> existingColumns = existing.getClusteredSortedColDefs();
         List<ColumnDef> newColumns = recent.getClusteredSortedColDefs();
-        log.info("clusteredDef existing Cluster Columns:{}",existingColumns);
-        log.info("clusteredDef recent Cluster Columns:{} ",newColumns);
+        log.info("existing Cluster by Sorted by Columns:{}",existingColumns);
+        log.info("recent Cluster by Sorted by Columns:{} ",newColumns);
 
       if ((existingColumns !=null && !existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty()) )  {
           int minColumns = Math.min(existingColumns.size(),newColumns.size());

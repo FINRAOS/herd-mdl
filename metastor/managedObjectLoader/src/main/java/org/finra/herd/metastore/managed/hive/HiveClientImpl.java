@@ -72,14 +72,12 @@ public class HiveClientImpl implements HiveClient {
 
         List<String> clusteredSortedColumns = Lists.newArrayList();
 
-        log.info("getClusterByClause -> ddl:{}",ddl);
-
 
         if (ddl.contains("CLUSTERED") || ddl.contains("clustered")) {
 
             String clusterclause = ddl.substring(ddl.indexOf("CLUSTERED BY"), ddl.indexOf("ROW"));
 
-            log.info("ClusterclauseSQL:{}",clusterclause);
+            log.info("ClusterSortedclauseSQL:{}",clusterclause);
 
             List<String> clusterColumns = getClusteredColumns(clusterclause);
             List<String> sortedColumns = getSortedColumns(clusterclause);
@@ -95,7 +93,6 @@ public class HiveClientImpl implements HiveClient {
                     clusterSql(clusterclause).
                     sortedCols(sortedColumns).
                     clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns,columnDefs)).build();
-            log.info("clusteredDef------->:{}",clusteredDef.getClusterCols());
 
 
         }else{
@@ -113,18 +110,12 @@ public class HiveClientImpl implements HiveClient {
 
         List<String> clusterColumns = Lists.newArrayList();
 
-        log.info("CLUSTERED BY CLAUSE FROM DDL:{}", ddl);
 
         String cc = StringUtils.substringBetween(ddl, "(", ")");
-        log.info("un-trimmed clustered columns:{}", cc);
         final String[] array = cc.split(",");
         Arrays.stream(array).map(String::trim).toArray(arr -> array);
         clusterColumns = Arrays.asList(array);
         log.info("clusterColumns:{}", clusterColumns);
-
-
-        log.info("clusterColumns :{}", clusterColumns);
-
 
         return clusterColumns;
 
@@ -134,8 +125,6 @@ public class HiveClientImpl implements HiveClient {
 
     static List<String> getSortedColumns(String ddl) {
         List<String> sortedColumns = Lists.newArrayList();
-
-        log.info("SORTED BY CLAUSE FROM DDL:{}", ddl);
 
 
         if(ddl.contains("SORTED BY")||ddl.contains("sorted by")){
@@ -151,10 +140,10 @@ public class HiveClientImpl implements HiveClient {
             {
                 sb = StringUtils.removeIgnoreCase(sb, "DESC");
             }
-            log.info("SORTED BY CLAUSE STRIPPED OF ASC|DESC:{}", sb);
             final String[] array1 = sb.split(",");
             Arrays.stream(array1).map(String::trim).toArray(arr -> array1);
             sortedColumns = Arrays.asList(array1);
+            log.info("sortedColumns:{}",sortedColumns);
 
         }
 
@@ -207,13 +196,11 @@ public class HiveClientImpl implements HiveClient {
     public static HiveTableSchema getHiveTableSchema(String ddl) {
         List<ColumnDef> columnList;
 
-        log.info("getHiveTableSchema -> ddl:{}", ddl);
 
         columnList = getDMSchemaColumns(ddl);
 
         ClusteredDef clusteredDef = getClusterByClause(ddl, columnList);
 
-        log.info("checking valid:{}",clusteredDef.getClusteredSortedColDefs());
 
         HiveTableSchema schema = new HiveTableSchema().toBuilder().ddl(ddl).columns(columnList).clusteredDef(clusteredDef).build();
         if (ddl.contains("PARTITIONED BY")) {
