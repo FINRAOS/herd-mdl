@@ -224,8 +224,7 @@ public class HiveHqlGenerator {
 
         if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
         {
-            change.setClusteredSortedChange(true);
-            change.setClusteredDef(newClusterDef);
+            change = change.builder().isClusteredSortedChange(true).clusteredDef(newClusterDef).build();
             log.info("is true?:{},Format obj is:{}",change.isClusteredSortedChange(),change.getClusteredDef().getClusteredSortedColDefs());
         }
 

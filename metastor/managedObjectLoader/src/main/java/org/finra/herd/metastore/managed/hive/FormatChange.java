@@ -33,7 +33,6 @@ public class FormatChange {
     List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
     boolean isClusteredSortedChange = false;
-    @Autowired
     ClusteredDef clusteredDef;
 
     boolean escapeStrChanged = false;
