@@ -226,6 +226,7 @@ public class HiveHqlGenerator {
         {
             change.setClusteredSortedChange(true);
             change.setClusteredDef(newClusterDef);
+            log.info("is true?:{},Format obj is:{}",change.isClusteredSortedChange(),change.getClusteredDef().getClusteredSortedColDefs());
         }
 
 
@@ -249,7 +250,7 @@ public class HiveHqlGenerator {
 
 
 
-        if (change.hasChange()) {
+        if (change.hasChange() || change.isClusteredSortedChange()) {
             notificationSender.sendFormatChangeEmail(change, format.getBusinessObjectFormatVersion(), jd,
                     existingHiveTableSchema, newSchema);
         }

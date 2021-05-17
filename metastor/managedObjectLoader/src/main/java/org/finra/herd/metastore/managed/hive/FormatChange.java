@@ -18,6 +18,7 @@ package org.finra.herd.metastore.managed.hive;
 import com.google.common.collect.Lists;
 import lombok.*;
 import org.apache.commons.math3.util.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -31,7 +32,8 @@ public class FormatChange {
     List<Pair<ColumnDef,ColumnDef>>  partitionColNameChanges = Lists.newArrayList();
     List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
-    boolean isClusteredSortedChange;
+    boolean isClusteredSortedChange = false;
+    @Autowired
     ClusteredDef clusteredDef;
 
     boolean escapeStrChanged = false;
@@ -41,7 +43,7 @@ public class FormatChange {
 
     public boolean hasChange()
     {
-        return hasColumnChanges()|| hasPartitionColumnChanges();
+        return hasColumnChanges()|| hasPartitionColumnChanges() || isClusteredSortedChange;
     }
 
     public boolean hasColumnChanges()
