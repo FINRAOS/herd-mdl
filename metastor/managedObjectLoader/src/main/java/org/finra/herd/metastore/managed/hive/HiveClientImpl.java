@@ -130,7 +130,7 @@ public class HiveClientImpl implements HiveClient {
         if(ddl.contains("SORTED BY")||ddl.contains("sorted by")){
 
             String sb = StringUtils.substringBetween(ddl, "SORTED BY ", ")");
-            log.info("SORTED BY CLAUSE :{}", sb);
+            log.info("SORTED BY COLUMNS :{}", sb);
 
             sb = StringUtils.remove(sb, "(");
             if(sb.contains("ASC")||sb.contains("asc")){
@@ -155,7 +155,6 @@ public class HiveClientImpl implements HiveClient {
     static List<ColumnDef> getClusteredSortedColDefs(List<String> clusteredSortedColumns, List<ColumnDef> columnDefs) {
 
         log.info("clusteredSortedColumns:{}", clusteredSortedColumns);
-        log.info("ColumnDefs:{}", columnDefs);
 
         List<ColumnDef> clusterSortedColDefs = columnDefs.stream().filter(
                 cols -> clusteredSortedColumns.stream().anyMatch(

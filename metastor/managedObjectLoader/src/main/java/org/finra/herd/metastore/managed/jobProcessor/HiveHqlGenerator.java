@@ -278,14 +278,13 @@ public class HiveHqlGenerator {
               }
               }
 
-      }
-
-      if ((existingColumns == null || existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty())  )
+      }else if ((existingColumns == null || existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty())  )
       {
           isClusterSortedChg = true;
 
       }
 
+      log.info("is there a Cluster or Sorted Column Change?:{}",isClusterSortedChg);
       return isClusterSortedChg;
     }
 
