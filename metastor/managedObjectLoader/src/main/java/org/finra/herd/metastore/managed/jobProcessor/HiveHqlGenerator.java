@@ -124,7 +124,6 @@ public class HiveHqlGenerator {
             if (!jd.getObjectDefinition().getFileType().equalsIgnoreCase("ORC")) {
                 String sql = dataMgmtSvc.getTableSchema(jd, true);
 
-                log.info("=======>sql:{}",sql);
 
                 if (cascade) {
                     sql = sql.substring(0, sql.lastIndexOf(";")) + " CASCADE;";
@@ -236,9 +235,6 @@ public class HiveHqlGenerator {
             formatChange.setClusteredDef(newClusterDef);
         }
 
-        log.info("Format change:{}",formatChange.isClusteredSortedChange());
-        log.info("Format Change:{}",formatChange.getTypeChanges());
-        log.info("Does Format have change:{}",formatChange.hasChange());
 
         if (formatChange.hasChange() ) {
             notificationSender.sendFormatChangeEmail(formatChange, format.getBusinessObjectFormatVersion(), jd,
