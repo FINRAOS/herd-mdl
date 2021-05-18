@@ -236,8 +236,9 @@ public class HiveHqlGenerator {
             formatChange.setClusteredDef(newClusterDef);
         }
 
-
-        log.info("Format change:{}",formatChange.toString());
+        log.info("Format change:{}",formatChange.isClusteredSortedChange());
+        log.info("Format Change:{}",formatChange.getTypeChanges());
+        log.info("Does Format have change:{}",formatChange.hasChange());
 
         if (formatChange.hasChange() ) {
             notificationSender.sendFormatChangeEmail(formatChange, format.getBusinessObjectFormatVersion(), jd,
