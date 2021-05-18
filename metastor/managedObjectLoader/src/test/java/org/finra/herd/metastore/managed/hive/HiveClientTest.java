@@ -89,6 +89,118 @@ public class HiveClientTest {
 
     }
 
+    public static HiveTableSchema getClusterByTestHiveTableSchema() {
+        String ddl = "CREATE EXTERNAL TABLE `tst_all_chng_cat_ola_events_prc_orc`(\n" +
+                "`event_type_cd` varchar(10),\n" +
+                "`cat_lifecycle_id` bigint,\n" +
+                "`cat_venue_odr_id` varchar(100),\n" +
+                "`top_ind` varchar(1),\n" +
+                "`cat_frm_dsgnt_id` varchar(40),\n" +
+                "`odr_id` varchar(64),\n" +
+                "`rtd_odr_id_1` varchar(64),\n" +
+                "`quote_id` varchar(64),\n" +
+                "`trd_id` varchar(64),\n" +
+                "`side_cd` varchar(20),\n" +
+                "`eqty_sym_id` varchar(22),\n" +
+                "`osi_sym_id` varchar(22),\n" +
+                "`cat_rptr_crdid` varchar(20),\n" +
+                "`cat_rptr_id` varchar(10),\n" +
+                "`sndr_id` varchar(20),\n" +
+                "`sndr_crd_id` bigint,\n" +
+                "`dstnt_id` varchar(20),\n" +
+                "`dstnt_crd_id` bigint,\n" +
+                "`event_dt` date,\n" +
+                "`event_tm` decimal(15,9),\n" +
+                "`event_qty` decimal(18,6),\n" +
+                "`mkt_cntr_id` varchar(7),\n" +
+                "`rec_unq_id` varchar(120),\n" +
+                "`file_ts` decimal(23,9),\n" +
+                "`raw_record` string)\n" +
+                "PARTITIONED BY (\n" +
+                "`trade_dt` date,\n" +
+                "`trans_type_cd` varchar(1))\n" +
+                "CLUSTERED BY (\n" +
+                "cat_lifecycle_id,\n" +
+                "cat_rptr_id\n" +
+                ")\n" +
+                "SORTED BY (\n" +
+                "cat_lifecycle_id ASC,\n" +
+                "event_tm ASC)\n" +
+                "INTO 5000 BUCKETS\n" +
+                "ROW FORMAT SERDE\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcSerde'\n" +
+                "WITH SERDEPROPERTIES (\n" +
+                "'escape.delim'='',\n" +
+                "'field.delim'='',\n" +
+                "'serialization.format'='',\n" +
+                "'serialization.null.format'='')\n" +
+                "STORED AS INPUTFORMAT\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcInputFormat'\n" +
+                "OUTPUTFORMAT\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat'\n" +
+                "LOCATION\n" +
+                "'s3://3019-1075-9931-appdata-us-east-1/CATMETA/cat_diver.db/cat_ola_events_prc_orc'\n" +
+                "TBLPROPERTIES (\n" +
+                "'transient_lastDdlTime'='1604439427');\n";
+
+        return HiveClientImpl.getHiveTableSchema(ddl);
+    }
+
+
+    public static HiveTableSchema getAllFormatTestHiveTableSchema() {
+        String ddl = "CREATE EXTERNAL TABLE `tst_all_chng_cat_ola_events_prc_orc`(\n" +
+                "`event_type_cd` varchar(10),\n" +
+                "`cat_lifecycle_id` bigint,\n" +
+                "`cat_venue_odr_id` varchar(100),\n" +
+                "`top_ind` varchar(1),\n" +
+                "`cat_frm_dsgnt_id` varchar(40),\n" +
+                "`odr_id` varchar(64),\n" +
+                "`rtd_odr_id_1` varchar(64),\n" +
+                "`quote_id` varchar(64),\n" +
+                "`trd_id` varchar(64),\n" +
+                "`side_cd` varchar(20),\n" +
+                "`eqty_sym_id` varchar(22),\n" +
+                "`osi_sym_id` varchar(22),\n" +
+                "`cat_rptr_crdid` varchar(20),\n" +
+                "`cat_rptr_id` varchar(10),\n" +
+                "`sndr_id` varchar(20),\n" +
+                "`sndr_crd_id` bigint,\n" +
+                "`dstnt_id` varchar(20),\n" +
+                "`dstnt_crd_id` bigint,\n" +
+                "`event_dt` date,\n" +
+                "`event_tm` decimal(15,9),\n" +
+                "`event_qty` decimal(18,6),\n" +
+                "`mkt_cntr_id` varchar(7),\n" +
+                "`rec_unq_id` varchar(120),\n" +
+                "`file_ts` decimal(23,9),\n" +
+                "`raw_record` string)\n" +
+                "PARTITIONED BY (\n" +
+                "`trade_dt` date,\n" +
+                "`trans_type_cd` varchar(1))\n" +
+                "CLUSTERED BY (\n" +
+                "cat_lifecycle_id,\n" +
+                "cat_rptr_id\n" +
+                ")\n" +
+                "INTO 5000 BUCKETS\n" +
+                "ROW FORMAT SERDE\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcSerde'\n" +
+                "WITH SERDEPROPERTIES (\n" +
+                "'escape.delim'='',\n" +
+                "'field.delim'='',\n" +
+                "'serialization.format'='',\n" +
+                "'serialization.null.format'='')\n" +
+                "STORED AS INPUTFORMAT\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcInputFormat'\n" +
+                "OUTPUTFORMAT\n" +
+                "'org.apache.hadoop.hive.ql.io.orc.OrcOutputFormat'\n" +
+                "LOCATION\n" +
+                "'s3://3019-1075-9931-appdata-us-east-1/CATMETA/cat_diver.db/cat_ola_events_prc_orc'\n" +
+                "TBLPROPERTIES (\n" +
+                "'transient_lastDdlTime'='1604439427');\n";
+
+        return HiveClientImpl.getHiveTableSchema(ddl);
+    }
+
     public static HiveTableSchema getTestHiveTableSchema() {
         String ddl = "CREATE EXTERNAL TABLE `OPT_OCCADJ_OPENINT_DETAIL_PRC_BZ`(\n" +
                 "  `date` date,\n" +

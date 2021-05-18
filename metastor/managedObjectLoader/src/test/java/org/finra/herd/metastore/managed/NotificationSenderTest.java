@@ -22,12 +22,14 @@ import org.finra.herd.metastore.managed.hive.ColumnDef;
 import org.finra.herd.metastore.managed.hive.FormatChange;
 import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 
 @Slf4j
 public class NotificationSenderTest {
+
 
     @Test
     public void testEmailFormat() throws Exception
@@ -42,16 +44,23 @@ public class NotificationSenderTest {
 
         Pair<ColumnDef, ColumnDef> p = new Pair<ColumnDef, ColumnDef>(old, newC);
 
-
-        FormatChange change = FormatChange.builder()
+//        formatChange.setNameChanges(Lists.newArrayList(p));
+//        formatChange.setTypeChanges(Lists.newArrayList(p));
+//        formatChange.setNewColumns(Lists.newArrayList(newC));
+//        formatChange.setDelimChanged(true);
+//        formatChange.setEscapeStrChanged(true);
+//        formatChange.setNullStrChanged(true);
+//
+        FormatChange formatChange = FormatChange.builder()
 				.nameChanges(Lists.newArrayList(p))
 				.typeChanges(Lists.newArrayList(p))
                 .newColumns(Lists.newArrayList(newC))
 				.delimChanged( true )
 				.escapeStrChanged( true )
 				.nullStrChanged( true )
-				.partitonColumnChanged( true )
 				.build();
+
+
 
         List columnList1 = Lists.newArrayList(new ColumnDef("REC_UNIQUE_ID", "BIGINT",0),
                 new ColumnDef("ORGNL_TRADE_DT", "DATE",1),
@@ -73,7 +82,7 @@ public class NotificationSenderTest {
                 new ColumnDef("NEW_COLUMN", "VARCHAR(6)",8));
 
 		log.info("Email Format (All Changes included):\n{}",
-				sender.getFormatChangeMsg(change,
+				sender.getFormatChangeMsg(formatChange,
 											2,
 											new JobDefinition(1, "ns", "obj", "prc", "txt", "", null, "", ""),
 											HiveTableSchema.builder().columns(columnList1).partitionColumns( columnList1 ).build(),

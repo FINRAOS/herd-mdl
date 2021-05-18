@@ -32,6 +32,8 @@ public class HiveTableSchema {
 
     private List<ColumnDef> partitionColumns = Lists.newArrayList();
 
+    private ClusteredDef clusteredDef;
+
     private String escape="";
     private String delim="";
     private String nullChar="";
