@@ -67,6 +67,9 @@ public class HiveHqlGenerator {
     @Autowired
     JobProcessorDAO jobProcessorDAO;
 
+    @Autowired
+    FormatChange formatChange;
+
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -225,25 +228,24 @@ public class HiveHqlGenerator {
         log.info("Existing columns = " + existingColumns.size() + ", ddl from Herd has columns = " + newColumns.size());
 
 
-        FormatChange change = FormatChange.builder().build();
 
-        detectRegularColumnChanges(existingColumns,newColumns,change);
-        detectPartitionColumnChanges(existingPartitionColumns,newPartitionColumns,change);
+        detectandSetRegularColumnChanges(existingColumns,newColumns);
+        detectandSetPartitionColumnChanges(existingPartitionColumns,newPartitionColumns);
 
         if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
         {
-            change.setClusteredSortedChange(true);
-            change.setClusteredDef(newClusterDef);
+            formatChange.setClusteredSortedChange(true);
+            formatChange.setClusteredDef(newClusterDef);
         }
 
 
         log.info("Changes for the Object are: ColumnNameChange:{}, Column Type change:{},New Column:{},Partition Name change:{}, Partition Type change:{},clustered Bysql:{}",
-                change.getNameChanges(),
-                change.getTypeChanges(),
-                change.getNewColumns(),
-                change.getPartitionColNameChanges(),
-                change.getPartitionColTypeChanges(),
-                change.getClusteredDef().getClusterSql());
+                formatChange.getNameChanges(),
+                formatChange.getTypeChanges(),
+                formatChange.getNewColumns(),
+                formatChange.getPartitionColNameChanges(),
+                formatChange.getPartitionColTypeChanges(),
+                formatChange.getClusteredDef().getClusterSql());
 
         //@Todo - Once the fix for delimiters is done
 
@@ -264,12 +266,12 @@ public class HiveHqlGenerator {
 
 
 
-        if (change.hasChange() ) {
-            notificationSender.sendFormatChangeEmail(change, format.getBusinessObjectFormatVersion(), jd,
+        if (formatChange.hasChange() ) {
+            notificationSender.sendFormatChangeEmail(formatChange, format.getBusinessObjectFormatVersion(), jd,
                     existingHiveTableSchema, newSchema);
         }
 
-        return change;
+        return formatChange;
     }
 
     boolean detectClusterSortedColChanges(ClusteredDef existing,ClusteredDef recent){
@@ -304,7 +306,7 @@ public class HiveHqlGenerator {
     }
 
     @VisibleForTesting
-    void detectRegularColumnChanges(List<ColumnDef> existingColumns,List<ColumnDef> newColumns,FormatChange change)
+    void detectandSetRegularColumnChanges(List<ColumnDef> existingColumns, List<ColumnDef> newColumns)
     {
         List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
         List<Pair<ColumnDef, ColumnDef>> typeChanges = Lists.newArrayList();
@@ -338,16 +340,16 @@ public class HiveHqlGenerator {
         }
 
         log.info("Regular Column Changes nameChanges :{}, typeChanges:{},addedColumns :{}",nameChanges,typeChanges,addedColumns);
-        change.setTypeChanges(typeChanges);
-        change.setNameChanges(nameChanges);
-        change.setNewColumns(addedColumns);
+        formatChange.setTypeChanges(typeChanges);
+        formatChange.setNameChanges(nameChanges);
+        formatChange.setNewColumns(addedColumns);
 
 
 
     }
 
     @VisibleForTesting
-    void detectPartitionColumnChanges(List<ColumnDef> existingPartitionColumns,List<ColumnDef> newPartitionColumns,FormatChange change)
+    void detectandSetPartitionColumnChanges(List<ColumnDef> existingPartitionColumns, List<ColumnDef> newPartitionColumns)
     {
         List<Pair<ColumnDef, ColumnDef>> partitionColTypeChanges = Lists.newArrayList();
         List<Pair<ColumnDef, ColumnDef>> partitionColNameChanges = Lists.newArrayList();
@@ -370,8 +372,8 @@ public class HiveHqlGenerator {
 
         }
 
-        change.setPartitionColNameChanges(partitionColNameChanges);
-        change.setPartitionColTypeChanges(partitionColTypeChanges);
+        formatChange.setPartitionColNameChanges(partitionColNameChanges);
+        formatChange.setPartitionColTypeChanges(partitionColTypeChanges);
 
 
     }
