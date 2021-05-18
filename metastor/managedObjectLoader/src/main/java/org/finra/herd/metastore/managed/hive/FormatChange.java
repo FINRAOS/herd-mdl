@@ -24,12 +24,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Builder (toBuilder = true)
 @Getter
 @Setter
 @Slf4j
-@Component
 @ToString
 @NoArgsConstructor
+@AllArgsConstructor
 public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
@@ -38,7 +39,6 @@ public class FormatChange {
     List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
     boolean isClusteredSortedChange = false;
-    @Autowired
     ClusteredDef clusteredDef;
 
     boolean escapeStrChanged = false;

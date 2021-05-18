@@ -67,9 +67,6 @@ public class HiveHqlGenerator {
     @Autowired
     JobProcessorDAO jobProcessorDAO;
 
-    @Autowired
-    FormatChange formatChange;
-
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -228,9 +225,10 @@ public class HiveHqlGenerator {
         log.info("Existing columns = " + existingColumns.size() + ", ddl from Herd has columns = " + newColumns.size());
 
 
+        FormatChange formatChange = FormatChange.builder().build();
 
-        detectandSetRegularColumnChanges(existingColumns,newColumns);
-        detectandSetPartitionColumnChanges(existingPartitionColumns,newPartitionColumns);
+        detectandSetRegularColumnChanges(existingColumns,newColumns,formatChange);
+        detectandSetPartitionColumnChanges(existingPartitionColumns,newPartitionColumns,formatChange);
 
         if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
         {
@@ -281,7 +279,7 @@ public class HiveHqlGenerator {
     }
 
     @VisibleForTesting
-    void detectandSetRegularColumnChanges(List<ColumnDef> existingColumns, List<ColumnDef> newColumns)
+    void detectandSetRegularColumnChanges(List<ColumnDef> existingColumns, List<ColumnDef> newColumns,FormatChange formatChange)
     {
         List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
         List<Pair<ColumnDef, ColumnDef>> typeChanges = Lists.newArrayList();
@@ -324,7 +322,7 @@ public class HiveHqlGenerator {
     }
 
     @VisibleForTesting
-    void detectandSetPartitionColumnChanges(List<ColumnDef> existingPartitionColumns, List<ColumnDef> newPartitionColumns)
+    void detectandSetPartitionColumnChanges(List<ColumnDef> existingPartitionColumns, List<ColumnDef> newPartitionColumns,FormatChange formatChange)
     {
         List<Pair<ColumnDef, ColumnDef>> partitionColTypeChanges = Lists.newArrayList();
         List<Pair<ColumnDef, ColumnDef>> partitionColNameChanges = Lists.newArrayList();
