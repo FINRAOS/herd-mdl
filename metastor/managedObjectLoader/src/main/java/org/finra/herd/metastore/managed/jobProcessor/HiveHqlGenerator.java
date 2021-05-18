@@ -238,14 +238,14 @@ public class HiveHqlGenerator {
             formatChange.setClusteredDef(newClusterDef);
         }
 
-
-        log.info("Changes for the Object are: ColumnNameChange:{}, Column Type change:{},New Column:{},Partition Name change:{}, Partition Type change:{},clustered Bysql:{}",
-                formatChange.getNameChanges(),
-                formatChange.getTypeChanges(),
-                formatChange.getNewColumns(),
-                formatChange.getPartitionColNameChanges(),
-                formatChange.getPartitionColTypeChanges(),
-                formatChange.getClusteredDef().getClusterSql());
+//
+//        log.info("Changes for the Object are: ColumnNameChange:{}, Column Type change:{},New Column:{},Partition Name change:{}, Partition Type change:{},clustered Bysql:{}",
+//                formatChange.getNameChanges(),
+//                formatChange.getTypeChanges(),
+//                formatChange.getNewColumns(),
+//                formatChange.getPartitionColNameChanges(),
+//                formatChange.getPartitionColTypeChanges(),
+//                formatChange.getClusteredDef().getClusterSql());
 
         //@Todo - Once the fix for delimiters is done
 
