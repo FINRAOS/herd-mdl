@@ -50,7 +50,7 @@ public class FormatChange {
 
     public boolean hasColumnChanges()
     {
-        return (nameChanges!=null && !nameChanges.isEmpty()) && (typeChanges!=null && typeChanges.isEmpty()) && (newColumns!=null && !newColumns.isEmpty());
+        return ((nameChanges!=null && !nameChanges.isEmpty()) || (typeChanges!=null && !typeChanges.isEmpty()) || (newColumns!=null && !newColumns.isEmpty()));
 
     }
 
