@@ -11,6 +11,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Component
 public class ClusteredDef {
     private String clusterSql;
     private List<ColumnDef> clusteredSortedColDefs = Lists.newArrayList();

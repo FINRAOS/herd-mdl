@@ -239,24 +239,7 @@ public class HiveHqlGenerator {
         }
 
 
-        //@Todo - Once the fix for delimiters is done
-
-//            if(! HiveTableSchema.isSameChar(newSchema.getNullChar(), existingHiveTableSchema.getNullChar()))
-//            {
-//                change.setNullStrChanged(true);
-//            }
-//
-//            if(! HiveTableSchema.isSameChar(newSchema.getDelim(),existingHiveTableSchema.getDelim()))
-//            {
-//                change.setDelimChanged(true);
-//            }
-//
-//            if(! HiveTableSchema.isSameChar(newSchema.getEscape(),existingHiveTableSchema.getEscape()))
-//            {
-//                change.setEscapeStrChanged(true);
-//            }
-
-
+        log.info("Format change:{}",formatChange.toString());
 
         if (formatChange.hasChange() ) {
             notificationSender.sendFormatChangeEmail(formatChange, format.getBusinessObjectFormatVersion(), jd,

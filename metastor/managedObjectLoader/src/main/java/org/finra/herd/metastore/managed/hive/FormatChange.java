@@ -28,6 +28,8 @@ import java.util.List;
 @Setter
 @Slf4j
 @Component
+@ToString
+@NoArgsConstructor
 public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
@@ -36,6 +38,7 @@ public class FormatChange {
     List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
     boolean isClusteredSortedChange = false;
+    @Autowired
     ClusteredDef clusteredDef;
 
     boolean escapeStrChanged = false;
