@@ -30,8 +30,6 @@ import java.util.List;
 @Slf4j
 public class NotificationSenderTest {
 
-	@Autowired
-	FormatChange formatChange;
 
     @Test
     public void testEmailFormat() throws Exception
@@ -46,21 +44,21 @@ public class NotificationSenderTest {
 
         Pair<ColumnDef, ColumnDef> p = new Pair<ColumnDef, ColumnDef>(old, newC);
 
-        formatChange.setNameChanges(Lists.newArrayList(p));
-        formatChange.setTypeChanges(Lists.newArrayList(p));
-        formatChange.setNewColumns(Lists.newArrayList(newC));
-        formatChange.setDelimChanged(true);
-        formatChange.setEscapeStrChanged(true);
-        formatChange.setNullStrChanged(true);
+//        formatChange.setNameChanges(Lists.newArrayList(p));
+//        formatChange.setTypeChanges(Lists.newArrayList(p));
+//        formatChange.setNewColumns(Lists.newArrayList(newC));
+//        formatChange.setDelimChanged(true);
+//        formatChange.setEscapeStrChanged(true);
+//        formatChange.setNullStrChanged(true);
 //
-//        FormatChange change = FormatChange.builder()
-//				.nameChanges(Lists.newArrayList(p))
-//				.typeChanges(Lists.newArrayList(p))
-//                .newColumns(Lists.newArrayList(newC))
-//				.delimChanged( true )
-//				.escapeStrChanged( true )
-//				.nullStrChanged( true )
-//				.build();
+        FormatChange formatChange = FormatChange.builder()
+				.nameChanges(Lists.newArrayList(p))
+				.typeChanges(Lists.newArrayList(p))
+                .newColumns(Lists.newArrayList(newC))
+				.delimChanged( true )
+				.escapeStrChanged( true )
+				.nullStrChanged( true )
+				.build();
 
 
 

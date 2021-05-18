@@ -17,20 +17,13 @@ package org.finra.herd.metastore.managed.hive;
 
 import com.google.common.collect.Lists;
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Builder (toBuilder = true)
+@Builder
 @Getter
 @Setter
-@Slf4j
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
 public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();

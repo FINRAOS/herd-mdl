@@ -313,10 +313,10 @@ public class HiveHqlGenerator {
         }
 
         log.info("Regular Column Changes nameChanges :{}, typeChanges:{},addedColumns :{}",nameChanges,typeChanges,addedColumns);
-        formatChange.setTypeChanges(typeChanges);
-        formatChange.setNameChanges(nameChanges);
-        formatChange.setNewColumns(addedColumns);
 
+        formatChange.setNameChanges(nameChanges);
+        formatChange.setTypeChanges(typeChanges);
+        formatChange.setNewColumns(addedColumns);
 
 
     }
