@@ -232,13 +232,18 @@ public class HiveHqlGenerator {
 
         if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
         {
-            change = change.builder().isClusteredSortedChange(true).clusteredDef(newClusterDef).build();
-            log.info("is true?:{},Format obj is:{}",change.isClusteredSortedChange(),change.getClusteredDef().getClusteredSortedColDefs());
+            change.setClusteredSortedChange(true);
+            change.setClusteredDef(newClusterDef);
         }
 
 
-        log.info("Changes for the Object are:{},{},{},{},{}",change.getNameChanges(),change.getNewColumns(),
-                change.getPartitionColNameChanges(),change.getPartitionColTypeChanges(),change.getClusteredDef().getClusterSql());
+        log.info("Changes for the Object are: ColumnNameChange:{}, Column Type change:{},New Column:{},Partition Name change:{}, Partition Type change:{},clustered Bysql:{}",
+                change.getNameChanges(),
+                change.getTypeChanges(),
+                change.getNewColumns(),
+                change.getPartitionColNameChanges(),
+                change.getPartitionColTypeChanges(),
+                change.getClusteredDef().getClusterSql());
 
         //@Todo - Once the fix for delimiters is done
 
@@ -333,9 +338,9 @@ public class HiveHqlGenerator {
         }
 
         log.info("Regular Column Changes nameChanges :{}, typeChanges:{},addedColumns :{}",nameChanges,typeChanges,addedColumns);
-
-        change = change.builder().typeChanges(typeChanges).nameChanges(nameChanges).newColumns(addedColumns).build();
-
+        change.setTypeChanges(typeChanges);
+        change.setNameChanges(nameChanges);
+        change.setNewColumns(addedColumns);
 
 
 
@@ -365,10 +370,8 @@ public class HiveHqlGenerator {
 
         }
 
-        log.info("Partition Column Type Changes:{},Name Changes:{}",partitionColTypeChanges,partitionColNameChanges);
-
-
-        change = change.builder().partitionColNameChanges(partitionColNameChanges).partitionColTypeChanges(partitionColTypeChanges).build();
+        change.setPartitionColNameChanges(partitionColNameChanges);
+        change.setPartitionColTypeChanges(partitionColTypeChanges);
 
 
     }

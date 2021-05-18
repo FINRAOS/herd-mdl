@@ -44,19 +44,19 @@ public class FormatChange {
 
     public boolean hasChange()
     {
-        log.info("hasColumnChanges:{},hasPartitionColumnChanges:{},isClusteredSortedChange:{}",hasColumnChanges(),hasPartitionColumnChanges(),isClusteredSortedChange);
         return hasColumnChanges()|| hasPartitionColumnChanges() || isClusteredSortedChange;
     }
 
     public boolean hasColumnChanges()
     {
-        return (! (nameChanges.isEmpty() && typeChanges.isEmpty() && newColumns.isEmpty()));
+        return (nameChanges!=null && !nameChanges.isEmpty()) && (typeChanges!=null && typeChanges.isEmpty()) && (newColumns!=null && !newColumns.isEmpty());
+
     }
 
     public boolean hasPartitionColumnChanges ()
     {
 
-        partitonColumnChanged = (!partitionColTypeChanges.isEmpty());
+        partitonColumnChanged = (partitionColTypeChanges!=null && !partitionColTypeChanges.isEmpty());
         return partitonColumnChanged;
     }
 
