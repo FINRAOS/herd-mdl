@@ -92,6 +92,7 @@ public class HiveHqlGenerator {
                     FormatChange change = detectSchemaChange(jd, hiveTableSchema, format, ddl);
                     formatRegularColumn(change,jd,list,tableName);
                     formatPartitionColumn(change,jd,list,tableName);
+                    formatClusterColumn(change,jd,list,tableName);
 
                 } catch (Exception ex) {
                     log.warn("Error comparing formats", ex);
@@ -137,12 +138,6 @@ public class HiveHqlGenerator {
                     list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
                             existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
 
-                    if(change.isClusteredSortedChange())
-                    {
-                        log.info("Clustered Change :Alter table {}  {}",tableName,change.getClusteredDef().getClusterSql());
-                        list.add(String.format("Alter table %s  %s ;", tableName,
-                               change.getClusteredDef().getClusterSql() ));
-                    }
 
 
                 }
@@ -172,6 +167,19 @@ public class HiveHqlGenerator {
 
     }
 
+    void formatClusterColumn(FormatChange change,JobDefinition jd,List<String> list,String tableName) throws org.finra.herd.sdk.invoker.ApiException {
+
+        if(change.isClusteredSortedChange())
+        {
+
+                    log.info("Clustered Change :Alter table {}  {}", tableName, change.getClusteredDef().getClusterSql());
+                    list.add(String.format("Alter table %s  %s ;", tableName,
+                            change.getClusteredDef().getClusterSql()));
+
+
+        }
+
+    }
 
     void formatPartitionColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) throws org.finra.herd.sdk.invoker.ApiException{
 
@@ -229,6 +237,8 @@ public class HiveHqlGenerator {
         }
 
 
+        log.info("Changes for the Object are:{},{},{},{},{}",change.getNameChanges(),change.getNewColumns(),
+                change.getPartitionColNameChanges(),change.getPartitionColTypeChanges(),change.getClusteredDef().getClusterSql());
 
         //@Todo - Once the fix for delimiters is done
 
@@ -249,7 +259,7 @@ public class HiveHqlGenerator {
 
 
 
-        if (change.hasChange() || change.isClusteredSortedChange()) {
+        if (change.hasChange() ) {
             notificationSender.sendFormatChangeEmail(change, format.getBusinessObjectFormatVersion(), jd,
                     existingHiveTableSchema, newSchema);
         }
@@ -323,9 +333,9 @@ public class HiveHqlGenerator {
         }
 
         log.info("Regular Column Changes nameChanges :{}, typeChanges:{},addedColumns :{}",nameChanges,typeChanges,addedColumns);
-        change.setTypeChanges(typeChanges);
-        change.setNameChanges(nameChanges);
-        change.setNewColumns(addedColumns);
+
+        change = change.builder().typeChanges(typeChanges).nameChanges(nameChanges).newColumns(addedColumns).build();
+
 
 
 
@@ -355,8 +365,10 @@ public class HiveHqlGenerator {
 
         }
 
-        change.setPartitionColNameChanges(partitionColNameChanges);
-        change.setPartitionColTypeChanges(partitionColTypeChanges);
+        log.info("Partition Column Type Changes:{},Name Changes:{}",partitionColTypeChanges,partitionColNameChanges);
+
+
+        change = change.builder().partitionColNameChanges(partitionColNameChanges).partitionColTypeChanges(partitionColTypeChanges).build();
 
 
     }

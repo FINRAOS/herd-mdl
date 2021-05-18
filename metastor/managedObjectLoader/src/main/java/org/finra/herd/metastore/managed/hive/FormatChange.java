@@ -17,6 +17,7 @@ package org.finra.herd.metastore.managed.hive;
 
 import com.google.common.collect.Lists;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,6 +26,7 @@ import java.util.List;
 @Builder
 @Getter
 @Setter
+@Slf4j
 public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
@@ -42,6 +44,7 @@ public class FormatChange {
 
     public boolean hasChange()
     {
+        log.info("hasColumnChanges:{},hasPartitionColumnChanges:{},isClusteredSortedChange:{}",hasColumnChanges(),hasPartitionColumnChanges(),isClusteredSortedChange);
         return hasColumnChanges()|| hasPartitionColumnChanges() || isClusteredSortedChange;
     }
 
