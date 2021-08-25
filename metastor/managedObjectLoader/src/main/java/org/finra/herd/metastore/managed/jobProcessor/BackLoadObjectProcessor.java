@@ -108,6 +108,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 	private void identifyPartitionsAndBackLoad( JobDefinition od, JobSubmitterInfo jsi ) throws ApiException {
 		Map<String, Set<String>> partitions = partitionsAsMap( od, jsi );
+		log.info("Partitions :{}",partitions);
 		log.info( "Total Available Partitions to load: {}", partitions.size() );
 
 		if(partitions.isEmpty()){
@@ -236,6 +237,7 @@ public class BackLoadObjectProcessor extends JobProcessor {
 
 	private int getBusinessObjectData( final JobDefinition jd, Map<String, Set<String>> partitionsAsMap, int pageNum ) throws ApiException {
         List<BusinessObjectData> businessObjectDataElements = dataMgmtSvc.searchBOData( jd, pageNum, pageSize, filterOnValidLatestVersions ).getBusinessObjectDataElements();
+        log.info("BusinessObjectData : {}",businessObjectDataElements);
         log.info( "BO Data Search Result: \n{}", businessObjectDataElements.size() );
         businessObjectDataElements.stream()
                 .forEach( as ->

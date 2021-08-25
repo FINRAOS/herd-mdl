@@ -233,6 +233,7 @@ public class DataMgmtSvc {
         boDataSearchKeyItem.setBusinessObjectFormatFileType(jd.getObjectDefinition().getFileType());
         boDataSearchKeyItem.setFilterOnLatestValidVersion(filterOnValidLatestVersions);
 
+        log.info("BusinessObjectDataSearchKey,pageNum,pageSize :{} ,{} ,{}",boDataSearchKeyItem,pageNum,pageSize);
 
         // Search BO Data
         return businessObjectDataApi.businessObjectDataSearchBusinessObjectData(
