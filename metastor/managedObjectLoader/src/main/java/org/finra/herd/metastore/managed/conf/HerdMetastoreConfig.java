@@ -48,6 +48,7 @@ public class HerdMetastoreConfig {
     public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
     public static final String CRED_FILE_PATH = "cred.file.path";
     public static final String ANALYZE_STATS  = "analyze.stats";
+    public static final int ALTER_TABLE_MAX_PARTITIONS = 25000;
 
 
 

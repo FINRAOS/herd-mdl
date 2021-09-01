@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.hive.HiveClient;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
+import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,37 +42,10 @@ public class ManagedJobProcessor extends JobProcessor {
 	public ProcessBuilder createProcessBuilder( JobDefinition od ) {
 		Objects.requireNonNull( od.getPartitionKey(), "PartitionKey is required for DDL call but found it NULL or EMPTY....EXITING!!!" );
 
-		List<String> partitionVal = Lists.newArrayList();
 
 		String partitionValue = od.getPartitionValue();
-		if ( partitionValue.contains( JobProcessorConstants.DOUBLE_UNDERSCORE ) ) {
-			try {
-				String[] parts = partitionValue.split( JobProcessorConstants.DOUBLE_UNDERSCORE );
 
-				String startDate = parts[1];
-				String endDate = parts[0];
-
-				SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd" );
-				Date start = format.parse( startDate );
-				Date end = format.parse( endDate );
-				Date d = start;
-
-				while ( d.before( end ) ) {
-					partitionVal.add( format.format( d ) );
-					d.setTime( d.getTime() + 24 * 3600 * 1000 );
-				}
-
-				partitionVal.add( endDate );
-			} catch ( ParseException e ) {
-				logger.severe( e.getMessage() );
-				return null;
-			}
-
-		} else if ( partitionValue.contains( JobProcessorConstants.COMMA ) ) {
-			partitionVal.addAll( Lists.newArrayList( partitionValue.split( JobProcessorConstants.COMMA ) ) );
-		} else {
-			partitionVal.add( partitionValue );
-		}
+		List<String> partitionVal = MetastoreUtil.formattedPartitionValues(partitionValue);
 
 		try {
 			String path = hiveHqlGenerator.buildHql( od, partitionVal );
