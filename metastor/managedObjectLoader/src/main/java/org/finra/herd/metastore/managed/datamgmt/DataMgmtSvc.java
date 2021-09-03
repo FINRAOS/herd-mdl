@@ -139,6 +139,11 @@ public class DataMgmtSvc {
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }
 
+    /*
+     Overloaded - Combines Alter Statements for partitions
+     for both Drop and Add.
+      ALTER_TABLE_MAX_PARTITIONS set to 25k.
+     */
     public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions,boolean combineAlterStmts) throws ApiException {
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
 
@@ -176,7 +181,7 @@ public class DataMgmtSvc {
         request.setPartitionValueFilters(partitionValueFilters);
         request.setNamespace(jd.getObjectDefinition().getNameSpace());
 
-        log.info("Get BO DDL Request: \n{}", request.toString());
+        log.info("Get BO DDL Request with combine Alter Statements: \n{}", request.toString());
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }
 
