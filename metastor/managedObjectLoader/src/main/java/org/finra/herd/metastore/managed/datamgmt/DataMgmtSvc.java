@@ -142,7 +142,7 @@ public class DataMgmtSvc {
     /*
      Overloaded - Combines Alter Statements for partitions
      for both Drop and Add.
-      ALTER_TABLE_MAX_PARTITIONS set to 25k.
+      ALTER_TABLE_MAX_PARTITIONS set to 6k.
      */
     public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions,boolean combineAlterStmts) throws ApiException {
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
