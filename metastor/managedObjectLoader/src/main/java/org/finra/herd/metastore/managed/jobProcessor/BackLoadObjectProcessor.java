@@ -182,8 +182,8 @@ public class BackLoadObjectProcessor extends JobProcessor {
 		ProcessBuilder processBuilder=null;
 		try {
 			String ddl = dataMgmtSvc.getTableSchema(od,false);
-			String createDb = "CREATE DATABASE  IF NOT EXISTS "+od.getObjectDefinition().getNameSpace()+";";
-			String useDb = "use "+od.getObjectDefinition().getNameSpace()+";";
+			String createDb = "CREATE DATABASE  IF NOT EXISTS "+od.getObjectDefinition().getDbName()+";";
+			String useDb = "use "+od.getObjectDefinition().getDbName()+";";
 
 			log.info("DDL :{} ",ddl);
 			File hqlFilePath = File.createTempFile("/tmp/backload-createtable-", ".hql", new File("/tmp"));
