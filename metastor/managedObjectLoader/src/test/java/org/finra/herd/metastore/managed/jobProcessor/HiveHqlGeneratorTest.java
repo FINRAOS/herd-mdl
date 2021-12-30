@@ -145,6 +145,8 @@ public class HiveHqlGeneratorTest {
     public void testDetectDiff() throws Exception
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
+        DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
+        HiveAlterTable hiveAlterTable=new HiveAlterTable();
         HiveTableSchema hiveTableSchema = HiveClientTest.getTestHiveTableSchema();
         HiveClient hiveClient = Mockito.mock(HiveClient.class);
         hiveHqlGenerator.hiveClient=hiveClient;
@@ -177,7 +179,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
 
-        FormatChange change = hiveHqlGenerator.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
+        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
         TestCase.assertFalse("There is no change", change.hasChange());
@@ -187,6 +189,9 @@ public class HiveHqlGeneratorTest {
     public void testPartitionColChange() throws Exception
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
+        DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
+        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getTestHiveTableSchema();
 
@@ -215,7 +220,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = hiveHqlGenerator.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
+        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
         TestCase.assertTrue("There is change", change.hasChange());
@@ -227,6 +232,9 @@ public class HiveHqlGeneratorTest {
     public void testClusterByChange() throws Exception
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
+        DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
+        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getClusterByTestHiveTableSchema();
 
@@ -286,7 +294,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = hiveHqlGenerator.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
+        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
 
@@ -301,6 +309,9 @@ public class HiveHqlGeneratorTest {
     public void testAllFormatByChange() throws Exception
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
+        DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
+        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getAllFormatTestHiveTableSchema();
 
@@ -360,7 +371,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = hiveHqlGenerator.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
+        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
 
