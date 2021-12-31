@@ -22,6 +22,7 @@ import org.finra.herd.metastore.managed.HerdMetastoreTest;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
 import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;

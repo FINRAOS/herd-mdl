@@ -15,6 +15,7 @@
 **/
 package org.finra.herd.metastore.managed.hive;
 
+import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertFalse;

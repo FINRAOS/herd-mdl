@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.format.FormatStrategy;
 import org.springframework.beans.factory.annotation.Autowired;

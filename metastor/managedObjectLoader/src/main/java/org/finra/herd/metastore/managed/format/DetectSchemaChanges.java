@@ -6,8 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
-import org.finra.herd.metastore.managed.hive.ClusteredDef;
-import org.finra.herd.metastore.managed.hive.ColumnDef;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
 import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.finra.herd.sdk.invoker.ApiException;

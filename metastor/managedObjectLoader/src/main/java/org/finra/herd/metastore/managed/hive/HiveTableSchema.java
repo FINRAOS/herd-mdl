@@ -17,6 +17,8 @@ package org.finra.herd.metastore.managed.hive;
 
 import com.google.common.collect.Lists;
 import lombok.*;
+import org.finra.herd.metastore.managed.format.ClusteredDef;
+import org.finra.herd.metastore.managed.format.ColumnDef;
 
 import java.util.List;
 import java.util.Objects;
