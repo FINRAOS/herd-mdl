@@ -22,6 +22,8 @@ import org.finra.herd.metastore.managed.HerdMetastoreTest;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
+import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
@@ -146,7 +148,7 @@ public class HiveHqlGeneratorTest {
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
         DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
-        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+        HiveFormatAlterTable hiveFormatAlterTable =new HiveFormatAlterTable();
         HiveTableSchema hiveTableSchema = HiveClientTest.getTestHiveTableSchema();
         HiveClient hiveClient = Mockito.mock(HiveClient.class);
         hiveHqlGenerator.hiveClient=hiveClient;
@@ -190,7 +192,7 @@ public class HiveHqlGeneratorTest {
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
         DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
-        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+        HiveFormatAlterTable hiveFormatAlterTable =new HiveFormatAlterTable();
 
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getTestHiveTableSchema();
@@ -233,7 +235,7 @@ public class HiveHqlGeneratorTest {
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
         DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
-        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+        HiveFormatAlterTable hiveFormatAlterTable =new HiveFormatAlterTable();
 
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getClusterByTestHiveTableSchema();
@@ -310,7 +312,7 @@ public class HiveHqlGeneratorTest {
     {
         HiveHqlGenerator hiveHqlGenerator = new HiveHqlGenerator();
         DetectSchemaChanges detectSchemaChanges= new DetectSchemaChanges();
-        HiveAlterTable hiveAlterTable=new HiveAlterTable();
+        HiveFormatAlterTable hiveFormatAlterTable =new HiveFormatAlterTable();
 
 
         HiveTableSchema hiveTableSchema = HiveClientTest.getAllFormatTestHiveTableSchema();

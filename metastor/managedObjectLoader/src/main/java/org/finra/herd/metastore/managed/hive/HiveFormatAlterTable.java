@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.FormatChange;
+import org.finra.herd.metastore.managed.format.FormatStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,16 +13,16 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class HiveAlterTable {
+public class HiveFormatAlterTable implements FormatStrategy {
 
     @Autowired
     protected DataMgmtSvc dataMgmtSvc;
 
 
-    public void formatRegularColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) throws org.finra.herd.sdk.invoker.ApiException
+    public void formatRegularColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName,boolean isCascade) throws org.finra.herd.sdk.invoker.ApiException
     {
         if (change.hasColumnChanges()) {
-            boolean cascade = cascade(jd);
+            boolean cascade = isCascade ;
             String cascadeStr = "";
             if (cascade) {
                 cascadeStr = "CASCADE";
@@ -105,10 +107,22 @@ public class HiveAlterTable {
 
     }
 
-    protected boolean cascade(JobDefinition jd) {
-        return true;
-    }
 
+
+    @Override
+    public void executeFormatChange(FormatChange formatChange,JobDefinition jd, List<String> list, String tableName,boolean isCascade)  {
+
+        try{
+            formatRegularColumn(formatChange,jd,list,tableName,isCascade);
+
+        }catch( org.finra.herd.sdk.invoker.ApiException ie){
+            throw new RuntimeException("Error in Comparing Formats");
+        }
+        formatPartitionColumn(formatChange,jd,list,tableName);
+        formatClusterColumn(formatChange,jd,list,tableName);
+
+
+    }
 
 
 }

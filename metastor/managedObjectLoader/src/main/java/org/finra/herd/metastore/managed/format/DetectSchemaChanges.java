@@ -1,4 +1,4 @@
-package org.finra.herd.metastore.managed.hive;
+package org.finra.herd.metastore.managed.format;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
+import org.finra.herd.metastore.managed.hive.ClusteredDef;
+import org.finra.herd.metastore.managed.hive.ColumnDef;
+import org.finra.herd.metastore.managed.hive.HiveClientImpl;
+import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;

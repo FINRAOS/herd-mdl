@@ -15,16 +15,18 @@
  **/
 package org.finra.herd.metastore.managed.jobProcessor;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
+import org.finra.herd.metastore.managed.format.FormatChange;
+import org.finra.herd.metastore.managed.format.FormatStrategy;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
+import org.finra.herd.metastore.managed.jobProcessor.dao.PartitionsDAO;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
@@ -71,7 +73,10 @@ public class HiveHqlGenerator {
     DetectSchemaChanges detectSchemaChanges;
 
     @Autowired
-    HiveAlterTable hiveAlterTable;
+    PartitionsDAO partitionsDAO;
+
+    @Autowired
+    HiveFormatAlterTable hiveFormatAlterTable;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -79,6 +84,7 @@ public class HiveHqlGenerator {
         String tableName = jd.getTableName();
 
         List<String> list = Lists.newArrayList();
+        FormatStrategy strategy;
 
         if (schemaExists) {
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
@@ -96,9 +102,14 @@ public class HiveHqlGenerator {
                 try {
 
                     FormatChange change = detectSchemaChanges.detectSchemaChange(jd, hiveTableSchema, format, ddl);
-                    hiveAlterTable.formatRegularColumn(change,jd,list,tableName);
-                    hiveAlterTable.formatPartitionColumn(change,jd,list,tableName);
-                    hiveAlterTable.formatClusterColumn(change,jd,list,tableName);
+                    if(partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT)
+                    {
+                     hiveFormatAlterTable.executeFormatChange(change,jd,list,jd.getTableName(),this.cascade(jd));
+                    } else
+                    {
+                        log.info("Total Partition Count :{}",partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName()));
+                        log.info("Name:{},DB:{}",jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName());
+                    }
 
                 } catch (Exception ex) {
                     log.warn("Error comparing formats", ex);
@@ -226,6 +237,11 @@ public class HiveHqlGenerator {
                 .build();
     }
 
+    // This method is used in the child class to override some objects for which we do not want cascade operation.
+
+    protected boolean cascade(JobDefinition jd) {
+        return true;
+    }
 
     /**
      * Method to create the HQL file for adding partitions
@@ -248,6 +264,8 @@ public class HiveHqlGenerator {
                 .add(String.valueOf(jd.getNumOfRetry()))
                 .toString();
     }
+
+
 
 
 }

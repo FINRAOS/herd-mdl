@@ -20,7 +20,7 @@ import com.mitchellbosecke.pebble.PebbleEngine;
 import com.mitchellbosecke.pebble.error.PebbleException;
 import com.mitchellbosecke.pebble.template.PebbleTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.finra.herd.metastore.managed.hive.FormatChange;
+import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

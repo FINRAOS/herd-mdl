@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 **/
-package org.finra.herd.metastore.managed.hive;
+package org.finra.herd.metastore.managed.format;
 
 import com.google.common.collect.Lists;
 import lombok.*;
 import org.apache.commons.math3.util.Pair;
+import org.finra.herd.metastore.managed.hive.ClusteredDef;
+import org.finra.herd.metastore.managed.hive.ColumnDef;
 
 import java.util.List;
 
