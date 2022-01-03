@@ -182,7 +182,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
 
-        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
+        FormatChange change = detectSchemaChanges.detectAllColumnChanges(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
         TestCase.assertFalse("There is no change", change.hasChange());
@@ -223,7 +223,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
+        FormatChange change = detectSchemaChanges.detectAllColumnChanges(new JobDefinition(1,"MRP","OPT_OCCADJ_OPENINT_DETAIL",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
         TestCase.assertTrue("There is change", change.hasChange());
@@ -297,7 +297,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
+        FormatChange change = detectSchemaChanges.detectAllColumnChanges(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
 
@@ -374,7 +374,7 @@ public class HiveHqlGeneratorTest {
         BusinessObjectFormat format = new BusinessObjectFormat();
         format.setBusinessObjectFormatVersion(0);
         hiveHqlGenerator.notificationSender=Mockito.mock(NotificationSender.class);
-        FormatChange change = detectSchemaChanges.detectSchemaChange(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
+        FormatChange change = detectSchemaChanges.detectAllColumnChanges(new JobDefinition(1,"MRP","tst_all_chng_cat_ola_events",
                 "PRC","BZ", "","","",""), hiveTableSchema, format, ddl);
 
 

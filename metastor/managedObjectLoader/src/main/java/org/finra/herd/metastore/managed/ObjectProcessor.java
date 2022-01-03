@@ -59,6 +59,9 @@ public class ObjectProcessor {
 	private BackLoadObjectProcessor backLoadObjectProcessor;
 
 	@Autowired
+	private FormatObjectProcessor formatObjectProcessor;
+
+	@Autowired
 	protected NotificationSender notificationSender;
 
 	@Autowired
@@ -71,6 +74,7 @@ public class ObjectProcessor {
 	public static final int WF_TYPE_MANAGED = 0;
 	public static final int WF_TYPE_SINGLETON = 1;
 	public static final int WF_TYPE_MANAGED_STATS = 5;
+	public static final int WF_TYPE_FORMAT = 17;
 	public static final int WF_TYPE_DROP_TABLE = 7;
 	public static final int WF_TYPE_BACK_LOAD_PARTITIONS = 8;
 
@@ -229,6 +233,9 @@ public class ObjectProcessor {
 				break;
 			case WF_TYPE_BACK_LOAD_PARTITIONS:
 				jp = backLoadObjectProcessor;
+				break;
+			case WF_TYPE_FORMAT:
+				jp= formatObjectProcessor;
 				break;
 			default:
 				logger.warning( "Cannot find job processor" );

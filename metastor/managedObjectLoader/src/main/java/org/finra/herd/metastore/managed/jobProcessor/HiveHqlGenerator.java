@@ -72,11 +72,9 @@ public class HiveHqlGenerator {
     @Autowired
     DetectSchemaChanges detectSchemaChanges;
 
-    @Autowired
-    PartitionsDAO partitionsDAO;
 
-    @Autowired
-    HiveFormatAlterTable hiveFormatAlterTable;
+
+
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -84,31 +82,20 @@ public class HiveHqlGenerator {
         String tableName = jd.getTableName();
 
         List<String> list = Lists.newArrayList();
-        FormatStrategy strategy;
 
         if (schemaExists) {
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
                 list.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
-                HiveTableSchema hiveTableSchema = hiveClient.getExistingDDL(jd.getObjectDefinition().getDbName(), tableName);
-
-                BusinessObjectFormat format = dataMgmtSvc.getDMFormat(jd);
-
-                String ddl = dataMgmtSvc.getTableSchema(jd, false);
-
-                log.info("DDL from DM: " + ddl);
 
 
                 try {
 
-                    FormatChange change = detectSchemaChanges.detectSchemaChange(jd, hiveTableSchema, format, ddl);
-                    if(partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT)
+
+                    if(detectSchemaChanges.getFormatChange(jd).hasChange())
                     {
-                     hiveFormatAlterTable.executeFormatChange(change,jd,list,jd.getTableName(),this.cascade(jd));
-                    } else
-                    {
-                        log.info("Total Partition Count :{}",partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName()));
-                        log.info("Name:{},DB:{}",jd.getObjectDefinition().getObjectName(),jd.getObjectDefinition().getDbName());
+                        submitFormatJob(jd);
+
                     }
 
                 } catch (Exception ex) {
@@ -216,6 +203,15 @@ public class HiveHqlGenerator {
         jobProcessorDAO.addDMNotification(dmNotification);
     }
 
+    private void submitFormatJob(JobDefinition jd) {
+        DMNotification dmNotification = buildDMNotification(jd);
+
+        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_FORMAT);
+        dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
+
+        log.info("Herd Notification DB request: \n{}", dmNotification);
+        jobProcessorDAO.addDMNotification(dmNotification);
+    }
 
     protected String partition(Set<String> partitionKeys) {
         return partitionKeys.stream().collect(Collectors.joining("`,`", "`", "`"));

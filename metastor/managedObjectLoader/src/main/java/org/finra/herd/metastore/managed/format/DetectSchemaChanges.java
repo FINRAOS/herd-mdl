@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
+import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.hive.HiveClient;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
 import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.finra.herd.sdk.invoker.ApiException;
@@ -13,6 +15,7 @@ import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.sql.SQLException;
 import java.util.List;
 
 @Component
@@ -23,9 +26,37 @@ public class DetectSchemaChanges {
     @Autowired
     protected NotificationSender notificationSender;
 
-    public FormatChange detectSchemaChange(JobDefinition jd,
-                                    HiveTableSchema existingHiveTableSchema,
-                                    BusinessObjectFormat format, String ddl) throws ApiException {
+    @Autowired
+    protected HiveClient hiveClient;
+
+    @Autowired
+    protected DataMgmtSvc dataMgmtSvc;
+
+
+    public FormatChange getFormatChange(JobDefinition od) throws ApiException, SQLException {
+
+
+        HiveTableSchema hiveTableSchema = hiveClient.getExistingDDL(od.getObjectDefinition().getDbName(), od.getTableName());
+
+        BusinessObjectFormat format = dataMgmtSvc.getDMFormat(od);
+
+        String ddl = dataMgmtSvc.getTableSchema(od, false);
+
+        log.info("DDL from DM: " + ddl);
+
+
+        FormatChange change = detectAllColumnChanges(od, hiveTableSchema, format, ddl);
+
+
+        return change;
+
+
+
+    }
+
+    public FormatChange detectAllColumnChanges(JobDefinition jd,
+                                               HiveTableSchema existingHiveTableSchema,
+                                               BusinessObjectFormat format, String ddl) throws ApiException {
 
 
         HiveTableSchema newSchema = HiveClientImpl.getHiveTableSchema(ddl);
