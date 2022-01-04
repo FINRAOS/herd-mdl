@@ -185,6 +185,45 @@ public class DataMgmtSvc {
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }
 
+    public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions,BusinessObjectDataDdlRequest request) throws ApiException {
+
+        request.setIncludeDropTableStatement(false);
+        request.setOutputFormat(BusinessObjectDataDdlRequest.OutputFormatEnum.HIVE_13_DDL);
+        request.setBusinessObjectFormatUsage(jd.getObjectDefinition().getUsageCode());
+        request.setBusinessObjectFormatFileType(jd.getObjectDefinition().getFileType());
+        request.setBusinessObjectDefinitionName(jd.getObjectDefinition().getObjectName());
+        request.setAllowMissingData(true);
+        request.setIncludeDropPartitions(false);
+        request.setIncludeIfNotExistsOption(true);
+        request.setTableName(jd.getTableName());
+
+        List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
+
+        log.info("PartitionKey: {} \t Partitions: {}", jd.getPartitionKey(), partitions);
+        if (MetastoreUtil.isPartitionedSingleton(jd.getWfType(), jd.getPartitionKey())) {
+            addPartitionedSingletonFilter(jd, partitionValueFilters);
+        } else {
+
+            if (MetastoreUtil.isNonPartitionedSingleton(jd.getWfType(), jd.getPartitionKey())) {
+                addPartitionFilter(jd.getPartitionKey(), Lists.newArrayList("none"), partitionValueFilters);
+            } else {
+                if (jd.isSubPartitionLevelProcessing()) {
+                    addSubPartitionFilter(jd, partitionValueFilters);
+                } else {
+                    addPartitionFilter(jd.getPartitionKey(), partitions, partitionValueFilters);
+                }
+            }
+        }
+
+        request.setPartitionValueFilter(null);
+        request.setPartitionValueFilters(partitionValueFilters);
+        request.setNamespace(jd.getObjectDefinition().getNameSpace());
+
+        log.info("Get BO DDL Request with combine Alter Statements: \n{}", request.toString());
+        return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
+    }
+
+
     private void addPartitionFilter(String partitionKey, List<String> partitions, List<PartitionValueFilter> partitionValueFilters) {
         PartitionValueFilter filter = new PartitionValueFilter();
         filter.setPartitionKey(partitionKey);
