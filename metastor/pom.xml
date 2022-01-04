@@ -86,16 +86,6 @@
 			<artifactId>javax.json</artifactId>
 			<version>${glassfish.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-api</artifactId>
-			<version>RELEASE</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-core</artifactId>
-			<version>RELEASE</version>
-		</dependency>
 	</dependencies>
 
 	<developers>
@@ -106,6 +96,17 @@
 			<url>https://github.com/VekasS</url>
 			<organization>FINRA</organization>
 			<organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
+			<roles>
+				<role>developer</role>
+				<role>tester</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>skaviyappa</id>
+			<name>Sivakumar Kaviyappa</name>
+			<email>kbsivakumar@gmail.com</email>
+			<url>https://github.com/SivaKaviyappa</url>
+			<organization>FINRA</organization>
 			<roles>
 				<role>developer</role>
 				<role>tester</role>
