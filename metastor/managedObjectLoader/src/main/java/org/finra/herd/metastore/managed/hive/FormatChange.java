@@ -28,20 +28,35 @@ public class FormatChange {
 
     List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
     List<Pair<ColumnDef, ColumnDef>> typeChanges = Lists.newArrayList();
+    List<Pair<ColumnDef,ColumnDef>>  partitionColNameChanges = Lists.newArrayList();
+    List<Pair<ColumnDef,ColumnDef>>  partitionColTypeChanges = Lists.newArrayList();
     List<ColumnDef> newColumns = Lists.newArrayList();
+    boolean isClusteredSortedChange = false;
+    ClusteredDef clusteredDef;
 
-    boolean partitonColumnChanged = false;
     boolean escapeStrChanged = false;
     boolean nullStrChanged = false;
     boolean delimChanged = false;
+    boolean partitonColumnChanged = false;
 
     public boolean hasChange()
     {
-        return hasColumnChanges()||partitonColumnChanged;
+        return hasColumnChanges()|| hasPartitionColumnChanges() || isClusteredSortedChange;
     }
 
     public boolean hasColumnChanges()
     {
-        return (! (nameChanges.isEmpty() && typeChanges.isEmpty() && newColumns.isEmpty()));
+        return ((nameChanges!=null && !nameChanges.isEmpty()) || (typeChanges!=null && !typeChanges.isEmpty()) || (newColumns!=null && !newColumns.isEmpty()));
+
     }
+
+    public boolean hasPartitionColumnChanges ()
+    {
+
+        partitonColumnChanged = (partitionColTypeChanges!=null && !partitionColTypeChanges.isEmpty());
+        return partitonColumnChanged;
+    }
+
+
+
 }

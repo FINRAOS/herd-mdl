@@ -29,13 +29,13 @@
 
 	<artifactId>metastore</artifactId>
 	<groupId>org.finra.herd-mdl.metastore</groupId>
-	<version>1.2.48</version>
+	<version>1.2.54</version>
 	<packaging>pom</packaging>
 
 	<properties>
 		<spring.boot.version>2.0.2.RELEASE</spring.boot.version>
 		<lombok.version>1.18.0</lombok.version>
-		<herd.sdk.version>0.97.0</herd.sdk.version>
+		<herd.sdk.version>0.161.1</herd.sdk.version>
 		<jcommander.version>1.72</jcommander.version>
 		<javax.json.version>1.1.2</javax.json.version>
 		<glassfish.version>1.1</glassfish.version>
@@ -58,6 +58,23 @@
 			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
 		</license>
 	</licenses>
+
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>2.17.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>2.17.1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 
 	<dependencies>
 		<dependency>
@@ -86,6 +103,7 @@
 			<artifactId>javax.json</artifactId>
 			<version>${glassfish.version}</version>
 		</dependency>
+
 	</dependencies>
 
 	<developers>
@@ -96,6 +114,17 @@
 			<url>https://github.com/VekasS</url>
 			<organization>FINRA</organization>
 			<organizationUrl>https://www.linkedin.com/in/vekassingh/</organizationUrl>
+			<roles>
+				<role>developer</role>
+				<role>tester</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>skaviyappa</id>
+			<name>Sivakumar Kaviyappa</name>
+			<email>kbsivakumar@gmail.com</email>
+			<url>https://github.com/SivaKaviyappa</url>
+			<organization>FINRA</organization>
 			<roles>
 				<role>developer</role>
 				<role>tester</role>
