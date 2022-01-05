@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import static org.finra.herd.metastore.managed.conf.HerdMetastoreConfig.ALTER_TABLE_MAX_PARTITIONS;
+
 /**
  * Herd Client
  */
@@ -137,6 +139,52 @@ public class DataMgmtSvc {
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }
 
+    /*
+     Overloaded - Combines Alter Statements for partitions
+     for both Drop and Add.
+      ALTER_TABLE_MAX_PARTITIONS set to 6k.
+     */
+    public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions,boolean combineAlterStmts) throws ApiException {
+        BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
+
+        request.setIncludeDropTableStatement(false);
+        request.setOutputFormat(BusinessObjectDataDdlRequest.OutputFormatEnum.HIVE_13_DDL);
+        request.setBusinessObjectFormatUsage(jd.getObjectDefinition().getUsageCode());
+        request.setBusinessObjectFormatFileType(jd.getObjectDefinition().getFileType());
+        request.setBusinessObjectDefinitionName(jd.getObjectDefinition().getObjectName());
+        request.setAllowMissingData(true);
+        request.setIncludeDropPartitions(true);
+        request.setIncludeIfNotExistsOption(true);
+        request.setTableName(jd.getTableName());
+        request.combineMultiplePartitionsInSingleAlterTable(combineAlterStmts);
+        request.combinedAlterTableMaxPartitions(ALTER_TABLE_MAX_PARTITIONS);
+
+        List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
+
+        log.info("PartitionKey: {} \t Partitions: {}", jd.getPartitionKey(), partitions);
+        if (MetastoreUtil.isPartitionedSingleton(jd.getWfType(), jd.getPartitionKey())) {
+            addPartitionedSingletonFilter(jd, partitionValueFilters);
+        } else {
+
+            if (MetastoreUtil.isNonPartitionedSingleton(jd.getWfType(), jd.getPartitionKey())) {
+                addPartitionFilter(jd.getPartitionKey(), Lists.newArrayList("none"), partitionValueFilters);
+            } else {
+                if (jd.isSubPartitionLevelProcessing()) {
+                    addSubPartitionFilter(jd, partitionValueFilters);
+                } else {
+                    addPartitionFilter(jd.getPartitionKey(), partitions, partitionValueFilters);
+                }
+            }
+        }
+
+        request.setPartitionValueFilter(null);
+        request.setPartitionValueFilters(partitionValueFilters);
+        request.setNamespace(jd.getObjectDefinition().getNameSpace());
+
+        log.info("Get BO DDL Request with combine Alter Statements: \n{}", request.toString());
+        return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
+    }
+
     private void addPartitionFilter(String partitionKey, List<String> partitions, List<PartitionValueFilter> partitionValueFilters) {
         PartitionValueFilter filter = new PartitionValueFilter();
         filter.setPartitionKey(partitionKey);
@@ -233,6 +281,7 @@ public class DataMgmtSvc {
         boDataSearchKeyItem.setBusinessObjectFormatFileType(jd.getObjectDefinition().getFileType());
         boDataSearchKeyItem.setFilterOnLatestValidVersion(filterOnValidLatestVersions);
 
+        log.info("BusinessObjectDataSearchKey,pageNum,pageSize :{} ,{} ,{}",boDataSearchKeyItem,pageNum,pageSize);
 
         // Search BO Data
         return businessObjectDataApi.businessObjectDataSearchBusinessObjectData(
