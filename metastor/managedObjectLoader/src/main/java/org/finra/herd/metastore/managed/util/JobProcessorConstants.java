@@ -47,6 +47,7 @@ public interface JobProcessorConstants {
 	String HIVE_PASSWORD = "";
 
 	int MAX_PARTITION_FORMAT_LIMIT = 5000;
+	long MAX_JOB_WAIT_TIME=3600;
 
 
 }

@@ -1,5 +1,6 @@
 package org.finra.herd.metastore.managed.conf;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -14,11 +15,11 @@ public class AsyncConfig implements AsyncConfigurer {
 
 
     @Override
+    @Bean( name = "formatExecutor" )
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5);
         executor.setMaxPoolSize(5);
-        executor.setThreadNamePrefix("MyExecutor-");
         executor.initialize();
         return executor;
     }

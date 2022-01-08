@@ -1,33 +1,21 @@
 package org.finra.herd.metastore.managed.format;
 
-import lombok.Getter;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.hive.HiveFormatAlterTable;
-import org.finra.herd.metastore.managed.util.ExecuteHive;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
 
 @Service
 @Slf4j
@@ -40,8 +28,9 @@ public class RegularFormatStrategy implements FormatStrategy {
     @Autowired
     HiveFormatAlterTable hiveFormatAlterTable;
 
+
     @Autowired
-    ExecuteHive executeHive;
+    SubmitFormatProcess submitFormatProcess;
 
     @Override
     public void executeFormatChange(JobDefinition jobDefinition,FormatChange formatChange,boolean cascade){
@@ -50,9 +39,7 @@ public class RegularFormatStrategy implements FormatStrategy {
 
         hiveFormatAlterTable.executeFormatChange(formatChange, jobDefinition,hiveStatements, cascade);
 
-        runProcess(hiveStatements);
-
-
+        runProcess(hiveStatements,jobDefinition.getObjectDefinition().getObjectName(),jobDefinition.getObjectDefinition().getNameSpace());
 
 
     }
@@ -64,53 +51,59 @@ public class RegularFormatStrategy implements FormatStrategy {
     }
 
 
-    void runProcess(List<String> hiveStatements) throws RuntimeException {
-        ProcessBuilder pb = createProcessBuilder(hiveStatements,"/tmp/regular-format-");
-        if (Objects.nonNull(pb)) {
-            ExecutorService pool = Executors.newSingleThreadExecutor();
-            try {
-                log.info("Start Task " + pb.command());
-                Process process = pb.start();
-                Callable task = () -> new BufferedReader(new InputStreamReader(process.getInputStream()))
-                    .lines()
-                    .collect(Collectors.toList());
+    void runProcess(List<String> hiveStatements,String objectName,String dbName) {
 
-                Future<List<String>> future = pool.submit(task);
-                if (!future.isDone()) {
-                    log.info("Waiting for task to be done");
-                    future.get(JobProcessorConstants.HIVE_TIMEOUT, TimeUnit.SECONDS);
+        try {
+            String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
+
+            log.info("The tmp dir for format is ==> {}", tmpdir);
+
+            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
+
+            CompletableFuture<String> processOutput = formatProcess.thenApplyAsync(process -> {
+                String res = null;
+                try {
+                    res = CharStreams.toString(new InputStreamReader(process.getInputStream(), Charsets.UTF_8));
+                } catch (Exception e) {
+                    log.error(
+                            "not able to parse inputstream {}",e.getMessage()
+                    );
+                }
+                return res;
+            });
+
+
+            processOutput.thenAcceptAsync(s -> log.info("Hive execution output is ==>{}", s));
+
+            formatProcess.thenAcceptAsync(proc -> {
+                try{
+                    if(!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME,TimeUnit.SECONDS))
+                    {
+                        proc.destroyForcibly();
+                        processOutput.completeExceptionally(new Exception("Process TimedOut"));
+
+                    }
+                }catch(InterruptedException ie){
+                    log.error("Unable to kill the process");
                 }
 
-                log.info("Task completed" + pb.command());
-                this.setComplete(true);
+            });
 
-            } catch (Exception e) {
-                log.info("Exception in Regular Format Strategy runProcess" + e.getMessage());
-                throw new RuntimeException("Regular Format Changes Failed");
-            } finally {
-                pool.shutdown();
-            }
+            processOutput.handleAsync((proc, err) -> {
+
+                if (err != null) {
+                    log.error("Unable to finish processing of format for Object {} , Namespace {}", objectName, dbName);
+                    throw new RuntimeException("Unable to finish processing of format");
+                }else{
+                    this.isComplete=true;
+                }
+                return null;
+            });
+
+
+        }catch(Exception e){
+
         }
-    }
-
-
-    public ProcessBuilder createProcessBuilder(List<String> schemaHql,String filePrefix) {
-            try {
-                //"/tmp/regular-format-"
-                byte[] setHiveTimeout = (JobProcessorConstants.SET_HIVE_CLIENT_TIMEOUT + JobProcessorConstants.HIVE_TIMEOUT + ";").getBytes();
-                File hqlFilePath = File.createTempFile(filePrefix, ".hql", new File("/tmp"));
-                Path path = Paths.get(hqlFilePath.getAbsolutePath());
-                Files.write(path, setHiveTimeout, CREATE, APPEND);
-                Files.write(path, schemaHql, APPEND);
-                log.info("Schema HQL: {} \t regular format HQL fileName :{}", schemaHql, hqlFilePath.getAbsolutePath());
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", hqlFilePath.getAbsolutePath());
-                return pb;
-            } catch (IOException ie) {
-                log.info("Problem encountered while regular format update with message: {}", ie.getMessage(), ie);
-            }
-
-
-        return null;
     }
 
 
