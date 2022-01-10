@@ -13,7 +13,7 @@ import java.util.List;
 public class PartitionsDAO {
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    JdbcTemplate template;
 
 
 
@@ -24,7 +24,7 @@ public class PartitionsDAO {
             "join DBS D on D.DB_ID = T.DB_ID \n" +
             "where T.TBL_NAME =?\n" +
             "and D.NAME = ?;";
-        int totalPartitionCount= jdbcTemplate.queryForObject(sql,new Object[]{objectName.toLowerCase(),dbName.toLowerCase()},Integer.class);
+        int totalPartitionCount= template.queryForObject(sql,new Object[]{objectName.toLowerCase(),dbName.toLowerCase()},Integer.class);
         return  totalPartitionCount;
     }
 
@@ -38,7 +38,7 @@ public class PartitionsDAO {
            "and D.NAME = ?;\n";
 
 
-       return jdbcTemplate.query(sql, new Object[]{objectName.toLowerCase(), dbName.toLowerCase()}, (resultSet,rowNum) -> {
+       return template.query(sql, new Object[]{objectName.toLowerCase(), dbName.toLowerCase()}, (resultSet,rowNum) -> {
            return resultSet.getString("partitions");
        });
     }
@@ -63,7 +63,7 @@ public class PartitionsDAO {
             "         GROUP BY SUBSTRING_INDEX(SUBSTRING_INDEX(P.PART_NAME, CONCAT(LOWER(PK.PKEY_NAME), '='), -1), '/', 1)\n" +
             "       ) as sq;";
 
-        int maxCount=jdbcTemplate.queryForObject(sql,new Object[]{dbName.toLowerCase(),objectName.toLowerCase()},Integer.class);
+        int maxCount=template.queryForObject(sql,new Object[]{dbName.toLowerCase(),objectName.toLowerCase()},Integer.class);
         return maxCount;
     }
 

@@ -68,6 +68,8 @@ public class HiveHqlGenerator {
     @Autowired
     DetectSchemaChanges detectSchemaChanges;
 
+    private boolean isFormatChange;
+
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
@@ -81,6 +83,7 @@ public class HiveHqlGenerator {
             } else {
                 try {
                     if (detectSchemaChanges.getFormatChange(jd).hasChange()) {
+                        isFormatChange=true;
                         submitFormatJob(jd);
                     }
                 } catch (Exception ex) {
@@ -105,22 +108,30 @@ public class HiveHqlGenerator {
         boolean tableExists = hiveClient.tableExist(jd.getObjectDefinition().getDbName(), jd.getTableName());
         BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions);
 
+        //Check for Format changes
         List<String> schemaHql = schemaSql(tableExists, jd);
 
-        // Add database Statements
-        selectDatabase(jd, schemaHql);
+        if(!isFormatChange){
+            // Add database Statements
+            selectDatabase(jd, schemaHql);
 
-        // Add DDL's from data DDL
-        addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
+            // Add DDL's from data DDL
+            addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
-        //Stats
-        addAnalyzeStats(jd, partitions);
+            //Stats
+            addAnalyzeStats(jd, partitions);
 
-        // Create file
-        Path hqlFilePath = createHqlFile(jd);
-        Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
+            // Create file
+            Path hqlFilePath = createHqlFile(jd);
+            Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
 
-        return hqlFilePath.toString();
+            return hqlFilePath.toString();
+        } else{
+            return null;
+        }
+
+
+
     }
 
     protected void selectDatabase(JobDefinition jd, List<String> schemaHql) {
@@ -186,6 +197,10 @@ public class HiveHqlGenerator {
 
         dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_FORMAT);
         dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
+
+        dmNotification.setPartitionKey(jd.partitionKeysForStats());
+        dmNotification.setPartitionValue(jd.getPartitionValue());
+
 
         log.info("Herd Format Notification DB request: \n{}", dmNotification);
         jobProcessorDAO.addDMNotification(dmNotification);
