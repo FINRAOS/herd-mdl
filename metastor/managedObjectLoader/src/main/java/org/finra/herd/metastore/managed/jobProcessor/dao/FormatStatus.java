@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 @ToString
 @Getter
