@@ -48,6 +48,7 @@ public interface JobProcessorConstants {
 
 	int MAX_PARTITION_FORMAT_LIMIT = 5000;
 	long MAX_JOB_WAIT_TIME=3600;
+	int ALTER_TABLE_ADD_MAX_PARTITIONS=35000;
 
 
 }

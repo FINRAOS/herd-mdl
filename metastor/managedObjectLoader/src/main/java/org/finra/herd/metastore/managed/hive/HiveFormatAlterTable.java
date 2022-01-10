@@ -10,6 +10,7 @@ import org.finra.herd.metastore.managed.format.FormatChange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -111,8 +112,9 @@ public class HiveFormatAlterTable  {
 
 
 
-    public List<String> executeFormatChange(FormatChange formatChange,JobDefinition jd, List<String> hiveStatements,  boolean isCascade)  {
+    public List<String> getFormatHiveStatements(FormatChange formatChange, JobDefinition jd, boolean isCascade)  {
 
+        List<String> hiveStatements = new ArrayList<>();
 
         try{
             formatRegularColumn(formatChange,jd,hiveStatements,jd.getTableName(),isCascade);

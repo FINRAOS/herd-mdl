@@ -8,4 +8,5 @@ public interface FormatStrategy {
 
     public boolean hasFormatCompleted();
     public void executeFormatChange(JobDefinition jd, FormatChange formatChange,boolean cascade);
+    public String getErr();
 }

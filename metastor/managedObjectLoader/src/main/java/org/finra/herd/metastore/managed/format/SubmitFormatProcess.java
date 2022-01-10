@@ -1,6 +1,7 @@
 package org.finra.herd.metastore.managed.format;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,9 @@ import static java.nio.file.StandardOpenOption.APPEND;
 @Service
 public class SubmitFormatProcess {
 
+
+
+
     @Async("formatExecutor")
     public CompletableFuture<Process> submitProcess(File files) {
 
@@ -36,7 +40,7 @@ public class SubmitFormatProcess {
                 process = pb.start();
 
             } catch (IOException ie) {
-                log.error("Exceptiopn in here {}" , ie.getMessage());
+                log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
                 throw new RuntimeException("Unable to execute  hive process ==>"+files.getAbsolutePath());
             }
             return process;
@@ -61,8 +65,8 @@ public class SubmitFormatProcess {
             Files.write(path, str.getBytes(), APPEND);
 
         } catch (Exception ioe) {
-            System.out.println(ioe.getMessage());
-        }
+            log.error("Exceptiopn in creatingHql file {}" , ioe.getMessage());
+            throw new RuntimeException("Unable to create  hive file ==>"+hqlFilePath.getAbsolutePath());        }
 
         return hqlFilePath;
 

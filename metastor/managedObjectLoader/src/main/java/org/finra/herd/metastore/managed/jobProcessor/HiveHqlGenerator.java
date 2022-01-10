@@ -69,10 +69,6 @@ public class HiveHqlGenerator {
     DetectSchemaChanges detectSchemaChanges;
 
 
-
-
-
-
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
         String tableName = jd.getTableName();
@@ -83,17 +79,10 @@ public class HiveHqlGenerator {
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
                 list.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
-
-
                 try {
-
-
-                    if(detectSchemaChanges.getFormatChange(jd).hasChange())
-                    {
+                    if (detectSchemaChanges.getFormatChange(jd).hasChange()) {
                         submitFormatJob(jd);
-
                     }
-
                 } catch (Exception ex) {
                     log.warn("Error comparing formats", ex);
                     notificationSender.sendNotificationEmail(ex.getMessage(), "Error comparing formats", jd);
@@ -110,13 +99,6 @@ public class HiveHqlGenerator {
         }
         return list;
     }
-
-
-
-
-
-
-
 
 
     public String buildHql(JobDefinition jd, List<String> partitions) throws IOException, ApiException, SQLException {
@@ -195,7 +177,7 @@ public class HiveHqlGenerator {
         dmNotification.setPartitionKey(jd.partitionKeysForStats());
         dmNotification.setPartitionValue(partitionValue);
 
-        log.info("Herd Notification DB request: \n{}", dmNotification);
+        log.info("Herd Stats Notification DB request: \n{}", dmNotification);
         jobProcessorDAO.addDMNotification(dmNotification);
     }
 
@@ -205,7 +187,7 @@ public class HiveHqlGenerator {
         dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_FORMAT);
         dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
 
-        log.info("Herd Notification DB request: \n{}", dmNotification);
+        log.info("Herd Format Notification DB request: \n{}", dmNotification);
         jobProcessorDAO.addDMNotification(dmNotification);
     }
 
@@ -256,8 +238,6 @@ public class HiveHqlGenerator {
                 .add(String.valueOf(jd.getNumOfRetry()))
                 .toString();
     }
-
-
 
 
 }
