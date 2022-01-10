@@ -1,5 +1,7 @@
 package org.finra.herd.metastore.managed.conf;
 
+import org.finra.herd.metastore.managed.format.ProcessAsyncUncaughtExceptionHandler;
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -24,4 +26,8 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return new ProcessAsyncUncaughtExceptionHandler(  );
+    }
 }
