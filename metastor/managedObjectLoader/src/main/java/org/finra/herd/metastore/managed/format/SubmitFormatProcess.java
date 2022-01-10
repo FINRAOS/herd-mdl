@@ -35,7 +35,7 @@ public class SubmitFormatProcess {
 
                 log.info("Thread in submitProcess {}",Thread.currentThread().getName());
 
-                ProcessBuilder pb = new ProcessBuilder("/bin/sh", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
 

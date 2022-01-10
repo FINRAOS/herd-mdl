@@ -52,6 +52,7 @@ public class FormatObjectProcessor extends JobProcessor {
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
             errorBuffer.append(ex.getMessage());
+            // Seeing Error here
             return false;
         }
 

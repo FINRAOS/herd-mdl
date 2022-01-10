@@ -115,6 +115,9 @@ public class HiveFormatAlterTable  {
     public List<String> getFormatHiveStatements(FormatChange formatChange, JobDefinition jd, boolean isCascade)  {
 
         List<String> hiveStatements = new ArrayList<>();
+        String useDb = "use "+jd.getObjectDefinition().getDbName()+";";
+        hiveStatements.add(useDb);
+
 
         try{
             formatRegularColumn(formatChange,jd,hiveStatements,jd.getTableName(),isCascade);
