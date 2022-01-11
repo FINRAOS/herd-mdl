@@ -1,5 +1,6 @@
 package org.finra.herd.metastore.managed.format;
 
+import lombok.ToString;
 import org.finra.herd.metastore.managed.JobDefinition;
 
 import java.text.Format;

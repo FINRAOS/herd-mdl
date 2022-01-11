@@ -1,5 +1,6 @@
 package org.finra.herd.metastore.managed.jobProcessor.dao;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Component
+@Slf4j
 public class PartitionsDAO {
 
     @Autowired
@@ -25,6 +27,7 @@ public class PartitionsDAO {
             "where T.TBL_NAME =?\n" +
             "and D.NAME = ?;";
         int totalPartitionCount= template.queryForObject(sql,new Object[]{objectName.toLowerCase(),dbName.toLowerCase()},Integer.class);
+        log.info("Total PartitionCount for Object:{} {} {}",dbName,objectName ,totalPartitionCount);
         return  totalPartitionCount;
     }
 

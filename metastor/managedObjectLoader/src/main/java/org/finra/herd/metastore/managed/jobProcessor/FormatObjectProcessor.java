@@ -3,9 +3,7 @@ package org.finra.herd.metastore.managed.jobProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
-import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
-import org.finra.herd.metastore.managed.format.FormatChange;
-import org.finra.herd.metastore.managed.format.FormatStrategy;
+import org.finra.herd.metastore.managed.format.*;
 import org.finra.herd.metastore.managed.hive.HiveFormatAlterTable;
 import org.finra.herd.metastore.managed.jobProcessor.dao.PartitionsDAO;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
@@ -39,14 +37,22 @@ public class FormatObjectProcessor extends JobProcessor {
 
     final int concurrency = Runtime.getRuntime().availableProcessors();
 
+
     @Override
     public boolean process(JobDefinition od, String clusterID, String workerID) {
 
         try {
 
+            log.info("Thread Name in process: {}",Thread.currentThread().getName());
             FormatStrategy formatStrategy= doFormat(od);
-            Optional <String> errMsg = Optional.of(formatStrategy.getErr());
+            log.info("Format Strategy:{}",formatStrategy);
+            log.info("Format strategy completed? :{}",formatStrategy.hasFormatCompleted());
+
+            Optional <String> errMsg = Optional.ofNullable(formatStrategy.getErr());
+            log.info("err msg {}",errMsg);
             errMsg.ifPresent(err-> errorBuffer.append(err));
+            log.info("Thread Name second in process: {}",Thread.currentThread().getName());
+
             // We will update Format Status here.
             return formatStrategy.hasFormatCompleted();
         } catch (Exception ex) {

@@ -4,6 +4,9 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
@@ -42,6 +45,10 @@ import static org.finra.herd.metastore.managed.conf.HerdMetastoreConfig.ALTER_TA
 @Service
 @Slf4j
 @Qualifier("renameFormat")
+@NoArgsConstructor
+@Getter
+@Setter
+@ToString
 public class RenameFormatStrategy implements FormatStrategy {
 
     @Autowired
@@ -195,6 +202,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         int splitSize = JobProcessorConstants.ALTER_TABLE_ADD_MAX_PARTITIONS/getMaxCount;
 
         return Lists.partition(rootPartitions,splitSize);
+
 
 
 

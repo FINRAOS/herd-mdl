@@ -22,6 +22,7 @@ import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
+import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
@@ -68,7 +69,7 @@ public class HiveHqlGenerator {
     @Autowired
     DetectSchemaChanges detectSchemaChanges;
 
-    private boolean isFormatChange;
+    private FormatChange formatChange;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -82,8 +83,8 @@ public class HiveHqlGenerator {
                 list.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
                 try {
-                    if (detectSchemaChanges.getFormatChange(jd).hasChange()) {
-                        isFormatChange=true;
+                    this.formatChange = detectSchemaChanges.getFormatChange(jd);
+                    if (this.formatChange.hasChange()) {
                         submitFormatJob(jd);
                     }
                 } catch (Exception ex) {
@@ -111,7 +112,8 @@ public class HiveHqlGenerator {
         //Check for Format changes
         List<String> schemaHql = schemaSql(tableExists, jd);
 
-        if(!isFormatChange){
+        log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
+        if(!this.formatChange.hasChange()){
             // Add database Statements
             selectDatabase(jd, schemaHql);
 

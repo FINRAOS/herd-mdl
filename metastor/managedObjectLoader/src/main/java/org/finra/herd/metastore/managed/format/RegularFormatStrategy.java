@@ -3,8 +3,7 @@ package org.finra.herd.metastore.managed.format;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.hive.HiveFormatAlterTable;
@@ -24,69 +23,78 @@ import java.util.concurrent.*;
 @Service
 @Slf4j
 @Qualifier("regularFormat")
+@ToString
 public class RegularFormatStrategy implements FormatStrategy {
 
-    @Setter
+    @Getter
     private boolean isComplete;
-
-    @Autowired
-    HiveFormatAlterTable hiveFormatAlterTable;
-
-
-    @Autowired
-    SubmitFormatProcess submitFormatProcess;
-
-    @Autowired
-    FormatProcessorDAO formatProcessorDAO;
-
-
+    private HiveFormatAlterTable hiveFormatAlterTable;
+    private SubmitFormatProcess submitFormatProcess;
+    private FormatProcessorDAO formatProcessorDAO;
     private StringBuffer errMsg;
 
+    @Autowired
+    public RegularFormatStrategy(HiveFormatAlterTable hiveFormatAlterTable,SubmitFormatProcess submitFormatProcess,
+                                 FormatProcessorDAO formatProcessorDAO ) {
+
+        this.hiveFormatAlterTable=hiveFormatAlterTable;
+        this.submitFormatProcess=submitFormatProcess;
+        this.formatProcessorDAO=formatProcessorDAO;
+        this.errMsg=new StringBuffer();
+
+    }
+
     @Override
-    public void executeFormatChange(JobDefinition jobDefinition,FormatChange formatChange,boolean cascade){
+    public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade) {
 
 
         List<String> hiveStatements = hiveFormatAlterTable.getFormatHiveStatements(formatChange, jobDefinition, cascade);
 
+        log.info("Regular Format hiveStatements size:[]", hiveStatements.size());
 
-        if(hiveStatements.size() > 0) {
+        if (hiveStatements.size() > 0) {
             runProcess(hiveStatements, jobDefinition.getObjectDefinition().getObjectName(), jobDefinition.getObjectDefinition().getNameSpace());
-        }
-        else {
+        } else {
             log.info("No Regular format changes detected {} {}", jobDefinition.getObjectDefinition().getNameSpace(), jobDefinition.getObjectDefinition().getDbName());
         }
-
 
 
     }
 
     @Override
-    public boolean hasFormatCompleted(){
+    public boolean hasFormatCompleted() {
 
         return this.isComplete;
     }
 
     @Override
-    public String getErr(){
-        return  this.errMsg.toString();
+    public String getErr() {
+        return this.errMsg.toString();
     }
 
-    void runProcess(List<String> hiveStatements,String objectName,String dbName) {
+    void runProcess(List<String> hiveStatements, String objectName, String dbName) {
 
         try {
             String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
 
             log.info("The tmp dir for format is ==> {}", tmpdir);
+            log.info("Thread Name in runProcess: {}", Thread.currentThread().getName());
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
 
-            CompletableFuture<String> processOutput = formatProcess.thenApplyAsync(process -> {
+            if (!formatProcess.isDone()) {
+                log.info("Format process not done block");
+                formatProcess.get();
+                log.info("Format process is done un block");
+            }
+
+            CompletableFuture<String> processOutput = formatProcess.thenApply(process -> {
                 String res = null;
                 try {
                     res = CharStreams.toString(new InputStreamReader(process.getInputStream(), Charsets.UTF_8));
                 } catch (Exception e) {
                     log.error(
-                            "not able to parse inputstream {}",e.getMessage()
+                            "not able to parse inputstream {}", e.getMessage()
                     );
                     errMsg.append("not able to parse inputstream");
                     errMsg.append(e.getMessage());
@@ -95,25 +103,25 @@ public class RegularFormatStrategy implements FormatStrategy {
             });
 
 
-            processOutput.thenAcceptAsync(s -> log.info("Hive execution output is ==>{}", s));
+            processOutput.thenAccept(s -> log.info("Hive execution output is ==>{}", s));
 
-            formatProcess.thenAcceptAsync(proc -> {
-                try{
-                    if(!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME,TimeUnit.SECONDS))
-                    {
+            formatProcess.thenAccept(proc -> {
+                try {
+                    if (!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS)) {
                         proc.destroyForcibly();
                         processOutput.completeExceptionally(new Exception("Process Timed Out"));
 
                     }
-                }catch(InterruptedException ie){
-                    log.error("Unable to kill the process after timeout {}",ie.getMessage());
+                } catch (InterruptedException ie) {
+                    log.error("Unable to kill the process after timeout {}", ie.getMessage());
                     errMsg.append("Unable to kill the process after timeout");
                     errMsg.append(ie.getMessage());
                 }
 
             });
 
-            processOutput.handleAsync((proc, err) -> {
+
+            formatProcess.whenComplete((proc, err) -> {
 
                 if (err != null) {
                     log.error("Unable to finish processing of format for Object {} , Namespace {}", objectName, dbName);
@@ -121,20 +129,19 @@ public class RegularFormatStrategy implements FormatStrategy {
                     errMsg.append(objectName);
                     errMsg.append(dbName);
 
-                }else{
-                    this.isComplete=true;
+                } else {
+                    this.isComplete = true;
                     log.info("Format change processing Complete for Object {} , Namespace {}", objectName, dbName);
+                    log.info("Thread Name in handleAsync: {}", Thread.currentThread().getName());
+                    log.info("is Complete? {}", this.isComplete);
 
                 }
-                return null;
             });
 
-            formatProcess.join();
 
+        } catch (Exception e) {
 
-        }catch(Exception e){
-
-            log.error("Exception in regular format change {}",e.getMessage());
+            log.error("Exception in regular format change {}", e.getMessage());
             errMsg.append("Exception in regular format change");
             errMsg.append(e.getMessage());
 
