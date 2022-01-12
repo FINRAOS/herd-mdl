@@ -4,72 +4,107 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.jobProcessor.dao.FormatProcessorDAO;
+import org.finra.herd.metastore.managed.jobProcessor.dao.FormatStatus;
 import org.finra.herd.metastore.managed.jobProcessor.dao.PartitionsDAO;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.invoker.ApiException;
-import org.finra.herd.sdk.model.BusinessObjectDataDdl;
 import org.finra.herd.sdk.model.BusinessObjectDataDdlRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import java.lang.Boolean;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static java.nio.file.StandardOpenOption.APPEND;
-import static org.finra.herd.metastore.managed.conf.HerdMetastoreConfig.ALTER_TABLE_MAX_PARTITIONS;
 
 
 @Service
 @Slf4j
 @Qualifier("renameFormat")
-@NoArgsConstructor
-@Getter
-@Setter
 @ToString
 public class RenameFormatStrategy implements FormatStrategy {
 
-    @Autowired
-    protected DataMgmtSvc dataMgmtSvc;
-
-    @Autowired
-    PartitionsDAO partitionsDAO;
-
     @Getter
     private boolean isComplete;
-
+    private DataMgmtSvc dataMgmtSvc;
+    private PartitionsDAO partitionsDAO;
     private StringBuffer errMsg;
+    private SubmitFormatProcess submitFormatProcess;
+
+    private FormatProcessorDAO formatProcessorDAO;
 
     @Autowired
-    SubmitFormatProcess submitFormatProcess;
+    public RenameFormatStrategy(DataMgmtSvc dataMgmtSvc,PartitionsDAO partitionsDAO,SubmitFormatProcess submitFormatProcess,FormatProcessorDAO formatProcessorDAO){
+
+        this.dataMgmtSvc= dataMgmtSvc;
+        this.partitionsDAO=partitionsDAO;
+        this.submitFormatProcess=submitFormatProcess;
+        this.errMsg= new StringBuffer();
+        this.formatProcessorDAO=formatProcessorDAO;
+    }
+
+
 
     @Override
     public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade){
 
-        runProcess(jobDefinition);
+        List<List<String>> rootPartitionList= getSplitRootPartitionList(jobDefinition);
+        String dbName=jobDefinition.getObjectDefinition().getDbName();
+        String objectName=jobDefinition.getObjectDefinition().getObjectName();
 
+        log.info("List of rootPartitions for the object => {} {} {}",rootPartitionList,dbName,objectName);
+        try{
+
+            List<CompletableFuture<FormatProcessObject>> formatProcessObjectList = createTableAddPartitionDDL(jobDefinition,rootPartitionList);
+
+            printProcessOutput(formatProcessObjectList);
+
+            CompletableFuture<?>[] formatProcessObjListarr = formatProcessObjectList.toArray(new CompletableFuture[formatProcessObjectList.size()]);
+
+            CompletableFuture<Void> allfuture= CompletableFuture.allOf(formatProcessObjListarr);
+
+//Wait for all Process to complete
+            if(!allfuture.isDone())
+            {
+                log.info("all process not complete");
+                allfuture.get();
+                //Hopefully done bythis time?
+                log.info("all process  complete");
+
+
+            }
+
+
+            Map<Boolean, List<CompletableFuture<FormatProcessObject>>> result =
+                    formatProcessObjectList
+                            .stream()
+                            .collect(Collectors.partitioningBy(CompletableFuture::isCompletedExceptionally));
+
+
+            setFormatStatus(result);
+
+
+
+
+
+        }catch (Exception e){
+
+            log.error("Error in execute {}",e.getMessage());
+            errMsg.append("Error in execute {}"+e.getMessage());
+        }
 
     }
 
@@ -86,67 +121,92 @@ public class RenameFormatStrategy implements FormatStrategy {
     }
 
 
-    private void runProcess(JobDefinition jobDefinition){
 
-        List<List<String>> rootPartitionList= getSplitRootPartitionList(jobDefinition);
+    private void buildFormatStatus(List<CompletableFuture<FormatProcessObject>> futureFormatObjList, String status)
+    {
 
-        try{
-            List<CompletableFuture<Process>> processList = createTableAddPartitionDDL(jobDefinition,rootPartitionList);
+        futureFormatObjList.forEach(future -> {
 
-            List<CompletableFuture<String>> processOutput = processList.stream().map(proc ->
-                    proc.thenApplyAsync(
+            future.thenAccept(formatProcessObject -> {
 
-
-
-                            p -> {
-                                String s = null;
-
-                                try {
-                                    s = CharStreams.toString(new InputStreamReader(
-                                            p.getInputStream(), Charsets.UTF_8));
-                                    log.info("Thread in collect"+Thread.currentThread().getName());
-
-                                } catch (Exception ie) {
-                                    log.info("processouput" +ie.getMessage());
-                                }
-                                return s;
-                            }
-
-                    )).collect(Collectors.toList());
+                FormatStatus formatStatus = FormatStatus.builder()
+                        .partitionValues(StringUtils.join(formatProcessObject.partitionList, ","))
+                        .formatUsage(formatProcessObject.jobDefinition.getObjectDefinition().getUsageCode())
+                        .clusterName(formatProcessObject.jobDefinition.getClusterName())
+                        .partitionKey(formatProcessObject.jobDefinition.getPartitionKey())
+                        .notificationId(formatProcessObject.jobDefinition.getId())
+                        .workflowType(formatProcessObject.jobDefinition.getWfType())
+                        .objDefName(formatProcessObject.jobDefinition.getObjectDefinition().getObjectName())
+                        .formatStatus(status)
+                        .build();
+                log.info("Value of formatProcessObject is {}", formatProcessObject);
+                formatProcessorDAO.addFormatStatus(
+                        formatStatus
+                );
 
 
-
-            Consumer<String> printProcessOutput= (s)-> log.info(s);
-
-            processOutput.forEach(c-> c.thenAcceptAsync(printProcessOutput));
-
-            CompletableFuture.allOf(processList.toArray(new CompletableFuture[0]))
-                    // avoid throwing an exception in the join() call
-                    .exceptionally(ex -> null)
-                    .join();
-            Map<Boolean, List<CompletableFuture<Process>>> result =
-                    processList.stream()
-                            .collect(Collectors.partitioningBy(CompletableFuture::isCompletedExceptionally));
-
-            log.info("RESULT =" + result);
-
-            result.forEach((res,process)->{
-                if(!res){
-                    log.info("process failed"+process);
-                    throw new RuntimeException("this process failed");
-                }
             });
 
 
-        }catch (Exception e){
-
-        }
-
+        });
 
 
     }
+    private  void setFormatStatus(Map<Boolean,List<CompletableFuture<FormatProcessObject>>> resultsMap){
 
-    private List<CompletableFuture<Process>> createTableAddPartitionDDL(JobDefinition jobDefinition,List<List<String>> rootPartitionList) throws IOException {
+
+        Objects.requireNonNull(resultsMap,"Results of format process in Rename can not be Null!");
+
+
+         resultsMap.forEach((result,futureFormatObjList)-> {
+
+
+             this.isComplete=true;
+
+             if (!result) {
+
+                 buildFormatStatus(futureFormatObjList,"E");
+             }
+             else {
+
+                 buildFormatStatus(futureFormatObjList,"P");
+
+         }
+    });
+    }
+
+
+
+
+
+
+    private void printProcessOutput(List<CompletableFuture<FormatProcessObject>> formatProcessObjectList) {
+
+        List<CompletableFuture<String>> processOutput = formatProcessObjectList.stream().map(proc ->
+                proc.thenApplyAsync(
+
+                        p -> {
+                            String s = null;
+
+                            try {
+                                s = CharStreams.toString(new InputStreamReader(
+                                        p.getProcess().getInputStream(), Charsets.UTF_8));
+                                log.info("Thread in collect"+Thread.currentThread().getName());
+
+                            } catch (Exception ie) {
+                                log.info("processouput" +ie.getMessage());
+                            }
+                            return s;
+                        }
+
+                )).collect(Collectors.toList());
+
+
+        processOutput.forEach(c-> c.thenAccept(s->log.info(s)));
+
+
+    }
+    private List<CompletableFuture<FormatProcessObject>> createTableAddPartitionDDL(JobDefinition jobDefinition,List<List<String>> rootPartitionList) throws IOException {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
@@ -156,20 +216,23 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         log.info("The tmp dir for format is ==> {}", tmpdir);
 
-        List<CompletableFuture<Process>> processList=new ArrayList<>();
+        List<CompletableFuture<FormatProcessObject>> formatProcessObjectList=new ArrayList<>();
+
 
 
         rootPartitionList.forEach(partitionList -> {
-            processList.add(
-                    submitFormatProcess.submitProcess(
-                    submitFormatProcess.createHqlFile(
-                            getableAddPartitionDDL(jobDefinition,partitionList,request),tmpdir)
-                    )
-            );
+
+            List<String> hiveDdl = getableAddPartitionDDL(jobDefinition,partitionList,request);
+            File tmpFile=submitFormatProcess.createHqlFile(hiveDdl,tmpdir);
+            FormatProcessObject formatProcessObject=FormatProcessObject.builder()
+                    .partitionList(partitionList)
+            .jobDefinition(jobDefinition)
+            .build();
+            formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile,formatProcessObject));
 
         });
 
-        return processList;
+        return formatProcessObjectList;
 
     }
 
@@ -177,25 +240,29 @@ public class RenameFormatStrategy implements FormatStrategy {
     private List<String> getableAddPartitionDDL(JobDefinition jobDefinition,List<String> partitionList,BusinessObjectDataDdlRequest businessObjectDataDdlRequest) {
 
                 List<String> hiveDDL= new ArrayList<>();
+                String useDb = "use "+jobDefinition.getObjectDefinition().getDbName()+";";
+                hiveDDL.add(useDb);
 
-                    try {
+
+        try {
                         hiveDDL.add(dataMgmtSvc.getBusinessObjectDataDdl(jobDefinition, partitionList, businessObjectDataDdlRequest).getDdl());
                     }catch(ApiException api){
                         //Add error
 
                     }
+                    log.info("HIVE DDL FOR RENAME :{}",hiveDDL);
         return hiveDDL;
 
     }
 
     private List<List<String>> getSplitRootPartitionList(JobDefinition jd)  {
 
-        String objectName=jd.getObjectDefinition().getObjectName();
-        String nameSpace=jd.getObjectDefinition().getNameSpace();
-        List<String> rootPartitions = partitionsDAO.getDistinctRootPartition(objectName,nameSpace);
+        String tableName=jd.getTableName();
+        String dbName=jd.getObjectDefinition().getDbName();
+        List<String> rootPartitions = partitionsDAO.getDistinctRootPartition(tableName,dbName);
 
         // Highest Partition Count in all the partitions for a given Object
-        int getMaxCount = partitionsDAO.getMaxCount(objectName,nameSpace);
+        int getMaxCount = partitionsDAO.getMaxCount(tableName,dbName);
 
         // To determine how to split for DM calls. Goal is to make sure we do not exceed the
         // ALTER_TABLE_ADD_MAX_PARTITIONS Limit for any given DM call
@@ -219,6 +286,16 @@ public class RenameFormatStrategy implements FormatStrategy {
     }
 
 
+
+    private static <T> CompletableFuture<List<T>> sequence(List<CompletableFuture<T>> futures) {
+        CompletableFuture<Void> allDoneFuture =
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+        return allDoneFuture.thenApply(v ->
+                futures.stream().
+                        map(future -> future.join()).
+                        collect(Collectors.toList())
+        );
+    }
 
 
 }

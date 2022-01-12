@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+/*
+
+ If the number of partitions in metastore are less than 50k use this Strategy
+ */
 @Service
 @Slf4j
 @Qualifier("regularFormat")
@@ -82,11 +86,7 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
 
-            if (!formatProcess.isDone()) {
-                log.info("Format process not done block");
-                formatProcess.get();
-                log.info("Format process is done un block");
-            }
+
 
             CompletableFuture<String> processOutput = formatProcess.thenApply(process -> {
                 String res = null;

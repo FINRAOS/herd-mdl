@@ -46,9 +46,9 @@ public interface JobProcessorConstants {
 	String HIVE_USER = "hadoop";
 	String HIVE_PASSWORD = "";
 
-	int MAX_PARTITION_FORMAT_LIMIT = 5000;
+	int MAX_PARTITION_FORMAT_LIMIT = 50;
 	long MAX_JOB_WAIT_TIME=3600;
-	int ALTER_TABLE_ADD_MAX_PARTITIONS=35000;
+	int ALTER_TABLE_ADD_MAX_PARTITIONS=35;
 
 
 }

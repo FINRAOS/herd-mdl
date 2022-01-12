@@ -69,15 +69,21 @@ public class FormatObjectProcessor extends JobProcessor {
 
         FormatChange change = detectSchemaChanges.getFormatChange(jd);
 
-        if (partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT)
+
+        if (partitionsDAO.getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT)
         {
             regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return regularFormatStrategy;
 
         } else {
 
-            log.info("Total Partition Count :{}", partitionsDAO.getTotalPartitionCount(jd.getObjectDefinition().getObjectName(), jd.getObjectDefinition().getDbName()));
-            log.info("Name:{},DB:{}", jd.getObjectDefinition().getObjectName(), jd.getObjectDefinition().getDbName());
+            /*
+              We are interested only in root Level partition Key for making DM call
+              We do not want to include sub partition details in the DM Call.
+             */
+            super.setPartitionKeyRegardless(jd);
+            jd.setSubPartitionLevelProcessing(false);
+
             renameFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return renameFormatStrategy;
         }

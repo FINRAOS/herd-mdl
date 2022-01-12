@@ -52,6 +52,36 @@ public class SubmitFormatProcess {
 
     }
 
+    @Async("formatExecutor")
+    public CompletableFuture<FormatProcessObject> submitProcess(File files,FormatProcessObject formatProcessObject) {
+
+
+        Supplier<FormatProcessObject> processSupplier = () -> {
+
+            Process process = null;
+            try {
+
+                log.info("Thread in submitProcess {}",Thread.currentThread().getName());
+
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                pb.redirectErrorStream(true);
+                process = pb.start();
+                formatProcessObject.setProcess(process);
+
+            } catch (IOException ie) {
+                log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
+                throw new RuntimeException("Unable to execute  hive process ==>"+files.getAbsolutePath());
+            }
+            return formatProcessObject;
+        };
+
+
+        CompletableFuture<FormatProcessObject> processCompletableFuture = CompletableFuture.supplyAsync(processSupplier);
+        return processCompletableFuture;
+
+    }
+
+
     public File createHqlFile(List<String> stringList, String tmpdir){
 
         File hqlFilePath =null;

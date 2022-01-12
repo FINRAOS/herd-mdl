@@ -29,6 +29,7 @@ import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -185,6 +186,8 @@ public class DataMgmtSvc {
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }
 
+
+    //@Async("formatExecutor") TODO Later on chain this thenCompose
     public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions,BusinessObjectDataDdlRequest request) throws ApiException {
 
         request.setIncludeDropTableStatement(false);
@@ -195,7 +198,6 @@ public class DataMgmtSvc {
         request.setAllowMissingData(true);
         request.setIncludeDropPartitions(false);
         request.setIncludeIfNotExistsOption(true);
-        request.setTableName(jd.getTableName());
 
         List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
 
@@ -219,6 +221,7 @@ public class DataMgmtSvc {
         request.setPartitionValueFilters(partitionValueFilters);
         request.setNamespace(jd.getObjectDefinition().getNameSpace());
 
+        log.info("Request to DM:{}",request);
         log.info("Get BO DDL Request with combine Alter Statements: \n{}", request.toString());
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }

@@ -24,7 +24,7 @@ public class FormatStatus {
     String clusterName;
     String formatStatus;
     String errorMessage;
-    int notificationId;
+    long notificationId;
     int workflowType;
 
     public static class FormatStatusMapper implements RowMapper<FormatStatus>
