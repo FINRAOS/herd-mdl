@@ -21,7 +21,6 @@ public class FormatStatus {
     String fileType;
     String partitionValues;
     String partitionKey;
-    String clusterName;
     String formatStatus;
     String errorMessage;
     long notificationId;

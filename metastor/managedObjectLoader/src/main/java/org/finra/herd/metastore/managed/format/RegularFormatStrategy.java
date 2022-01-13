@@ -36,15 +36,17 @@ public class RegularFormatStrategy implements FormatStrategy {
     private SubmitFormatProcess submitFormatProcess;
     private FormatProcessorDAO formatProcessorDAO;
     private StringBuffer errMsg;
+    private FormatUtil formatUtil;
 
     @Autowired
-    public RegularFormatStrategy(HiveFormatAlterTable hiveFormatAlterTable,SubmitFormatProcess submitFormatProcess,
-                                 FormatProcessorDAO formatProcessorDAO ) {
+    public RegularFormatStrategy(HiveFormatAlterTable hiveFormatAlterTable, SubmitFormatProcess submitFormatProcess,
+                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil) {
 
-        this.hiveFormatAlterTable=hiveFormatAlterTable;
-        this.submitFormatProcess=submitFormatProcess;
-        this.formatProcessorDAO=formatProcessorDAO;
-        this.errMsg=new StringBuffer();
+        this.hiveFormatAlterTable = hiveFormatAlterTable;
+        this.submitFormatProcess = submitFormatProcess;
+        this.formatProcessorDAO = formatProcessorDAO;
+        this.errMsg = new StringBuffer();
+        this.formatUtil = formatUtil;
 
     }
 
@@ -86,57 +88,15 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
 
-
-
-            CompletableFuture<String> processOutput = formatProcess.thenApply(process -> {
-                String res = null;
-                try {
-                    res = CharStreams.toString(new InputStreamReader(process.getInputStream(), Charsets.UTF_8));
-                } catch (Exception e) {
-                    log.error(
-                            "not able to parse inputstream {}", e.getMessage()
-                    );
-                    errMsg.append("not able to parse inputstream");
-                    errMsg.append(e.getMessage());
-                }
-                return res;
-            });
-
-
-            processOutput.thenAccept(s -> log.info("Hive execution output is ==>{}", s));
-
-            formatProcess.thenAccept(proc -> {
-                try {
-                    if (!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS)) {
-                        proc.destroyForcibly();
-                        processOutput.completeExceptionally(new Exception("Process Timed Out"));
-
-                    }
-                } catch (InterruptedException ie) {
-                    log.error("Unable to kill the process after timeout {}", ie.getMessage());
-                    errMsg.append("Unable to kill the process after timeout");
-                    errMsg.append(ie.getMessage());
-                }
-
-            });
-
-
+            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
+            formatUtil.handleProcess(formatProcess);
             formatProcess.whenComplete((proc, err) -> {
 
-                if (err != null) {
-                    log.error("Unable to finish processing of format for Object {} , Namespace {}", objectName, dbName);
-                    errMsg.append("Unable to finish processing of format for Object ==>");
-                    errMsg.append(objectName);
-                    errMsg.append(dbName);
-
-                } else {
-                    this.isComplete = true;
-                    log.info("Format change processing Complete for Object {} , Namespace {}", objectName, dbName);
-                    log.info("Thread Name in handleAsync: {}", Thread.currentThread().getName());
-                    log.info("is Complete? {}", this.isComplete);
-
-                }
+                this.isComplete = formatUtil.processComplete(objectName, dbName, err);
             });
+
+
+            errMsg.append(formatUtil.getErr());
 
 
         } catch (Exception e) {

@@ -70,7 +70,7 @@ public class FormatObjectProcessor extends JobProcessor {
         FormatChange change = detectSchemaChanges.getFormatChange(jd);
 
 
-        if (partitionsDAO.getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT)
+        if (partitionsDAO.getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT || !hiveHqlGenerator.cascade(jd))
         {
             regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return regularFormatStrategy;

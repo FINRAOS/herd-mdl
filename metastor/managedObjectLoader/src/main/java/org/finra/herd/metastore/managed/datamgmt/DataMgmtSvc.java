@@ -221,7 +221,6 @@ public class DataMgmtSvc {
         request.setPartitionValueFilters(partitionValueFilters);
         request.setNamespace(jd.getObjectDefinition().getNameSpace());
 
-        log.info("Request to DM:{}",request);
         log.info("Get BO DDL Request with combine Alter Statements: \n{}", request.toString());
         return businessObjectDataApi.businessObjectDataGenerateBusinessObjectDataDdl(request);
     }

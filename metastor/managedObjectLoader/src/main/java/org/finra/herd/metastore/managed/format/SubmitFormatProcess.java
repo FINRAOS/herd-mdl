@@ -1,6 +1,8 @@
 package org.finra.herd.metastore.managed.format;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -62,13 +65,22 @@ public class SubmitFormatProcess {
             try {
 
                 log.info("Thread in submitProcess {}",Thread.currentThread().getName());
+                log.info("File submitProcess {}",files.getAbsolutePath());
+                StopWatch watch = new StopWatch();
+                watch.start();
 
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
+                process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
+                watch.stop();
+                log.info("format Process for table :{} and these partitions :{} ran for:{}",
+                    formatProcessObject.getJobDefinition().getTableName(),formatProcessObject.getPartitionList(),watch.getTime());
+
                 formatProcessObject.setProcess(process);
 
-            } catch (IOException ie) {
+
+            } catch (Exception ie) {
                 log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
                 throw new RuntimeException("Unable to execute  hive process ==>"+files.getAbsolutePath());
             }
@@ -101,4 +113,6 @@ public class SubmitFormatProcess {
         return hqlFilePath;
 
     }
+
+
 }

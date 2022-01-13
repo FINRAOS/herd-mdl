@@ -13,10 +13,10 @@ public class FormatProcessorDAO {
     JdbcTemplate template;
 
     public void addFormatStatus( FormatStatus formatStatus ) {
-        template.update(
-            "INSERT INTO FORMAT_STATUS (NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, WF_TYPE,  PARTITION_VALUES, PARTITION_KEY, CLUSTER_NAME, NOTIFICATION_ID,STATUS) \n"
+        log.info("update :{}",template.update(
+            "INSERT INTO FORMAT_STATUS (NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, WF_TYPE,  PARTITION_VALUES, PARTITION_KEY, ERR_MSG, NOTIFICATION_ID,STATUS) \n"
                 + "VALUES (?,?,?,?,?,?,?,?,?,?)"
             , formatStatus.getNamespace(), formatStatus.getObjDefName(), formatStatus.getFormatUsage(), formatStatus.getFileType(), formatStatus.getWorkflowType()
-            ,  formatStatus.getPartitionValues(), formatStatus.getPartitionKey(), formatStatus.getClusterName(), formatStatus.getNotificationId(),formatStatus.getFormatStatus() );
+            ,  formatStatus.getPartitionValues(), formatStatus.getPartitionKey(), formatStatus.getErrorMessage(), formatStatus.getNotificationId(),formatStatus.getFormatStatus() ));
     }
 }
