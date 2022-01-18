@@ -25,6 +25,7 @@ import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
 import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
+import org.finra.herd.metastore.managed.stats.StatsHelper;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
@@ -64,12 +65,15 @@ public class HiveHqlGenerator {
     protected NotificationSender notificationSender;
 
     @Autowired
-    JobProcessorDAO jobProcessorDAO;
+    protected JobProcessorDAO jobProcessorDAO;
 
     @Autowired
-    DetectSchemaChanges detectSchemaChanges;
+    protected DetectSchemaChanges detectSchemaChanges;
 
-    private FormatChange formatChange;
+    @Autowired
+    protected StatsHelper statsHelper;
+
+    protected  FormatChange formatChange;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -113,6 +117,7 @@ public class HiveHqlGenerator {
         List<String> schemaHql = schemaSql(tableExists, jd);
 
         log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
+
         if(!this.formatChange.hasChange()){
             // Add database Statements
             selectDatabase(jd, schemaHql);
@@ -121,7 +126,7 @@ public class HiveHqlGenerator {
             addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
             //Stats
-            addAnalyzeStats(jd, partitions);
+            statsHelper.addAnalyzeStats(jd, partitions);
 
             // Create file
             Path hqlFilePath = createHqlFile(jd);
@@ -159,40 +164,8 @@ public class HiveHqlGenerator {
         }
     }
 
-    protected void addAnalyzeStats(JobDefinition jd, List<String> partitions) {
 
-        log.info("Adding gather Stats job");
-        try {
 
-            if (partitions.size() == 1) {
-                submitStatsJob(jd, jd.partitionValuesForStats(partitions.get(0)));
-            } else {
-                //Filter not available Partitions
-                dataMgmtSvc.filterPartitionsAsPerAvailability(jd, partitions);
-
-                partitions.stream()
-                        .forEach(s -> submitStatsJob(jd, s));
-            }
-
-            // Start Stats cluster is not running
-            dataMgmtSvc.createCluster(true, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME);
-        } catch (Exception e) {
-            log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
-        }
-    }
-
-    private void submitStatsJob(JobDefinition jd, String partitionValue) {
-        DMNotification dmNotification = buildDMNotification(jd);
-
-        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
-        dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
-
-        dmNotification.setPartitionKey(jd.partitionKeysForStats());
-        dmNotification.setPartitionValue(partitionValue);
-
-        log.info("Herd Stats Notification DB request: \n{}", dmNotification);
-        jobProcessorDAO.addDMNotification(dmNotification);
-    }
 
     private void submitFormatJob(JobDefinition jd) {
         DMNotification dmNotification = buildDMNotification(jd);

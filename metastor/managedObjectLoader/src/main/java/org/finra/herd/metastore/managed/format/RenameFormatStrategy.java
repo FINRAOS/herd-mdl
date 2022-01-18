@@ -1,28 +1,27 @@
 package org.finra.herd.metastore.managed.format;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharStreams;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.finra.herd.metastore.managed.JobDefinition;
+import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.jobProcessor.dao.FormatProcessorDAO;
 import org.finra.herd.metastore.managed.jobProcessor.dao.FormatStatus;
 import org.finra.herd.metastore.managed.jobProcessor.dao.PartitionsDAO;
+import org.finra.herd.metastore.managed.stats.StatsHelper;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdlRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -31,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
-@Service
+@Component("renameFormat")
 @Slf4j
-@Qualifier("renameFormat")
 @ToString
+@NoArgsConstructor
 public class RenameFormatStrategy implements FormatStrategy {
 
     @Getter
@@ -44,12 +43,16 @@ public class RenameFormatStrategy implements FormatStrategy {
     private StringBuffer errMsg;
     private SubmitFormatProcess submitFormatProcess;
     private FormatUtil formatUtil;
+    private NotificationSender notificationSender;
+    private HRoles hRoles;
 
     private FormatProcessorDAO formatProcessorDAO;
+    private StatsHelper statsHelper;
 
     @Autowired
     public RenameFormatStrategy(DataMgmtSvc dataMgmtSvc, PartitionsDAO partitionsDAO, SubmitFormatProcess submitFormatProcess,
-                                FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil) {
+                                FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil, NotificationSender notificationSender,
+                                StatsHelper statsHelper,HRoles hRoles) {
 
         this.dataMgmtSvc = dataMgmtSvc;
         this.partitionsDAO = partitionsDAO;
@@ -57,6 +60,9 @@ public class RenameFormatStrategy implements FormatStrategy {
         this.errMsg = new StringBuffer();
         this.formatProcessorDAO = formatProcessorDAO;
         this.formatUtil = formatUtil;
+        this.notificationSender=notificationSender;
+        this.statsHelper=statsHelper;
+        this.hRoles=hRoles;
     }
 
 
@@ -64,30 +70,42 @@ public class RenameFormatStrategy implements FormatStrategy {
     public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade) {
 
 
-        if (runProcess(jobDefinition) && doCountsMatch(jobDefinition)) {
+        List<List<String>> rootPartitionList = getSplitRootPartitionList(jobDefinition);
+
+        if (runProcess(jobDefinition,rootPartitionList) && doCountsMatch(jobDefinition)) {
             renameExisitingTable(jobDefinition);
 
-        }
+            if(this.isComplete)
+            {
+                rootPartitionList.forEach(
+                        partitionList ->
+                                statsHelper.addAnalyzeStats(jobDefinition,partitionList)
+                            );
+                        }
+
+            }
+
+
 
     }
 
 
-    private boolean runProcess(JobDefinition jobDefinition) {
+    private boolean runProcess(JobDefinition jobDefinition, List<List<String>> rootPartitionList) {
 
         boolean result = false;
-        List<List<String>> rootPartitionList = getSplitRootPartitionList(jobDefinition);
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         String objectName = jobDefinition.getObjectDefinition().getObjectName();
 
         log.info("List of rootPartitions for the object => {} {} {}", rootPartitionList, dbName, objectName);
         log.info("Batch Size ===>{}", rootPartitionList.size());
+        List<CompletableFuture<FormatProcessObject>> formatProcessObjectList=null;
         try {
 
             StopWatch watch = new StopWatch();
             watch.start();
 
 
-            List<CompletableFuture<FormatProcessObject>> formatProcessObjectList = createTableAddPartitionDDL(jobDefinition, rootPartitionList);
+            formatProcessObjectList = createTableAddPartitionDDL(jobDefinition, rootPartitionList);
 
 
             CompletableFuture<?>[] formatProcessObjListarr = formatProcessObjectList.toArray(new CompletableFuture[formatProcessObjectList.size()]);
@@ -104,9 +122,13 @@ public class RenameFormatStrategy implements FormatStrategy {
 
                 log.info("format Process for table :{} and all partitions ran for :{} ",
                         jobDefinition.getTableName(), watch.getTime());
+                /*
+                  Do not handle error here since we need to track error at individual process level.
+                 */
             });
 
-            List<CompletableFuture<String>> processOutput = formatUtil.printProcessOutput(formatProcessObjectList);
+            //Use only for debugging.
+//            List<CompletableFuture<String>> processOutput = formatUtil.printProcessOutput(formatProcessObjectList);
 
 
             final List<CompletableFuture<FormatProcessObject>> failedProcessing = formatProcessObjectList.stream().filter(
@@ -120,6 +142,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                     }
             ).collect(Collectors.toList());
 
+             formatUtil.printProcessOutput(failedProcessing);
 
             formatProcessObjectList.forEach(
                     fl -> {
@@ -140,12 +163,20 @@ public class RenameFormatStrategy implements FormatStrategy {
 
             result = failedProcessing.size() <= 0;
 
-            cleanUp(formatProcessObjectList);
 
         } catch (Exception e) {
 
             log.error("Error in execute {}", e.getMessage());
             errMsg.append("Error in execute {}" + e.getMessage());
+            notificationSender.sendFailureEmail(jobDefinition,1,"Unbale to create  the new latest object (Rename) after format change"+this.getErr(),"");
+        }
+        finally {
+
+            if(formatProcessObjectList!=null) {
+                cleanUp(formatProcessObjectList);
+
+            }
+
         }
 
         return result;
@@ -209,7 +240,7 @@ public class RenameFormatStrategy implements FormatStrategy {
     }
 
 
-    private List<CompletableFuture<FormatProcessObject>> createTableAddPartitionDDL(JobDefinition jobDefinition, List<List<String>> rootPartitionList) throws IOException {
+    private List<CompletableFuture<FormatProcessObject>> createTableAddPartitionDDL(JobDefinition jobDefinition, List<List<String>> rootPartitionList) throws Exception {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
@@ -252,6 +283,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         } catch (ApiException api) {
             log.info("Unable to query DM:{}", api.getResponseBody());
             errMsg.append("Unable to query DM");
+
         }
         return hiveDDL;
 
@@ -266,14 +298,21 @@ public class RenameFormatStrategy implements FormatStrategy {
         // Highest Partition Count in all the partitions for a given Object
         int getMaxCount = partitionsDAO.getMaxCount(tableName, dbName);
 
+        log.info("getMaxCount :{}",getMaxCount);
+
         // To determine how to split for DM calls. Goal is to make sure we do not exceed the
         // ALTER_TABLE_ADD_MAX_PARTITIONS Limit for any given DM call
         int splitSize = JobProcessorConstants.ALTER_TABLE_ADD_MAX_PARTITIONS / getMaxCount;
+
+
+        log.info("splitSize :{}",splitSize);
 
         return Lists.partition(rootPartitions, splitSize);
 
 
     }
+
+    //TODO check with corey on when this may or may not happen.
 
     private boolean doCountsMatch(JobDefinition jd) {
 
@@ -284,10 +323,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
     }
 
-    private void grantPermissions(JobDefinition jobDefinition) {
 
-        log.info("Granting Permissions");
-    }
 
 
     private void renameExisitingTable(JobDefinition jobDefinition) {
@@ -300,6 +336,10 @@ public class RenameFormatStrategy implements FormatStrategy {
         hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
         hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
         hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
+        List<String> grantRolesHql= hRoles.grantPrestoRoles(jobDefinition);
+        if(!grantRolesHql.isEmpty()) {
+            hqlStatements.addAll(grantRolesHql);
+        }
 
 
         try {
@@ -315,11 +355,21 @@ public class RenameFormatStrategy implements FormatStrategy {
             formatProcess.whenComplete((proc, err) -> {
 
                 this.isComplete=formatUtil.processComplete(existingTableName, dbName, err);
+                if(err!=null){
+                    log.error("Error occurred during rename operation");
+
+                        notificationSender.sendFailureEmail(jobDefinition,0,"Error occurred during rename operation"+err.getMessage(),"");
+
+
+                }
             });
 
 
         } catch (Exception e) {
-                log.error("Unable to rename the Object");
+                log.error("Unable to swap the latest Object in hive after format change"+e.getMessage());
+                errMsg.append("Unable to swap the latest Object in hive after format change"+e.getMessage());
+            notificationSender.sendFailureEmail(jobDefinition,1,"Unable to swap the latest Object in hive after format (Rename) change"+this.getErr(),"");
+
 
         }
 

@@ -80,7 +80,7 @@ public class FormatUtil {
 
     }
 
-    void handleProcess(CompletableFuture<Process> formatProcess, CompletableFuture<String> processOutput) {
+    protected void handleProcess(CompletableFuture<Process> formatProcess, CompletableFuture<String> processOutput) {
         formatProcess.thenAccept(proc -> {
             try {
                 if (!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS)) {
@@ -98,7 +98,7 @@ public class FormatUtil {
     }
 
 
-    void handleProcess(CompletableFuture<Process> formatProcess) {
+    protected void handleProcess(CompletableFuture<Process> formatProcess) {
         formatProcess.thenAccept(proc -> {
             try {
                 if (!proc.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS)) {
@@ -115,7 +115,7 @@ public class FormatUtil {
     }
 
 
-    boolean processComplete(String existingTableName, String dbName, Throwable err) {
+    protected boolean processComplete(String existingTableName, String dbName, Throwable err) {
         boolean isComplete = true;
 
         if (err != null) {

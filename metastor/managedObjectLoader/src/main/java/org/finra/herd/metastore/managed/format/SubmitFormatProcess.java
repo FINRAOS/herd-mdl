@@ -35,16 +35,21 @@ public class SubmitFormatProcess {
 
             Process process = null;
             try {
-
-                log.info("Thread in submitProcess {}",Thread.currentThread().getName());
-
+                log.info("File submitProcess {}",files.getAbsolutePath());
+                StopWatch watch = new StopWatch();
+                watch.start();
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
+                process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
 
-            } catch (IOException ie) {
-                log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
-                throw new RuntimeException("Unable to execute  hive process ==>"+files.getAbsolutePath());
+                watch.stop();
+                log.info("format Process ran for:{}", watch.getTime());
+
+
+            } catch (Exception ie) {
+                log.error("Exceptiopn in submitProcess for Regular format {}" , ie.getMessage());
+                throw new RuntimeException("Unable to execute  hive process for Regular format ==>"+files.getAbsolutePath());
             }
             return process;
         };
@@ -64,7 +69,6 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                log.info("Thread in submitProcess {}",Thread.currentThread().getName());
                 log.info("File submitProcess {}",files.getAbsolutePath());
                 StopWatch watch = new StopWatch();
                 watch.start();
@@ -82,7 +86,7 @@ public class SubmitFormatProcess {
 
             } catch (Exception ie) {
                 log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
-                throw new RuntimeException("Unable to execute  hive process ==>"+files.getAbsolutePath());
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>"+files.getAbsolutePath());
             }
             return formatProcessObject;
         };

@@ -6,12 +6,14 @@ import com.google.common.io.CharStreams;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
+import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.hive.HiveFormatAlterTable;
 import org.finra.herd.metastore.managed.jobProcessor.dao.FormatProcessorDAO;
 import org.finra.herd.metastore.managed.jobProcessor.dao.FormatStatus;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStreamReader;
@@ -24,9 +26,8 @@ import java.util.concurrent.*;
 
  If the number of partitions in metastore are less than 50k use this Strategy
  */
-@Service
 @Slf4j
-@Qualifier("regularFormat")
+@Component("regularFormat")
 @ToString
 public class RegularFormatStrategy implements FormatStrategy {
 
@@ -37,16 +38,18 @@ public class RegularFormatStrategy implements FormatStrategy {
     private FormatProcessorDAO formatProcessorDAO;
     private StringBuffer errMsg;
     private FormatUtil formatUtil;
+    private NotificationSender notificationSender;
 
     @Autowired
     public RegularFormatStrategy(HiveFormatAlterTable hiveFormatAlterTable, SubmitFormatProcess submitFormatProcess,
-                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil) {
+                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil,NotificationSender notificationSender) {
 
         this.hiveFormatAlterTable = hiveFormatAlterTable;
         this.submitFormatProcess = submitFormatProcess;
         this.formatProcessorDAO = formatProcessorDAO;
         this.errMsg = new StringBuffer();
         this.formatUtil = formatUtil;
+        this.notificationSender=notificationSender;
 
     }
 
@@ -64,6 +67,11 @@ public class RegularFormatStrategy implements FormatStrategy {
             log.info("No Regular format changes detected {} {}", jobDefinition.getObjectDefinition().getNameSpace(), jobDefinition.getObjectDefinition().getDbName());
         }
 
+        if(errMsg!=null && errMsg.capacity()>0){
+            notificationSender.sendFailureEmail(
+                    jobDefinition,1,"Unbale to do Regular format change",""
+            );
+        }
 
     }
 
@@ -84,7 +92,6 @@ public class RegularFormatStrategy implements FormatStrategy {
             String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
 
             log.info("The tmp dir for format is ==> {}", tmpdir);
-            log.info("Thread Name in runProcess: {}", Thread.currentThread().getName());
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
 
@@ -104,6 +111,8 @@ public class RegularFormatStrategy implements FormatStrategy {
             log.error("Exception in regular format change {}", e.getMessage());
             errMsg.append("Exception in regular format change");
             errMsg.append(e.getMessage());
+            notificationSender.sendEmail("Unbale to do Regular format change for "+dbName + objectName + " ==>" +this.getErr(),dbName+"."+objectName+"  format failed");
+
 
 
         }

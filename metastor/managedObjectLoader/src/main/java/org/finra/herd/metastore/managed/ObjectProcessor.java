@@ -193,7 +193,7 @@ public class ObjectProcessor {
 
         if ( success ) {
             deleteProcessedNotificaiton( jobDefinition );
-        } else if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) ) {
+        } else if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) && jobDefinition.getWfType()!=WF_TYPE_FORMAT ) {
             logger.warning( "Retry maxed out, send email" );
 			int numRetry = jobDefinition.numOfRetry + 1;
 

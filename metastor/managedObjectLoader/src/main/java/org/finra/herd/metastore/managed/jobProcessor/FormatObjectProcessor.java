@@ -9,6 +9,7 @@ import org.finra.herd.metastore.managed.jobProcessor.dao.PartitionsDAO;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
@@ -30,9 +31,11 @@ public class FormatObjectProcessor extends JobProcessor {
     HiveHqlGenerator hiveHqlGenerator;
 
     @Autowired
+    @Qualifier("regularFormat")
     FormatStrategy regularFormatStrategy;
 
     @Autowired
+    @Qualifier("renameFormat")
     FormatStrategy renameFormatStrategy;
 
     final int concurrency = Runtime.getRuntime().availableProcessors();
@@ -43,34 +46,33 @@ public class FormatObjectProcessor extends JobProcessor {
 
         try {
 
-            log.info("Thread Name in process: {}",Thread.currentThread().getName());
             FormatStrategy formatStrategy= doFormat(od);
-            log.info("Format Strategy:{}",formatStrategy);
             log.info("Format strategy completed? :{}",formatStrategy.hasFormatCompleted());
-
             Optional <String> errMsg = Optional.ofNullable(formatStrategy.getErr());
-            log.info("err msg {}",errMsg);
             errMsg.ifPresent(err-> errorBuffer.append(err));
-            log.info("Thread Name second in process: {}",Thread.currentThread().getName());
-
-            // We will update Format Status here.
             return formatStrategy.hasFormatCompleted();
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
             errorBuffer.append(ex.getMessage());
-            // Seeing Error here
             return false;
         }
 
     }
 
+    /*
+       If the number of partitions for a object are less than 50k use alter table ..
+       else
+       create a new object and backload the partitons and swap.
+     */
 
     private FormatStrategy doFormat(JobDefinition jd) throws ApiException, SQLException {
 
         FormatChange change = detectSchemaChanges.getFormatChange(jd);
 
 
-        if (partitionsDAO.getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT || !hiveHqlGenerator.cascade(jd))
+        if (partitionsDAO.
+                getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT || !hiveHqlGenerator.
+                cascade(jd))
         {
             regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return regularFormatStrategy;
@@ -78,8 +80,9 @@ public class FormatObjectProcessor extends JobProcessor {
         } else {
 
             /*
+              jd object contains what ever partition key is set as part of add partition work flow.
               We are interested only in root Level partition Key for making DM call
-              We do not want to include sub partition details in the DM Call.
+              We do not want to include sub partition details in the DM Call. Hence reset partition key
              */
             super.setPartitionKeyRegardless(jd);
             jd.setSubPartitionLevelProcessing(false);
@@ -87,6 +90,7 @@ public class FormatObjectProcessor extends JobProcessor {
             renameFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return renameFormatStrategy;
         }
+
 
     }
 

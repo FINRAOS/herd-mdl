@@ -49,8 +49,11 @@ public class ManagedJobProcessor extends JobProcessor {
 
 		try {
 			String path = hiveHqlGenerator.buildHql( od, partitionVal );
-			ProcessBuilder pb = new ProcessBuilder( "hive", "-v", "-f", path );
-			return pb;
+			if(path!=null){
+				ProcessBuilder pb = new ProcessBuilder( "hive", "-v", "-f", path );
+				return pb;
+			}
+
 		} catch ( Throwable ex ) {
 			errorBuffer.append( ex.getMessage() );
 			ex.printStackTrace();
