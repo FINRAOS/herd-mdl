@@ -38,6 +38,9 @@ public class FormatObjectProcessor extends JobProcessor {
     @Qualifier("renameFormat")
     FormatStrategy renameFormatStrategy;
 
+    @Autowired
+    JobProcessorConstants jobProcessorConstants;
+
     final int concurrency = Runtime.getRuntime().availableProcessors();
 
 
@@ -46,10 +49,10 @@ public class FormatObjectProcessor extends JobProcessor {
 
         try {
 
-            FormatStrategy formatStrategy= doFormat(od);
-            log.info("Format strategy completed? :{}",formatStrategy.hasFormatCompleted());
-            Optional <String> errMsg = Optional.ofNullable(formatStrategy.getErr());
-            errMsg.ifPresent(err-> errorBuffer.append(err));
+            FormatStrategy formatStrategy = doFormat(od);
+            log.info("Format strategy completed? :{}", formatStrategy.hasFormatCompleted());
+            Optional<String> errMsg = Optional.ofNullable(formatStrategy.getErr());
+            errMsg.ifPresent(err -> errorBuffer.append(err));
             return formatStrategy.hasFormatCompleted();
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
@@ -71,9 +74,8 @@ public class FormatObjectProcessor extends JobProcessor {
 
 
         if (partitionsDAO.
-                getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < JobProcessorConstants.MAX_PARTITION_FORMAT_LIMIT || !hiveHqlGenerator.
-                cascade(jd))
-        {
+                getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < jobProcessorConstants.getMaxPartitionFormatLimit() ||
+                !hiveHqlGenerator.cascade(jd)) {
             regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd));
             return regularFormatStrategy;
 

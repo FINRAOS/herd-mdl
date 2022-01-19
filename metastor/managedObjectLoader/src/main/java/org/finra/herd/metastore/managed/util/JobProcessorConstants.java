@@ -16,6 +16,7 @@
 package org.finra.herd.metastore.managed.util;
 
 import org.finra.herd.metastore.managed.conf.HerdMetastoreConfig;
+import org.springframework.context.annotation.Bean;
 
 public interface JobProcessorConstants {
 	String METASTOR_CLUSTER_NAME 		= "metastore";
@@ -46,9 +47,10 @@ public interface JobProcessorConstants {
 	String HIVE_USER = "hadoop";
 	String HIVE_PASSWORD = "";
 
-	int MAX_PARTITION_FORMAT_LIMIT = 50;
-	long MAX_JOB_WAIT_TIME=3600;
-	int ALTER_TABLE_ADD_MAX_PARTITIONS=35;
+	long MAX_JOB_WAIT_TIME=5400;
+
+	int getAlterTableAddMaxPartitions();
+	int getMaxPartitionFormatLimit();
 
 
 }

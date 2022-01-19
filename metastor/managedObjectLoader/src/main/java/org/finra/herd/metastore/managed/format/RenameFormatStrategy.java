@@ -18,6 +18,7 @@ import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdlRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @ToString
 @NoArgsConstructor
+@Scope("prototype")
 public class RenameFormatStrategy implements FormatStrategy {
 
     @Getter
@@ -48,11 +50,12 @@ public class RenameFormatStrategy implements FormatStrategy {
 
     private FormatProcessorDAO formatProcessorDAO;
     private StatsHelper statsHelper;
+    private JobProcessorConstants jobProcessorConstants;
 
     @Autowired
     public RenameFormatStrategy(DataMgmtSvc dataMgmtSvc, PartitionsDAO partitionsDAO, SubmitFormatProcess submitFormatProcess,
                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil, NotificationSender notificationSender,
-                                StatsHelper statsHelper,HRoles hRoles) {
+                                StatsHelper statsHelper,HRoles hRoles,JobProcessorConstants jobProcessorConstants) {
 
         this.dataMgmtSvc = dataMgmtSvc;
         this.partitionsDAO = partitionsDAO;
@@ -63,6 +66,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         this.notificationSender=notificationSender;
         this.statsHelper=statsHelper;
         this.hRoles=hRoles;
+        this.jobProcessorConstants=jobProcessorConstants;
     }
 
 
@@ -244,7 +248,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
-        request.combinedAlterTableMaxPartitions(JobProcessorConstants.ALTER_TABLE_ADD_MAX_PARTITIONS);
+        request.combinedAlterTableMaxPartitions(jobProcessorConstants.getAlterTableAddMaxPartitions());
         request.setTableName(jobDefinition.getTableName() + "_LATEST");
         String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
 
@@ -302,7 +306,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         // To determine how to split for DM calls. Goal is to make sure we do not exceed the
         // ALTER_TABLE_ADD_MAX_PARTITIONS Limit for any given DM call
-        int splitSize = JobProcessorConstants.ALTER_TABLE_ADD_MAX_PARTITIONS / getMaxCount;
+        int splitSize = jobProcessorConstants.getAlterTableAddMaxPartitions() / getMaxCount;
 
 
         log.info("splitSize :{}",splitSize);
@@ -318,7 +322,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         String existingTableName = jd.getTableName();
         String newTableName = jd.getTableName().concat("_LATEST");
-        return partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) ==
+        return partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) <=
                 partitionsDAO.getTotalPartitionCount(newTableName, jd.getObjectDefinition().getDbName());
 
     }

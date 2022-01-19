@@ -89,7 +89,14 @@ public class HiveHqlGenerator {
                 try {
                     this.formatChange = detectSchemaChanges.getFormatChange(jd);
                     if (this.formatChange.hasChange()) {
-                        submitFormatJob(jd);
+                        List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
+                        log.info("formatNotification:{}",formatNotification);
+                        if(formatNotification!=null && formatNotification.size()<=0){
+                            submitFormatJob(jd);
+                        }else{
+                            log.info("A format notification:  {} is being currently processed for this job definition:  {}",formatNotification,jd);
+                        }
+
                     }
                 } catch (Exception ex) {
                     log.warn("Error comparing formats", ex);

@@ -13,6 +13,7 @@ import org.finra.herd.metastore.managed.jobProcessor.dao.FormatStatus;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.*;
 @Slf4j
 @Component("regularFormat")
 @ToString
+@Scope("prototype")
 public class RegularFormatStrategy implements FormatStrategy {
 
     @Getter
