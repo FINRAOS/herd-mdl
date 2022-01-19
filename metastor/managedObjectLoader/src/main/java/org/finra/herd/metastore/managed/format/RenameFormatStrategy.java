@@ -126,6 +126,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
                 log.info("format Process for table :{} and all partitions ran for :{} ",
                         jobDefinition.getTableName(), watch.getTime());
+
                 /*
                   Do not handle error here since we need to track error at individual process level.
                  */

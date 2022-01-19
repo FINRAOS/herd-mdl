@@ -200,6 +200,8 @@ public class ObjectProcessor {
 			deleteProcessedNotificaiton( jobDefinition );
 			sendFailureEmail( jobDefinition, error, numRetry, clusterManager.getClusterID());
 
+		} else if( !success  && jobDefinition.getWfType()==WF_TYPE_FORMAT  ) {
+        	 jobPicker.extendLock(jobDefinition,clusterManager.getClusterID(),workerID);
 		}
 	}
 
