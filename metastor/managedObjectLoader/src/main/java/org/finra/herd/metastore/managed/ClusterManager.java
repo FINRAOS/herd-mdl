@@ -416,7 +416,7 @@ public class ClusterManager implements InitializingBean {
 
 			int updated = template.update( "INSERT IGNORE INTO METASTOR_EMR_AUTOSCALE (ID, STATS_ID, CLUSTER_ID, CLUSTER_TYPE) VALUES (?, ?, ?, ?)"
 					, id, stats_id, clusterID, clusterType );
-			logger.info( "No. of rows updated" + updated );
+			logger.info( "/No. of rows updated" + updated );
 
 			if ( updated > 0 ) {
 

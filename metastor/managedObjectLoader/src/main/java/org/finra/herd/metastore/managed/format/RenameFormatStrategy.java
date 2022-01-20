@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.finra.herd.metastore.managed.JobDefinition;
+import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.jobProcessor.dao.FormatProcessorDAO;
@@ -28,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 
@@ -51,11 +53,15 @@ public class RenameFormatStrategy implements FormatStrategy {
     private FormatProcessorDAO formatProcessorDAO;
     private StatsHelper statsHelper;
     private JobProcessorConstants jobProcessorConstants;
+    private String clusterId;
+    private String workerId;
+    private JobPicker jobPicker;
 
     @Autowired
     public RenameFormatStrategy(DataMgmtSvc dataMgmtSvc, PartitionsDAO partitionsDAO, SubmitFormatProcess submitFormatProcess,
                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil, NotificationSender notificationSender,
-                                StatsHelper statsHelper,HRoles hRoles,JobProcessorConstants jobProcessorConstants) {
+                                StatsHelper statsHelper,HRoles hRoles,JobProcessorConstants jobProcessorConstants,
+                                JobPicker jobPicker) {
 
         this.dataMgmtSvc = dataMgmtSvc;
         this.partitionsDAO = partitionsDAO;
@@ -67,13 +73,16 @@ public class RenameFormatStrategy implements FormatStrategy {
         this.statsHelper=statsHelper;
         this.hRoles=hRoles;
         this.jobProcessorConstants=jobProcessorConstants;
+        this.jobPicker = jobPicker;
     }
 
 
     @Override
-    public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade) {
+    public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade,String clusterId, String workerId) {
 
 
+        this.workerId = workerId;
+        this.clusterId = clusterId;
         List<List<String>> rootPartitionList = getSplitRootPartitionList(jobDefinition);
 
         if (runProcess(jobDefinition,rootPartitionList) && doCountsMatch(jobDefinition)) {
@@ -117,8 +126,21 @@ public class RenameFormatStrategy implements FormatStrategy {
 
             CompletableFuture<Void> allfuture = CompletableFuture.allOf(formatProcessObjListarr);
 
-            long overallWait = rootPartitionList.size() * 40; // No. of batches * 40 minutes
-            allfuture.get(overallWait, TimeUnit.MINUTES); //Blocking call wait for all futures to be done
+            while(!allfuture.isDone())
+
+            {
+                try {
+                    allfuture.get(1,TimeUnit.MINUTES);
+
+                }catch ( TimeoutException te) {
+                        log.info( "Extending lock for object ==>" + jobDefinition.getObjectDefinition() );
+                    jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
+            }
+
+            }
+
+//            long overallWait = rootPartitionList.size() * 40; // No. of batches * 40 minutes
+//            allfuture.get(overallWait, TimeUnit.MINUTES); //Blocking call wait for all futures to be done
 
             watch.stop();
 
@@ -267,6 +289,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                     .jobDefinition(jobDefinition)
                     .build();
             formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
+            jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
 
 
         });

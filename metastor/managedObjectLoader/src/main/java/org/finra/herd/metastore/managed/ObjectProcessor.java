@@ -193,15 +193,13 @@ public class ObjectProcessor {
 
         if ( success ) {
             deleteProcessedNotificaiton( jobDefinition );
-        } else if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) && jobDefinition.getWfType()!=WF_TYPE_FORMAT ) {
+        } else if ( !success && (jobDefinition.numOfRetry >= (maxRetry - 1)) ) {
             logger.warning( "Retry maxed out, send email" );
 			int numRetry = jobDefinition.numOfRetry + 1;
 
 			deleteProcessedNotificaiton( jobDefinition );
 			sendFailureEmail( jobDefinition, error, numRetry, clusterManager.getClusterID());
 
-		} else if( !success  && jobDefinition.getWfType()==WF_TYPE_FORMAT  ) {
-        	 jobPicker.extendLock(jobDefinition,clusterManager.getClusterID(),workerID);
 		}
 	}
 

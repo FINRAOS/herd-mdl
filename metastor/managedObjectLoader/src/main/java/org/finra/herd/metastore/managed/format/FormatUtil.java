@@ -4,6 +4,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.finra.herd.metastore.managed.JobDefinition;
+import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,9 @@ public class FormatUtil {
     public FormatUtil() {
         this.err = new StringBuilder();
     }
+
+    @Autowired
+    private JobPicker jobPicker;
 
 
     public CompletableFuture<String> printProcessOutput(CompletableFuture<Process> formatProcess) {
@@ -79,6 +84,7 @@ public class FormatUtil {
 
 
     }
+
 
     protected void handleProcess(CompletableFuture<Process> formatProcess, CompletableFuture<String> processOutput) {
         formatProcess.thenAccept(proc -> {
