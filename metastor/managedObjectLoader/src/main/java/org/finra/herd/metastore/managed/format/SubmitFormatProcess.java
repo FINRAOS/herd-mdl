@@ -78,8 +78,9 @@ public class SubmitFormatProcess {
                 process = pb.start();
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
-                log.info("format Process for table :{} and these partitions :{} ran for:{}",
-                    formatProcessObject.getJobDefinition().getTableName(),formatProcessObject.getPartitionList(),watch.getTime());
+                log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {}",
+                    formatProcessObject.getJobDefinition().getTableName(),formatProcessObject.getPartitionList(),watch.getTime(),files
+                .getAbsolutePath());
 
                 formatProcessObject.setProcess(process);
 
