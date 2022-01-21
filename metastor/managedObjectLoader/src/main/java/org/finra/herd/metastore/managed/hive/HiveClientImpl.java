@@ -68,9 +68,9 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-   public static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
+    public static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
 
-        ClusteredDef clusteredDef =  null;
+        ClusteredDef clusteredDef = null;
 
         List<String> clusteredSortedColumns = Lists.newArrayList();
 
@@ -79,7 +79,7 @@ public class HiveClientImpl implements HiveClient {
 
             String clusterclause = ddl.substring(ddl.indexOf("CLUSTERED BY"), ddl.indexOf("ROW"));
 
-            log.info("ClusterSortedclauseSQL:{}",clusterclause);
+            log.info("ClusterSortedclauseSQL:{}", clusterclause);
 
             List<String> clusterColumns = getClusteredColumns(clusterclause);
             List<String> sortedColumns = getSortedColumns(clusterclause);
@@ -94,16 +94,15 @@ public class HiveClientImpl implements HiveClient {
                     clusterCols(clusterColumns).
                     clusterSql(clusterclause).
                     sortedCols(sortedColumns).
-                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns,columnDefs)).build();
+                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns, columnDefs)).build();
 
 
-        }else{
+        } else {
             clusteredDef = clusteredDef.builder().build();
         }
 
 
-
-       return clusteredDef;
+        return clusteredDef;
 
     }
 
@@ -129,23 +128,22 @@ public class HiveClientImpl implements HiveClient {
         List<String> sortedColumns = Lists.newArrayList();
 
 
-        if(ddl.contains("SORTED BY")||ddl.contains("sorted by")){
+        if (ddl.contains("SORTED BY") || ddl.contains("sorted by")) {
 
             String sb = StringUtils.substringBetween(ddl, "SORTED BY ", ")");
             log.info("SORTED BY COLUMNS :{}", sb);
 
             sb = StringUtils.remove(sb, "(");
-            if(sb.contains("ASC")||sb.contains("asc")){
+            if (sb.contains("ASC") || sb.contains("asc")) {
                 sb = StringUtils.removeIgnoreCase(sb, "ASC");
             }
-            if(sb.contains("DESC")||sb.contains("desc"))
-            {
+            if (sb.contains("DESC") || sb.contains("desc")) {
                 sb = StringUtils.removeIgnoreCase(sb, "DESC");
             }
             final String[] array1 = sb.split(",");
             Arrays.stream(array1).map(String::trim).toArray(arr -> array1);
             sortedColumns = Arrays.asList(array1);
-            log.info("sortedColumns:{}",sortedColumns);
+            log.info("sortedColumns:{}", sortedColumns);
 
         }
 
@@ -162,7 +160,6 @@ public class HiveClientImpl implements HiveClient {
                 cols -> clusteredSortedColumns.stream().anyMatch(
                         clusCol -> clusCol.trim().equalsIgnoreCase(cols.getName().trim())
                 )).collect(Collectors.toList());
-
 
 
         log.info("clusterSortedColDefs:{}", clusterSortedColDefs);
@@ -355,20 +352,13 @@ public class HiveClientImpl implements HiveClient {
     }
 
 
-
-    public int[] runHiveQuery(List<String> hqlStatement) throws SQLException {
-        try (Connection con = getDatabaseConnection("default")) {
+    public boolean runHiveQuery(String dbName, String hqlStatement) throws SQLException {
+        try (Connection con = getDatabaseConnection(dbName)) {
             Statement stmt = con.createStatement();
-            hqlStatement.forEach(hql->{
-                try {
-                    stmt.addBatch(hql);
-                }catch(SQLException se){}
-
-            });
-
-
-            return stmt.executeBatch();
+            return stmt.execute(hqlStatement);
         }
+
     }
+
 
 }

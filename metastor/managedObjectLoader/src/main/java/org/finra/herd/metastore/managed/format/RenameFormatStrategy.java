@@ -24,14 +24,17 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -120,72 +123,78 @@ public class RenameFormatStrategy implements FormatStrategy {
 
             StopWatch watch = new StopWatch();
             watch.start();
-            formatProcessObjectList = createTableAddPartitionDDL(jobDefinition, rootPartitionList);
+            formatProcessObjectList = createTableAddPartition(jobDefinition, rootPartitionList);
 
-            CompletableFuture<?>[] formatProcessObjListarr = formatProcessObjectList.toArray(new CompletableFuture[formatProcessObjectList.size()]);
-            CompletableFuture<Void> allfuture = CompletableFuture.allOf(formatProcessObjListarr);
 
-            while (!allfuture.isDone()) {
-                try {
-                    allfuture.get(1, TimeUnit.MINUTES);
+            if (!formatProcessObjectList.isEmpty()) {
 
-                } catch (TimeoutException te) {
-                    log.info("Extending lock for object ==>" + jobDefinition.getObjectDefinition());
-                    jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
+                CompletableFuture<?>[] formatProcessObjListarr = formatProcessObjectList.toArray(new CompletableFuture[formatProcessObjectList.size()]);
+                CompletableFuture<Void> allfuture = CompletableFuture.allOf(formatProcessObjListarr);
+
+                while (!allfuture.isDone()) {
+                    try {
+                        allfuture.get(1, TimeUnit.MINUTES);
+
+                    } catch (TimeoutException te) {
+                        log.info("Extending lock for object ==>" + jobDefinition.getObjectDefinition());
+                        jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
+                    }
+
                 }
-
-            }
 
 //            long overallWait = rootPartitionList.size() * 40; // No. of batches * 40 minutes
 //            allfuture.get(overallWait, TimeUnit.MINUTES); //Blocking call wait for all futures to be done
 
-            watch.stop();
+                watch.stop();
 
-            allfuture.whenComplete((res, err) -> {
+                allfuture.whenComplete((res, err) -> {
 
-                log.info("format Process for table :{} and all partitions ran for :{} ",
-                        jobDefinition.getTableName(), watch.getTime());
+                    log.info("format Process for table :{} and all partitions ran for :{} ",
+                            jobDefinition.getTableName(), watch.getTime());
 
                 /*
                   Do not handle error here since we need to track error at individual process level.
                  */
-            });
+                });
 
-            //Use only for debugging.
+                //Use only for debugging.
 //            List<CompletableFuture<String>> processOutput = formatUtil.printProcessOutput(formatProcessObjectList);
 
 
-            final List<CompletableFuture<FormatProcessObject>> failedProcessing = formatProcessObjectList.stream().filter(
-                    fl -> {
-                        boolean isProcessed = false;
-                        try {
-                            isProcessed = fl.thenApply(f -> f.getProcess().exitValue()).get() != 0;
-                        } catch (Exception e) {
+                final List<CompletableFuture<FormatProcessObject>> failedProcessing = formatProcessObjectList.stream().filter(
+                        fl -> {
+                            boolean isProcessed = false;
+                            try {
+                                isProcessed = fl.thenApply(f -> f.getProcess().exitValue()).get() != 0;
+                            } catch (Exception e) {
+                            }
+                            return isProcessed;
                         }
-                        return isProcessed;
-                    }
-            ).collect(Collectors.toList());
+                ).collect(Collectors.toList());
 
-            formatUtil.printProcessOutput(failedProcessing);
+                formatUtil.printProcessOutput(failedProcessing);
 
-            formatProcessObjectList.forEach(
-                    fl -> {
-                        fl.thenAccept(
-                                fop -> {
+                formatProcessObjectList.forEach(
+                        fl -> {
+                            fl.thenAccept(
+                                    fop -> {
 
-                                    if (fop.getProcess().exitValue() == 0) {
-                                        updateFormatStatus(fop, "P");
+                                        if (fop.getProcess().exitValue() == 0) {
+                                            updateFormatStatus(fop, "P");
 
-                                    } else {
-                                        updateFormatStatus(fop, "E");
+                                        } else {
+                                            updateFormatStatus(fop, "E");
+                                        }
                                     }
-                                }
-                        );
-                    }
-            );
+                            );
+                        }
+                );
 
 
-            result = failedProcessing.size() <= 0;
+                result = failedProcessing.size() <= 0;
+            } else {
+                log.info("Format process list is empty");
+            }
 
 
         } catch (Exception e) {
@@ -263,7 +272,7 @@ public class RenameFormatStrategy implements FormatStrategy {
     }
 
 
-    private List<CompletableFuture<FormatProcessObject>> createTableAddPartitionDDL(JobDefinition jobDefinition, List<List<String>> rootPartitionList) throws Exception {
+    private List<CompletableFuture<FormatProcessObject>> createTableAddPartition(JobDefinition jobDefinition, List<List<String>> rootPartitionList) throws Exception {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
@@ -279,49 +288,55 @@ public class RenameFormatStrategy implements FormatStrategy {
         String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
         hiveDdl.add(useDb);
 
-        AtomicInteger count=new AtomicInteger(0);
-        rootPartitionList.forEach(partitionList -> {
+
+        boolean isTableCreated = false;
+        try {
+
+            isTableCreated = createTable(jobDefinition, rootPartitionList,request);
+
+        } catch (SQLException se) {
+            new RuntimeException("unable to create table" + se.getMessage());
+        }
+
+        if(isTableCreated) {
+            rootPartitionList.forEach(partitionList -> {
 
 
-            Optional<String> ddl = getableAddPartitionDDL(jobDefinition, partitionList, request);
-            if (count.get() == 0) {
-                createTable(jobDefinition.getObjectDefinition().getDbName(), ddl);
-            }
-            count.getAndIncrement();
-            hiveDdl.add(formatUtil.getAlterTableStatemts(ddl));
-            File tmpFile = submitFormatProcess.createHqlFile(hiveDdl, tmpdir);
-            FormatProcessObject formatProcessObject = FormatProcessObject.builder()
-                    .partitionList(partitionList)
-                    .jobDefinition(jobDefinition)
-                    .build();
-            formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
-            jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
-
-
-        });
+                Optional<String> ddl = getableAddPartitionDDL(jobDefinition, partitionList, request);
+                addPartition(jobDefinition, tmpdir, formatProcessObjectList, hiveDdl, partitionList, ddl);
+            });
+        }else {
+            log.info("Can not add partitions table not created");
+        }
 
         return formatProcessObjectList;
 
     }
 
-    private void createTable(String dbName, Optional<String> ddl) {
-        List<String> hiveDdl = new ArrayList<>();
-        String useDb = "use " + dbName + ";";
-        hiveDdl.add(useDb);
+    private void addPartition(JobDefinition jobDefinition, String tmpdir, List<CompletableFuture<FormatProcessObject>> formatProcessObjectList, List<String> hiveDdl, List<String> partitionList, Optional<String> ddl) {
+        hiveDdl.add(formatUtil.getAlterTableStatemts(ddl));
+        File tmpFile = submitFormatProcess.createHqlFile(hiveDdl, tmpdir);
+        FormatProcessObject formatProcessObject = FormatProcessObject.builder()
+                .partitionList(partitionList)
+                .jobDefinition(jobDefinition)
+                .build();
+        formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
+        jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
+    }
 
-        String[] ddlArr;
+    private boolean createTable(JobDefinition jobDefinition,List<List<String>> rootPartitionList,BusinessObjectDataDdlRequest request) throws SQLException {
+
+        Optional<String> ddl = getableAddPartitionDDL(jobDefinition, rootPartitionList.get(0), request);
+        String dbName=jobDefinition.getObjectDefinition().getDbName();
+
         if (ddl.isPresent()) {
+            String[] ddlArr;
             ddlArr = ddl.get().split(";");
-            hiveDdl.add(ddlArr[0]);
-            try {
-                hiveClient.runHiveQuery(hiveDdl);
-            } catch (SQLException sqe) {
-                new RuntimeException("Unable to connect to hive" + sqe.getErrorCode()
-                        + sqe.getMessage());
-            }
-        }
-        else{
+            log.info("Create table DDL ==>{}", ddlArr[0]);
+            return hiveClient.runHiveQuery(dbName, ddlArr[0]);
+        } else {
             log.info("DDL is empty");
+            return false;
         }
     }
 
