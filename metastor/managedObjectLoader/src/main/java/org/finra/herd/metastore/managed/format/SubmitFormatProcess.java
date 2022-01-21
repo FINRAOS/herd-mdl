@@ -25,8 +25,6 @@ import static java.nio.file.StandardOpenOption.APPEND;
 public class SubmitFormatProcess {
 
 
-
-
     @Async("formatExecutor")
     public CompletableFuture<Process> submitProcess(File files) {
 
@@ -35,7 +33,7 @@ public class SubmitFormatProcess {
 
             Process process = null;
             try {
-                log.info("File submitProcess {}",files.getAbsolutePath());
+                log.info("File submitProcess {}", files.getAbsolutePath());
                 StopWatch watch = new StopWatch();
                 watch.start();
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
@@ -47,9 +45,17 @@ public class SubmitFormatProcess {
                 log.info("format Process ran for:{}", watch.getTime());
 
 
+            } catch (InterruptedException iex) {
+                if (process != null && process.isAlive()) {
+                    log.error("Process interrupted or timeout going to kill it");
+                    process.destroyForcibly();
+                }
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
+
+
             } catch (Exception ie) {
-                log.error("Exceptiopn in submitProcess for Regular format {}" , ie.getMessage());
-                throw new RuntimeException("Unable to execute  hive process for Regular format ==>"+files.getAbsolutePath());
+                log.error("Exceptiopn in submitProcess for Regular format {}", ie.getMessage());
+                throw new RuntimeException("Unable to execute  hive process for Regular format ==>" + files.getAbsolutePath());
             }
             return process;
         };
@@ -61,7 +67,7 @@ public class SubmitFormatProcess {
     }
 
     @Async("formatExecutor")
-    public CompletableFuture<FormatProcessObject> submitProcess(File files,FormatProcessObject formatProcessObject) {
+    public CompletableFuture<FormatProcessObject> submitProcess(File files, FormatProcessObject formatProcessObject) {
 
 
         Supplier<FormatProcessObject> processSupplier = () -> {
@@ -69,7 +75,7 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                log.info("File submitProcess {}",files.getAbsolutePath());
+                log.info("File submitProcess {}", files.getAbsolutePath());
                 StopWatch watch = new StopWatch();
                 watch.start();
 
@@ -79,15 +85,23 @@ public class SubmitFormatProcess {
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
                 log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {}",
-                    formatProcessObject.getJobDefinition().getTableName(),formatProcessObject.getPartitionList(),watch.getTime(),files
-                .getAbsolutePath());
+                        formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(), files
+                                .getAbsolutePath());
 
                 formatProcessObject.setProcess(process);
 
 
+            } catch (InterruptedException iex) {
+                if (process != null && process.isAlive()) {
+                    log.error("Process interrupted or timeout going to kill it");
+                    process.destroyForcibly();
+                }
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
+
+
             } catch (Exception ie) {
-                log.error("Exceptiopn in submitProcess {}" , ie.getMessage());
-                throw new RuntimeException("Unable to execute  hive process Rename Format ==>"+files.getAbsolutePath());
+                log.error("Exceptiopn in submitProcess {}", ie.getMessage());
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
             }
             return formatProcessObject;
         };
@@ -99,21 +113,24 @@ public class SubmitFormatProcess {
     }
 
 
-    public File createHqlFile(List<String> stringList, String tmpdir){
 
-        File hqlFilePath =null;
-        try{
-            log.info("Thread in writetoFile {}" ,Thread.currentThread().getName());
+
+    public File createHqlFile(List<String> stringList, String tmpdir) {
+
+        File hqlFilePath = null;
+        try {
+            log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
             hqlFilePath = File.createTempFile("str", ".sh", new File(tmpdir));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
-            String str=stringList.stream().collect(Collectors.joining(" "));
+            String str = stringList.stream().collect(Collectors.joining(" "));
             Files.write(path, str.getBytes(), APPEND);
 
         } catch (Exception ioe) {
-            log.error("Exceptiopn in creatingHql file {}" , ioe.getMessage());
-            throw new RuntimeException("Unable to create  hive file ==>"+hqlFilePath.getAbsolutePath());        }
+            log.error("Exceptiopn in creatingHql file {}", ioe.getMessage());
+            throw new RuntimeException("Unable to create  hive file ==>" + hqlFilePath.getAbsolutePath());
+        }
 
         return hqlFilePath;
 
