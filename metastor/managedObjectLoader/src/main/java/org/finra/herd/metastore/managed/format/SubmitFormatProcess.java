@@ -36,7 +36,7 @@ public class SubmitFormatProcess {
                 log.info("File submitProcess {}", files.getAbsolutePath());
                 StopWatch watch = new StopWatch();
                 watch.start();
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("hive ", " -v", " -f ", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
@@ -79,7 +79,7 @@ public class SubmitFormatProcess {
                 StopWatch watch = new StopWatch();
                 watch.start();
 
-                ProcessBuilder pb = new ProcessBuilder("sh", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("hive "," -v "," -f ", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);

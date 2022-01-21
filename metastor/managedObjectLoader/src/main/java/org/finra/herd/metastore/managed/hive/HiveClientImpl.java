@@ -353,4 +353,22 @@ public class HiveClientImpl implements HiveClient {
         log.info("Executing schemaSQL: {}", schemaSql);
         hiveJdbcTemplate.batchUpdate(schemaSql.stream().map(s -> s.replaceAll(";", "")).toArray(String[]::new));
     }
+
+
+
+    public int[] runHiveQuery(List<String> hqlStatement) throws SQLException {
+        try (Connection con = getDatabaseConnection("default")) {
+            Statement stmt = con.createStatement();
+            hqlStatement.forEach(hql->{
+                try {
+                    stmt.addBatch(hql);
+                }catch(SQLException se){}
+
+            });
+
+
+            return stmt.executeBatch();
+        }
+    }
+
 }

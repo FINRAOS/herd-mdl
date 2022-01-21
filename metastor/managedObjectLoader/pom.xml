@@ -177,7 +177,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hive</groupId>
-			<artifactId>hive-jdbc</artifactId>
+			<artifactId>
+				hive-jdbc</artifactId>
 			<version>${hive.jdbc.version}</version>
 		</dependency>
 		<dependency>

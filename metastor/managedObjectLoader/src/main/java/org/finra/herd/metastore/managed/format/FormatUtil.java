@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStreamReader;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -139,4 +142,19 @@ public class FormatUtil {
         return isComplete;
     }
 
+
+    public String getAlterTableStatemts(  Optional<String> ddl) {
+
+        String [] ddlArr=null;
+        if(ddl.isPresent())
+        {
+             ddlArr =ddl.get().split(";");
+            return  ddlArr[1];
+        }
+        else{
+            log.info("DDL is empty ==> No cookie for you!");
+        }
+
+        return null;
+    }
 }
