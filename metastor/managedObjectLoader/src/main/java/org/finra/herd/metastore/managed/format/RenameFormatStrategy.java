@@ -283,12 +283,15 @@ public class RenameFormatStrategy implements FormatStrategy {
         rootPartitionList.forEach(partitionList -> {
 
             List<String> hiveDdl = getableAddPartitionDDL(jobDefinition, partitionList, request);
+
             File tmpFile = submitFormatProcess.createHqlFile(hiveDdl, tmpdir);
+            String executeHive="#!/bin/sh; hive -v -f "+tmpFile.getAbsolutePath()+"; exit $?";
+            File executeHiveFile=submitFormatProcess.createHqlFile(executeHive,tmpdir);
             FormatProcessObject formatProcessObject = FormatProcessObject.builder()
                     .partitionList(partitionList)
                     .jobDefinition(jobDefinition)
                     .build();
-            formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
+            formatProcessObjectList.add(submitFormatProcess.submitProcess(executeHiveFile, formatProcessObject));
             try {
                 Thread.sleep(1000);
             }catch (InterruptedException e){}

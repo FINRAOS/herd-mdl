@@ -79,7 +79,7 @@ public class SubmitFormatProcess {
                 StopWatch watch = new StopWatch();
                 watch.start();
 
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("sh", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
@@ -121,7 +121,7 @@ public class SubmitFormatProcess {
         try {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
-            hqlFilePath = File.createTempFile("str", ".sh", new File(tmpdir));
+            hqlFilePath = File.createTempFile("str", ".hql", new File(tmpdir));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
             String str = stringList.stream().collect(Collectors.joining(" "));
@@ -136,5 +136,24 @@ public class SubmitFormatProcess {
 
     }
 
+    public File createHqlFile(String statements, String tmpdir) {
+
+        File hqlFilePath = null;
+        try {
+            log.info("Thread in writetoFile {}", Thread.currentThread().getName());
+
+            hqlFilePath = File.createTempFile("str", ".sh", new File(tmpdir));
+            Path path = Paths.get(hqlFilePath.getAbsolutePath());
+
+            Files.write(path, statements.getBytes(), APPEND);
+
+        } catch (Exception ioe) {
+            log.error("Exceptiopn in creatingHql file {}", ioe.getMessage());
+            throw new RuntimeException("Unable to create  hive file ==>" + hqlFilePath.getAbsolutePath());
+        }
+
+        return hqlFilePath;
+
+    }
 
 }
