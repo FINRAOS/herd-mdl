@@ -105,7 +105,7 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             log.info("The tmp dir for format is ==> {}", tmpdir);
 
-            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements, tmpdir));
+            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements));
 
             while(!formatProcess.isDone()){
 

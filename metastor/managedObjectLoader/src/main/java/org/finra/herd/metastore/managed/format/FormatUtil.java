@@ -80,7 +80,7 @@ public class FormatUtil {
             )).collect(Collectors.toList());
 
 
-        processOutput.forEach(c -> c.thenAccept(s -> log.info(s)));
+        processOutput.forEach(c -> c.thenAccept(s -> log.info("====>{}",s)));
 
 
         return processOutput;
@@ -149,7 +149,7 @@ public class FormatUtil {
         if(ddl.isPresent())
         {
              ddlArr =ddl.get().split(";");
-            return  ddlArr[1];
+            return  ddlArr[1]+";";
         }
         else{
             log.info("DDL is empty ==> No cookie for you!");

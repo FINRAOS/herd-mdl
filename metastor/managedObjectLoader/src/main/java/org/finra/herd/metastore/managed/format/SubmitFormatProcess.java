@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,16 +35,15 @@ public class SubmitFormatProcess {
 
             Process process = null;
             try {
-                log.info("File submitProcess {}", files.getAbsolutePath());
+                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(),Thread.currentThread().getName());
                 StopWatch watch = new StopWatch();
                 watch.start();
-                ProcessBuilder pb = new ProcessBuilder("hive ", " -v", " -f ", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
-
                 watch.stop();
-                log.info("format Process ran for:{}", watch.getTime());
+                log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS),Thread.currentThread().getName());
 
 
             } catch (InterruptedException iex) {
@@ -75,20 +76,39 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                log.info("File submitProcess {}", files.getAbsolutePath());
+                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(),Thread.currentThread().getName());
                 StopWatch watch = new StopWatch();
                 watch.start();
 
-                ProcessBuilder pb = new ProcessBuilder("hive","-v ","-f ", files.getAbsolutePath());
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                log.info("pb.command is ==>{}",pb.command());
                 pb.redirectErrorStream(true);
                 process = pb.start();
+                BufferedReader in = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
+
+                try {
+                    String line = in.readLine();
+                    while ( line != null ) {
+                            log.info("====>{}",line);
+                        line = in.readLine();
+                    }
+                    in.close();
+                } catch ( Exception ex ) {
+                    log.error( "ERROR {}" ,ex.getMessage() );
+                } finally {
+                    try {
+                        in.close();
+                    } catch ( IOException e ) {
+                        e.printStackTrace();
+                    }
+                }
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
-                log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {}",
-                        formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(), files
-                                .getAbsolutePath());
-
                 formatProcessObject.setProcess(process);
+
+                log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {} with exit Value:{} in Thread :{}",
+                        formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
+                                .getAbsolutePath(), process.exitValue(),Thread.currentThread().getName());
 
 
             } catch (InterruptedException iex) {
@@ -113,15 +133,13 @@ public class SubmitFormatProcess {
     }
 
 
-
-
-    public File createHqlFile(List<String> stringList, String tmpdir) {
+    public File createHqlFile(List<String> stringList) {
 
         File hqlFilePath = null;
         try {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
-            hqlFilePath = File.createTempFile("str", ".hql", new File(tmpdir));
+            hqlFilePath = File.createTempFile("/tmp/str-format", ".hql", new File("/tmp"));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
             String str = stringList.stream().collect(Collectors.joining(" "));
@@ -136,13 +154,13 @@ public class SubmitFormatProcess {
 
     }
 
-    public File createHqlFile(String statements, String tmpdir) {
+    public File createHqlFile(String statements) {
 
         File hqlFilePath = null;
         try {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
-            hqlFilePath = File.createTempFile("str", ".sh", new File(tmpdir));
+            hqlFilePath = File.createTempFile("/tmp/str-regularformat", ".sh", new File("/tmp"));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
             Files.write(path, statements.getBytes(), APPEND);

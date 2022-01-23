@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.finra.herd.metastore.managed.JobDefinition;
+import org.springframework.context.annotation.Scope;
 
 import java.util.List;
 
@@ -12,10 +13,11 @@ import java.util.List;
 @Setter
 @Getter
 @ToString
+@Scope("prototype")
 public class FormatProcessObject {
 
     List<String> partitionList;
     JobDefinition jobDefinition;
-    Process process;
+    volatile Process process;
 
 }

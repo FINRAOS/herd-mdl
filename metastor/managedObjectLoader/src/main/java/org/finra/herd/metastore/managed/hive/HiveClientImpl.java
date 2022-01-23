@@ -250,7 +250,7 @@ public class HiveClientImpl implements HiveClient {
     public boolean tableExist(String dbName, String tableName) throws SQLException {
         try (Connection con = getDatabaseConnection("default")) {
             Statement stmt = con.createStatement();
-
+            log.info("tableExist? {},{}",dbName,tableName);
             stmt.execute("show databases like \'" + dbName + "\'");
             if (stmt.getResultSet().next()) {
                 stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
@@ -346,16 +346,32 @@ public class HiveClientImpl implements HiveClient {
     }
 
     @Override
-    public void executeQueries(String database, List<String> schemaSql) {
-        log.info("Executing schemaSQL: {}", schemaSql);
-        hiveJdbcTemplate.batchUpdate(schemaSql.stream().map(s -> s.replaceAll(";", "")).toArray(String[]::new));
+    public void executeQueries(String database, List<String> hqlStatement) {
+        log.info("Executing schemaSQL: {}", hqlStatement);
+
+        try (Connection con = getDatabaseConnection(database)) {
+
+            Statement stmt = con.createStatement();
+            hqlStatement.forEach(hql->{
+                try {
+                    stmt.execute(hql);
+                }catch (SQLException sqe){}
+            });
+
+
+        }catch (SQLException sqe){
+
+        }
     }
 
 
     public boolean runHiveQuery(String dbName, String hqlStatement) throws SQLException {
+
         try (Connection con = getDatabaseConnection(dbName)) {
+
             Statement stmt = con.createStatement();
             return stmt.execute(hqlStatement);
+
         }
 
     }

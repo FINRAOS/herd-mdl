@@ -125,6 +125,7 @@ public class RenameFormatStrategy implements FormatStrategy {
             watch.start();
             formatProcessObjectList = createTableAddPartition(jobDefinition, rootPartitionList);
 
+            log.info("size of formatProcessObjectList"+formatProcessObjectList.size());
 
             if (!formatProcessObjectList.isEmpty()) {
 
@@ -151,6 +152,11 @@ public class RenameFormatStrategy implements FormatStrategy {
 
                     log.info("format Process for table :{} and all partitions ran for :{} ",
                             jobDefinition.getTableName(), watch.getTime());
+                    if(err!=null){
+                        log.error("The error is {}" ,err.getMessage());
+                    }
+
+                    log.info("The results are:{}",res);
 
                 /*
                   Do not handle error here since we need to track error at individual process level.
@@ -158,7 +164,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                 });
 
                 //Use only for debugging.
-//            List<CompletableFuture<String>> processOutput = formatUtil.printProcessOutput(formatProcessObjectList);
+            List<CompletableFuture<String>> processOutput = formatUtil.printProcessOutput(formatProcessObjectList);
 
 
                 final List<CompletableFuture<FormatProcessObject>> failedProcessing = formatProcessObjectList.stream().filter(
@@ -278,21 +284,22 @@ public class RenameFormatStrategy implements FormatStrategy {
         request.combineMultiplePartitionsInSingleAlterTable(true);
         request.combinedAlterTableMaxPartitions(jobProcessorConstants.getAlterTableAddMaxPartitions());
         request.setTableName(jobDefinition.getTableName() + "_LATEST");
-        String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
-
-        log.info("The tmp dir for format is ==> {}", tmpdir);
 
         List<CompletableFuture<FormatProcessObject>> formatProcessObjectList = new ArrayList<>();
 
         List<String> hiveDdl = new ArrayList<>();
-        String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
-        hiveDdl.add(useDb);
 
 
+        int count=0;
         boolean isTableCreated = false;
         try {
 
             isTableCreated = createTable(jobDefinition, rootPartitionList,request);
+            while(!isTableCreated && count <2){
+                Thread.sleep(5000);
+                isTableCreated=hiveClient.tableExist(jobDefinition.getObjectDefinition().getDbName(),jobDefinition.getTableName() + "_LATEST");
+                count++;
+            }
 
         } catch (SQLException se) {
             new RuntimeException("unable to create table" + se.getMessage());
@@ -300,22 +307,24 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         if(isTableCreated) {
             rootPartitionList.forEach(partitionList -> {
-
-
+                String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
+                hiveDdl.add(useDb);
                 Optional<String> ddl = getableAddPartitionDDL(jobDefinition, partitionList, request);
-                addPartition(jobDefinition, tmpdir, formatProcessObjectList, hiveDdl, partitionList, ddl);
+                addPartition(jobDefinition,  formatProcessObjectList, hiveDdl, partitionList, ddl);
+                hiveDdl.clear();
             });
         }else {
-            log.info("Can not add partitions table not created");
+            log.info("" +
+                    "Can not add partitions table not created");
         }
 
         return formatProcessObjectList;
 
     }
 
-    private void addPartition(JobDefinition jobDefinition, String tmpdir, List<CompletableFuture<FormatProcessObject>> formatProcessObjectList, List<String> hiveDdl, List<String> partitionList, Optional<String> ddl) {
+    private void addPartition(JobDefinition jobDefinition,  List<CompletableFuture<FormatProcessObject>> formatProcessObjectList, List<String> hiveDdl, List<String> partitionList, Optional<String> ddl) {
         hiveDdl.add(formatUtil.getAlterTableStatemts(ddl));
-        File tmpFile = submitFormatProcess.createHqlFile(hiveDdl, tmpdir);
+        File tmpFile = submitFormatProcess.createHqlFile(hiveDdl);
         FormatProcessObject formatProcessObject = FormatProcessObject.builder()
                 .partitionList(partitionList)
                 .jobDefinition(jobDefinition)
@@ -323,6 +332,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
         jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
     }
+
 
     private boolean createTable(JobDefinition jobDefinition,List<List<String>> rootPartitionList,BusinessObjectDataDdlRequest request) throws SQLException {
 
@@ -409,11 +419,8 @@ public class RenameFormatStrategy implements FormatStrategy {
 
 
         try {
-            String tmpdir = Files.createTempDirectory("rename").toFile().getAbsolutePath();
 
-            log.info("The tmp dir for rename is ==> {}", tmpdir);
-
-            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hqlStatements, tmpdir));
+            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hqlStatements));
             //TODO Comment after finishing testing
             CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
 
