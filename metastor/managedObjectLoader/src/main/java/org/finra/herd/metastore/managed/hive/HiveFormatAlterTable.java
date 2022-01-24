@@ -115,7 +115,9 @@ public class HiveFormatAlterTable  {
     public List<String> getFormatHiveStatements(FormatChange formatChange, JobDefinition jd, boolean isCascade)  {
 
         List<String> hiveStatements = new ArrayList<>();
+        String setHiveClientTimeout="set hive.metastore.client.socket.timeout=3600;";
         String useDb = "use "+jd.getObjectDefinition().getDbName()+";";
+        hiveStatements.add(setHiveClientTimeout);
         hiveStatements.add(useDb);
 
 

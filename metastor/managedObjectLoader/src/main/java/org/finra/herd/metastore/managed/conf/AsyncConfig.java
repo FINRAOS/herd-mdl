@@ -20,8 +20,8 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean( name = "formatExecutor" )
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1);
-        executor.setMaxPoolSize(1);
+        executor.setCorePoolSize(3);
+        executor.setMaxPoolSize(3);
         executor.initialize();
 
         return executor;

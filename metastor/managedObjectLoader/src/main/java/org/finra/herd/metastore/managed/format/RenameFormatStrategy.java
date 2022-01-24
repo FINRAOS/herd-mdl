@@ -295,7 +295,9 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         if(isTableCreated) {
             rootPartitionList.forEach(partitionList -> {
+                String setHiveClientTimeout="set hive.metastore.client.socket.timeout=3600;";
                 String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
+                hiveDdl.add(setHiveClientTimeout);
                 hiveDdl.add(useDb);
                 Optional<String> ddl = getPartitionDdlFromDM(jobDefinition, partitionList, request);
                 addPartition(jobDefinition,  formatProcessObjectList, hiveDdl, partitionList, ddl);
@@ -421,16 +423,16 @@ public class RenameFormatStrategy implements FormatStrategy {
                 if (err != null) {
                     log.error("Error occurred during rename operation");
 
-                    notificationSender.sendFailureEmail(jobDefinition, 0, "Error occurred during rename operation" + err.getMessage(), "");
+                    notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation" + err.getMessage(), this.clusterId);
 
                 }
             });
 
 
         } catch (Exception e) {
-            log.error("Unable to swap the latest Object in hive after format change" + e.getMessage());
-            errMsg.append("Unable to swap the latest Object in hive after format change" + e.getMessage());
-            notificationSender.sendFailureEmail(jobDefinition, 1, "Unable to rename the object in Hive " + this.getErr(), this.clusterId);
+            log.error("Unable to rename the latest Object in hive after format change" + e.getMessage());
+            errMsg.append("Unable to rename the latest Object in hive after format change" + e.getMessage());
+            notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Unable to rename the object in Hive " + this.getErr(), this.clusterId);
 
 
         }

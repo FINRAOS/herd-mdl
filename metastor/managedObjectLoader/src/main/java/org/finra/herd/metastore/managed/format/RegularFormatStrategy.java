@@ -79,7 +79,7 @@ public class RegularFormatStrategy implements FormatStrategy {
 
         if(errMsg!=null && errMsg.capacity()>0){
             notificationSender.sendFailureEmail(
-                    jobDefinition,1,"Unbale to do Regular format change",""
+                    jobDefinition,jobDefinition.getNumOfRetry(),"Unbale to do Regular format change",this.clusterId
             );
         }
 
@@ -126,9 +126,9 @@ public class RegularFormatStrategy implements FormatStrategy {
             log.error("Exception in regular format change {}", e.getMessage());
             errMsg.append("Exception in regular format change");
             errMsg.append(e.getMessage());
-            notificationSender.sendEmail("Unbale to do Regular format change for "+dbName + objectName + " ==>" +this.getErr(),dbName+"."+objectName+"  format failed");
-
-
+            notificationSender.sendFailureEmail(
+                    jobDefinition,jobDefinition.getNumOfRetry(),"Unbale to do Regular format change for "+dbName + objectName + " ==>" +this.getErr(),this.clusterId
+            );
 
         }
 
