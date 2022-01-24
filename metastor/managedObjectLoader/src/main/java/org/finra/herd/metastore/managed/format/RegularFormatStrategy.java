@@ -49,25 +49,25 @@ public class RegularFormatStrategy implements FormatStrategy {
 
     @Autowired
     public RegularFormatStrategy(HiveFormatAlterTable hiveFormatAlterTable, SubmitFormatProcess submitFormatProcess,
-                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil,NotificationSender notificationSender,JobPicker jobPicker) {
+                                 FormatProcessorDAO formatProcessorDAO, FormatUtil formatUtil, NotificationSender notificationSender, JobPicker jobPicker) {
 
         this.hiveFormatAlterTable = hiveFormatAlterTable;
         this.submitFormatProcess = submitFormatProcess;
         this.formatProcessorDAO = formatProcessorDAO;
         this.errMsg = new StringBuffer();
         this.formatUtil = formatUtil;
-        this.notificationSender=notificationSender;
-        this.jobPicker=jobPicker;
+        this.notificationSender = notificationSender;
+        this.jobPicker = jobPicker;
 
     }
 
     @Override
-    public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade,String clusterId,String workerId) {
+    public void executeFormatChange(JobDefinition jobDefinition, FormatChange formatChange, boolean cascade, String clusterId, String workerId) {
 
 
         List<String> hiveStatements = hiveFormatAlterTable.getFormatHiveStatements(formatChange, jobDefinition, cascade);
-        this.clusterId=clusterId;
-        this.workerId=workerId;
+        this.clusterId = clusterId;
+        this.workerId = workerId;
 
         log.info("Regular Format hiveStatements size:[]", hiveStatements.size());
 
@@ -77,9 +77,9 @@ public class RegularFormatStrategy implements FormatStrategy {
             log.info("No Regular format changes detected {} {}", jobDefinition.getObjectDefinition().getNameSpace(), jobDefinition.getObjectDefinition().getDbName());
         }
 
-        if(errMsg!=null && errMsg.capacity()>0){
+        if (errMsg != null && errMsg.capacity() > 0) {
             notificationSender.sendFailureEmail(
-                    jobDefinition,jobDefinition.getNumOfRetry(),"Unbale to do Regular format change",this.clusterId
+                    jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change", this.clusterId
             );
         }
 
@@ -107,7 +107,7 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements));
 
-            formatUtil.checkFutureComplete(jobDefinition,formatProcess,this.clusterId,this.workerId);
+            formatUtil.checkFutureComplete(jobDefinition, formatProcess, this.clusterId, this.workerId);
 
             //TODO remove once testing is done.
             CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
@@ -127,7 +127,7 @@ public class RegularFormatStrategy implements FormatStrategy {
             errMsg.append("Exception in regular format change");
             errMsg.append(e.getMessage());
             notificationSender.sendFailureEmail(
-                    jobDefinition,jobDefinition.getNumOfRetry(),"Unbale to do Regular format change for "+dbName + objectName + " ==>" +this.getErr(),this.clusterId
+                    jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change for " + dbName + objectName + " ==>" + this.getErr(), this.clusterId
             );
 
         }

@@ -49,7 +49,7 @@ public class FormatObjectProcessor extends JobProcessor {
 
         try {
 
-            FormatStrategy formatStrategy = doFormat(od, clusterID,  workerID);
+            FormatStrategy formatStrategy = doFormat(od, clusterID, workerID);
             log.info("Format strategy completed? :{}", formatStrategy.hasFormatCompleted());
             Optional<String> errMsg = Optional.ofNullable(formatStrategy.getErr());
             errMsg.ifPresent(err -> errorBuffer.append(err));
@@ -68,7 +68,7 @@ public class FormatObjectProcessor extends JobProcessor {
        create a new object and backload the partitons and swap.
      */
 
-    private FormatStrategy doFormat(JobDefinition jd,String clusterID, String workerID) throws ApiException, SQLException {
+    private FormatStrategy doFormat(JobDefinition jd, String clusterID, String workerID) throws ApiException, SQLException {
 
         FormatChange change = detectSchemaChanges.getFormatChange(jd);
 
@@ -76,7 +76,7 @@ public class FormatObjectProcessor extends JobProcessor {
         if (partitionsDAO.
                 getTotalPartitionCount(jd.getTableName(), jd.getObjectDefinition().getDbName()) < jobProcessorConstants.getMaxPartitionFormatLimit() ||
                 !hiveHqlGenerator.cascade(jd)) {
-            regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd), clusterID,  workerID);
+            regularFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd), clusterID, workerID);
             return regularFormatStrategy;
 
         } else {
@@ -89,7 +89,7 @@ public class FormatObjectProcessor extends JobProcessor {
             super.setPartitionKeyRegardless(jd);
             jd.setSubPartitionLevelProcessing(false);
 
-            renameFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd),clusterID,  workerID);
+            renameFormatStrategy.executeFormatChange(jd, change, hiveHqlGenerator.cascade(jd), clusterID, workerID);
             return renameFormatStrategy;
         }
 

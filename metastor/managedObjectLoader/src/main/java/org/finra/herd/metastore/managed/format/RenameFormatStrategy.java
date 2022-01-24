@@ -122,7 +122,7 @@ public class RenameFormatStrategy implements FormatStrategy {
             watch.start();
             formatProcessObjectList = createTableAddPartition(jobDefinition, rootPartitionList);
 
-            log.info("size of formatProcessObjectList"+formatProcessObjectList.size());
+            log.info("size of formatProcessObjectList" + formatProcessObjectList.size());
 
             if (!formatProcessObjectList.isEmpty()) {
 
@@ -149,8 +149,8 @@ public class RenameFormatStrategy implements FormatStrategy {
 
                     log.info("format Process for table :{} and all partitions ran for :{} ",
                             jobDefinition.getTableName(), watch.getTime(TimeUnit.SECONDS));
-                    if(err!=null){
-                        log.error("The error is {}" ,err.getMessage());
+                    if (err != null) {
+                        log.error("The error is {}", err.getMessage());
                     }
                 /*
                   Do not handle error here since we need to track error at individual process level.
@@ -270,7 +270,6 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
-        request.combinedAlterTableMaxPartitions(jobProcessorConstants.getAlterTableAddMaxPartitions());
         request.setTableName(jobDefinition.getTableName() + "_LATEST");
 
         List<CompletableFuture<FormatProcessObject>> formatProcessObjectList = new ArrayList<>();
@@ -278,14 +277,14 @@ public class RenameFormatStrategy implements FormatStrategy {
         List<String> hiveDdl = new ArrayList<>();
 
 
-        int count=0;
+        int count = 0;
         boolean isTableCreated = false;
         try {
 
-            isTableCreated = createTable(jobDefinition, rootPartitionList,request);
-            while(!isTableCreated && count <2){
+            isTableCreated = createTable(jobDefinition, rootPartitionList, request);
+            while (!isTableCreated && count < 2) {
                 Thread.sleep(5000);
-                isTableCreated=hiveClient.tableExist(jobDefinition.getObjectDefinition().getDbName(),jobDefinition.getTableName() + "_LATEST");
+                isTableCreated = hiveClient.tableExist(jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName() + "_LATEST");
                 count++;
             }
 
@@ -293,17 +292,20 @@ public class RenameFormatStrategy implements FormatStrategy {
             new RuntimeException("unable to create table" + se.getMessage());
         }
 
-        if(isTableCreated) {
+        if (isTableCreated) {
             rootPartitionList.forEach(partitionList -> {
-                String setHiveClientTimeout="set hive.metastore.client.socket.timeout=3600;";
+                String setHiveClientTimeout = "set hive.metastore.client.socket.timeout=3600;";
                 String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
                 hiveDdl.add(setHiveClientTimeout);
                 hiveDdl.add(useDb);
                 Optional<String> ddl = getPartitionDdlFromDM(jobDefinition, partitionList, request);
-                addPartition(jobDefinition,  formatProcessObjectList, hiveDdl, partitionList, ddl);
+                addPartition(jobDefinition, formatProcessObjectList, hiveDdl, partitionList, ddl);
                 hiveDdl.clear();
+                if (ddl.isPresent()) {
+                    log.info("No. of partitions from DM is :{}", StringUtils.countMatches(ddl.get(), "PARTITION"));
+                }
             });
-        }else {
+        } else {
             log.info("" +
                     "Can not add partitions table not created");
         }
@@ -312,7 +314,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
     }
 
-    private void addPartition(JobDefinition jobDefinition,  List<CompletableFuture<FormatProcessObject>> formatProcessObjectList, List<String> hiveDdl, List<String> partitionList, Optional<String> ddl) {
+    private void addPartition(JobDefinition jobDefinition, List<CompletableFuture<FormatProcessObject>> formatProcessObjectList, List<String> hiveDdl, List<String> partitionList, Optional<String> ddl) {
         hiveDdl.add(formatUtil.getAlterTableStatemts(ddl));
         File tmpFile = submitFormatProcess.createHqlFile(hiveDdl);
         FormatProcessObject formatProcessObject = FormatProcessObject.builder()
@@ -324,10 +326,10 @@ public class RenameFormatStrategy implements FormatStrategy {
     }
 
 
-    private boolean createTable(JobDefinition jobDefinition,List<List<String>> rootPartitionList,BusinessObjectDataDdlRequest request) throws SQLException {
+    private boolean createTable(JobDefinition jobDefinition, List<List<String>> rootPartitionList, BusinessObjectDataDdlRequest request) throws SQLException {
 
         Optional<String> ddl = getPartitionDdlFromDM(jobDefinition, rootPartitionList.get(0), request);
-        String dbName=jobDefinition.getObjectDefinition().getDbName();
+        String dbName = jobDefinition.getObjectDefinition().getDbName();
 
         if (ddl.isPresent()) {
             String[] ddlArr;
@@ -382,7 +384,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
     //TODO check with corey on when this may or may not happen.
 
-    private boolean isPartitionCountCorrect (JobDefinition jd) {
+    private boolean isPartitionCountCorrect(JobDefinition jd) {
 
         String existingTableName = jd.getTableName();
         String newTableName = jd.getTableName().concat("_LATEST");
@@ -415,7 +417,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 //            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
 
 
-            formatUtil.checkFutureComplete(jobDefinition, formatProcess,this.clusterId,this.workerId);
+            formatUtil.checkFutureComplete(jobDefinition, formatProcess, this.clusterId, this.workerId);
 
             formatProcess.whenComplete((proc, err) -> {
 
@@ -439,8 +441,6 @@ public class RenameFormatStrategy implements FormatStrategy {
 
 
     }
-
-
 
 
 }
