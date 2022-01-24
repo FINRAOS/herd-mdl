@@ -24,14 +24,20 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuild
 import com.amazonaws.services.elasticmapreduce.model.ClusterState;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
+import org.finra.herd.metastore.managed.conf.AsyncConfig;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -42,6 +48,7 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +59,10 @@ public class ClusterManager implements InitializingBean {
 
 	public static final String CLUSTER_NM_DELIMITER = "_";
 	public static final String REMOVE_CLUSTER = "DELETE FROM EMR_CLUSTER where CLUSTER_ID = ?";
+	@Autowired
+	private ApplicationContext applicationContext;
+
+
 
 	enum ClusterType {
 		STATS, NON_STATS
@@ -112,6 +123,7 @@ public class ClusterManager implements InitializingBean {
 
 	@Autowired
 	protected DataMgmtSvc dataMgmtSvc;
+
 
 
 	int createClusterRetryCounter = 0;
@@ -286,14 +298,18 @@ public class ClusterManager implements InitializingBean {
 			return;
 		}
 
+		ThreadPoolTaskExecutor executor= (ThreadPoolTaskExecutor) applicationContext.getBean("formatExecutor");
+		ExecutorService fs= executor.getThreadPoolExecutor();
+		fs.shutdown();
 		es.shutdownNow();
 
 		try {
 			es.awaitTermination( 5, TimeUnit.SECONDS );
+			fs.awaitTermination(5,TimeUnit.SECONDS);
 		} catch ( InterruptedException e ) {
 			logger.info( "Autoscale thread shutting down, wait interrupted" );
 		} finally {
-			if ( es.isTerminated() ) {
+			if ( es.isTerminated() && fs.isTerminated()) {
 				logger.info( "Autoscale service shutdown successfully!" );
 			} else {
 				logger.info( "Autoscale service is still running, trying again to shutdown" );
