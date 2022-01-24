@@ -125,6 +125,7 @@ public class HiveHqlGenerator {
 
         log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
 
+        //Execute only when no format change
         if(!this.formatChange.hasChange()){
             // Add database Statements
             selectDatabase(jd, schemaHql);

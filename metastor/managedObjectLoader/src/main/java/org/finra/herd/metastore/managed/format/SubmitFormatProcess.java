@@ -35,15 +35,17 @@ public class SubmitFormatProcess {
 
             Process process = null;
             try {
-                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(),Thread.currentThread().getName());
+                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                 StopWatch watch = new StopWatch();
                 watch.start();
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
+                // printProcessOutput(process); Enable when you need to debug.
+
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
-                log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS),Thread.currentThread().getName());
+                log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
 
 
             } catch (InterruptedException iex) {
@@ -51,8 +53,7 @@ public class SubmitFormatProcess {
                     log.error("Process interrupted or timeout going to kill it");
                     process.destroyForcibly();
                 }
-                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
-
+                throw new RuntimeException("Unable to execute  hive process Regular Format ==>" + files.getAbsolutePath());
 
             } catch (Exception ie) {
                 log.error("Exceptiopn in submitProcess for Regular format {}", ie.getMessage());
@@ -76,39 +77,24 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(),Thread.currentThread().getName());
+                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                 StopWatch watch = new StopWatch();
                 watch.start();
 
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                log.info("pb.command is ==>{}",pb.command());
+                log.info("pb.command is ==>{}", pb.command());
                 pb.redirectErrorStream(true);
                 process = pb.start();
-                BufferedReader in = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
 
-                try {
-                    String line = in.readLine();
-                    while ( line != null ) {
-                            log.info("====>{}",line);
-                        line = in.readLine();
-                    }
-                    in.close();
-                } catch ( Exception ex ) {
-                    log.error( "ERROR {}" ,ex.getMessage() );
-                } finally {
-                    try {
-                        in.close();
-                    } catch ( IOException e ) {
-                        e.printStackTrace();
-                    }
-                }
+                // printProcessOutput(process); Enable when you need to debug.
+
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
                 formatProcessObject.setProcess(process);
 
                 log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {} with exit Value:{} in Thread :{}",
                         formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
-                                .getAbsolutePath(), process.exitValue(),Thread.currentThread().getName());
+                                .getAbsolutePath(), process.exitValue(), Thread.currentThread().getName());
 
 
             } catch (InterruptedException iex) {
@@ -132,6 +118,27 @@ public class SubmitFormatProcess {
 
     }
 
+    private void printProcessOutput(Process process) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+        try {
+            String line = in.readLine();
+            while (line != null) {
+                log.info("====>{}", line);
+                line = in.readLine();
+            }
+            in.close();
+        } catch (Exception ex) {
+            log.error("ERROR {}", ex.getMessage());
+        } finally {
+            try {
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     public File createHqlFile(List<String> stringList) {
 
@@ -139,7 +146,7 @@ public class SubmitFormatProcess {
         try {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
-            hqlFilePath = File.createTempFile("/tmp/str-format", ".hql", new File("/tmp"));
+            hqlFilePath = File.createTempFile("str-format", ".hql", new File("/home/hadoop"));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
             String str = stringList.stream().collect(Collectors.joining(" "));
@@ -154,24 +161,5 @@ public class SubmitFormatProcess {
 
     }
 
-    public File createHqlFile(String statements) {
-
-        File hqlFilePath = null;
-        try {
-            log.info("Thread in writetoFile {}", Thread.currentThread().getName());
-
-            hqlFilePath = File.createTempFile("/tmp/str-regularformat", ".sh", new File("/tmp"));
-            Path path = Paths.get(hqlFilePath.getAbsolutePath());
-
-            Files.write(path, statements.getBytes(), APPEND);
-
-        } catch (Exception ioe) {
-            log.error("Exceptiopn in creatingHql file {}", ioe.getMessage());
-            throw new RuntimeException("Unable to create  hive file ==>" + hqlFilePath.getAbsolutePath());
-        }
-
-        return hqlFilePath;
-
-    }
 
 }

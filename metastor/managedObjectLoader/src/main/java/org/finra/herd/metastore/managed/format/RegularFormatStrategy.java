@@ -107,20 +107,11 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements));
 
-            while(!formatProcess.isDone()){
+            formatUtil.checkFutureComplete(jobDefinition,formatProcess,this.clusterId,this.workerId);
 
-                try {
-                    formatProcess.get(1,TimeUnit.MINUTES);
-
-                }catch ( TimeoutException te) {
-                    log.info( "Extending lock for object ==>" + jobDefinition.getObjectDefinition() );
-                    jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
-                }
-            }
-
+            //TODO remove once testing is done.
             CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
 
-            formatUtil.handleProcess(formatProcess);
             formatProcess.whenComplete((proc, err) -> {
 
                 this.isComplete = formatUtil.processComplete(objectName, dbName, err);
