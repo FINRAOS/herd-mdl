@@ -41,7 +41,7 @@ public class SubmitFormatProcess {
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
-                // printProcessOutput(process); Enable when you need to debug.
+                 printProcessOutput(process); //Enable when you need to debug.
 
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
@@ -145,6 +145,7 @@ public class SubmitFormatProcess {
         File hqlFilePath = null;
         try {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
+
 
             hqlFilePath = File.createTempFile("str-format", ".hql", new File("/home/hadoop"));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
