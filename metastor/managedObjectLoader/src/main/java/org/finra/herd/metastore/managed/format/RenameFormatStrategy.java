@@ -304,6 +304,9 @@ public class RenameFormatStrategy implements FormatStrategy {
                 if (ddl.isPresent()) {
                     log.info("No. of partitions from DM is :{}", StringUtils.countMatches(ddl.get(), "PARTITION"));
                 }
+                try {
+                    Thread.sleep(5000); //Pause for some time before submitting the next job
+                }catch (InterruptedException ie){}
             });
         } else {
             log.info("" +
