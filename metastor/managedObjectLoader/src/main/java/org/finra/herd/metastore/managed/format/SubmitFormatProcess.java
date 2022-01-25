@@ -86,7 +86,7 @@ public class SubmitFormatProcess {
                 pb.redirectErrorStream(true);
                 process = pb.start();
 
-                // printProcessOutput(process); Enable when you need to debug.
+                printProcessOutput(process); //Enable when you need to debug.
 
                 process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                 watch.stop();
