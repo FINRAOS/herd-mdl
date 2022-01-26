@@ -3,7 +3,6 @@ package org.finra.herd.metastore.managed.format;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -40,9 +39,8 @@ public class SubmitFormatProcess {
                     StopWatch watch = new StopWatch();
                     watch.start();
                     ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                    pb.redirectErrorStream(true);
                     process = pb.start();
-                    printProcessOutput(process); //Enable when you need to debug.
+                    printErrorOutput(process,files.getAbsolutePath()); //Enable when you need to debug.
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
@@ -82,13 +80,10 @@ public class SubmitFormatProcess {
                     log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                     StopWatch watch = new StopWatch();
                     watch.start();
-
                     ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                     log.info("pb.command is ==>{}", pb.command());
-                    pb.redirectErrorStream(true);
                     process = pb.start();
-
-                    printProcessOutput(process); //Enable when you need to debug.
+                    printErrorOutput(process,files.getAbsolutePath());
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
@@ -120,23 +115,29 @@ public class SubmitFormatProcess {
 
     }
 
-    private synchronized void printProcessOutput(Process process) {
-        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+    private synchronized void printErrorOutput(Process process,String fileName) {
+        BufferedReader in =null;
 
         try {
-            String line = in.readLine();
-            while (line != null) {
-                log.info("====>{}", line);
-                line = in.readLine();
+            in = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            if(in !=null) {
+                String line = in.readLine();
+                while (line != null) {
+                    log.info("Error ocurred with {} ==>{}", fileName, line);
+                    line = in.readLine();
+                }
+                in.close();
             }
-            in.close();
         } catch (Exception ex) {
-            log.error("ERROR {}", ex.getMessage());
+            log.error("error occurred while printing error stream {}", ex.getMessage());
         } finally {
             try {
-                in.close();
+                if(in!=null) {
+                    in.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("error occurred while printing error stream:{}",e.getMessage());
             }
         }
     }
