@@ -39,8 +39,9 @@ public class SubmitFormatProcess {
                     StopWatch watch = new StopWatch();
                     watch.start();
                     ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+//                    pb.redirectErrorStream(true);
                     process = pb.start();
-                    printErrorOutput(process,files.getAbsolutePath()); //Enable when you need to debug.
+//                    printProcessOutput(process); //Enable when you need to debug.
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
@@ -82,8 +83,10 @@ public class SubmitFormatProcess {
                     watch.start();
                     ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                     log.info("pb.command is ==>{}", pb.command());
+//                    pb.redirectErrorStream(true);
                     process = pb.start();
-                    printErrorOutput(process,files.getAbsolutePath());
+
+//                    printProcessOutput(process); //Enable when you need to debug.
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
@@ -115,29 +118,23 @@ public class SubmitFormatProcess {
 
     }
 
-    private synchronized void printErrorOutput(Process process,String fileName) {
-        BufferedReader in =null;
+    private synchronized void printProcessOutput(Process process) {
+        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
         try {
-            in = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-            if(in !=null) {
                 String line = in.readLine();
                 while (line != null) {
-                    log.info("Error ocurred with {} ==>{}", fileName, line);
+                log.info("====>{}", line);
                     line = in.readLine();
                 }
                 in.close();
-            }
         } catch (Exception ex) {
-            log.error("error occurred while printing error stream {}", ex.getMessage());
+            log.error("ERROR {}", ex.getMessage());
         } finally {
             try {
-                if(in!=null) {
                     in.close();
-                }
             } catch (IOException e) {
-                log.error("error occurred while printing error stream:{}",e.getMessage());
+                e.printStackTrace();
             }
         }
     }
