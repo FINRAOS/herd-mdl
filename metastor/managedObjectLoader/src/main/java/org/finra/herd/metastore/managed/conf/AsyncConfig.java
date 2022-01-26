@@ -1,7 +1,9 @@
 package org.finra.herd.metastore.managed.conf;
 
 import org.finra.herd.metastore.managed.format.ProcessAsyncUncaughtExceptionHandler;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -15,13 +17,17 @@ import java.util.concurrent.Executor;
 public class AsyncConfig implements AsyncConfigurer {
 
 
+    @Autowired
+    JobProcessorConstants jobProcessorConstants;
+
+
 
     @Override
     @Bean( name = "formatExecutor" )
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1);
-        executor.setMaxPoolSize(1);
+        executor.setCorePoolSize(jobProcessorConstants.getNoOfConcurrentExecutions());
+        executor.setMaxPoolSize(jobProcessorConstants.getNoOfConcurrentExecutions());
         executor.initialize();
 
         return executor;

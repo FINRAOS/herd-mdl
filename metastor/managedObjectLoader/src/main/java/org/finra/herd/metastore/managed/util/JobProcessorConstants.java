@@ -51,6 +51,7 @@ public interface JobProcessorConstants {
 
 	int getAlterTableAddMaxPartitions();
 	int getMaxPartitionFormatLimit();
+	int getNoOfConcurrentExecutions();
 
 
 }

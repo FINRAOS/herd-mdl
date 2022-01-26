@@ -14,4 +14,8 @@ public class DefaultJobProcessorConfigService implements  JobProcessorConstants{
     public int getMaxPartitionFormatLimit() {
         return 50000;
     }
+
+
+    @Override
+    public int getNoOfConcurrentExecutions() {return  1;}
 }
