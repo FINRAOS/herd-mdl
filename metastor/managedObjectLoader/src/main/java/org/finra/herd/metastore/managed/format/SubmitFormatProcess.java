@@ -35,18 +35,19 @@ public class SubmitFormatProcess {
 
             Process process = null;
             try {
-                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
-                StopWatch watch = new StopWatch();
-                watch.start();
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                pb.redirectErrorStream(true);
-                process = pb.start();
-                 printProcessOutput(process); //Enable when you need to debug.
+                synchronized (this) {
+                    log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
+                    ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                    pb.redirectErrorStream(true);
+                    process = pb.start();
+                    printProcessOutput(process); //Enable when you need to debug.
 
-                process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
-                watch.stop();
-                log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
-
+                    process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
+                    watch.stop();
+                    log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
+                }
 
             } catch (InterruptedException iex) {
                 if (process != null && process.isAlive()) {
@@ -77,26 +78,27 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
-                StopWatch watch = new StopWatch();
-                watch.start();
+                synchronized (this) {
+                    log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
+                    StopWatch watch = new StopWatch();
+                    watch.start();
 
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                log.info("pb.command is ==>{}", pb.command());
-                pb.redirectErrorStream(true);
-                process = pb.start();
+                    ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                    log.info("pb.command is ==>{}", pb.command());
+                    pb.redirectErrorStream(true);
+                    process = pb.start();
 
-                printProcessOutput(process); //Enable when you need to debug.
+                    printProcessOutput(process); //Enable when you need to debug.
 
-                process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
-                watch.stop();
-                formatProcessObject.setProcess(process);
+                    process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
+                    watch.stop();
+                    formatProcessObject.setProcess(process);
 
-                log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {} with exit Value:{} in Thread :{}",
-                        formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
-                                .getAbsolutePath(), process.exitValue(), Thread.currentThread().getName());
+                    log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {} with exit Value:{} in Thread :{}",
+                            formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
+                                    .getAbsolutePath(), process.exitValue(), Thread.currentThread().getName());
 
-
+                }
             } catch (InterruptedException iex) {
                 if (process != null && process.isAlive()) {
                     log.error("Process interrupted or timeout going to kill it");
@@ -118,7 +120,7 @@ public class SubmitFormatProcess {
 
     }
 
-    private void printProcessOutput(Process process) {
+    private synchronized void printProcessOutput(Process process) {
         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
         try {
