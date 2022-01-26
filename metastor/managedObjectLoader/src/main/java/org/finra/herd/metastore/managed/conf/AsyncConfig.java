@@ -17,8 +17,6 @@ import java.util.concurrent.Executor;
 public class AsyncConfig implements AsyncConfigurer {
 
 
-    @Autowired
-    JobProcessorConstants jobProcessorConstants;
 
 
 
@@ -26,8 +24,8 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean( name = "formatExecutor" )
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(jobProcessorConstants.getNoOfConcurrentExecutions());
-        executor.setMaxPoolSize(jobProcessorConstants.getNoOfConcurrentExecutions());
+        executor.setCorePoolSize(JobProcessorConstants.NO_OF_PARALLEL_EXECUTIONS);
+        executor.setMaxPoolSize(JobProcessorConstants.NO_OF_PARALLEL_EXECUTIONS);
         executor.initialize();
 
         return executor;

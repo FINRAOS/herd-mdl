@@ -16,6 +16,5 @@ public class DefaultJobProcessorConfigService implements  JobProcessorConstants{
     }
 
 
-    @Override
-    public int getNoOfConcurrentExecutions() {return  1;}
+
 }
