@@ -38,9 +38,11 @@ public class SubmitFormatProcess {
                     log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                     StopWatch watch = new StopWatch();
                     watch.start();
-                    Runtime runtime=Runtime.getRuntime();
-                    String [] command = {"hive","-v","-f",files.getAbsolutePath()};
-                    process = runtime.exec(command);
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                pb.redirectErrorStream(true);
+                process = pb.start();
+                 printProcessOutput(process); //Enable when you need to debug.
+
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
                     log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
@@ -79,10 +81,13 @@ public class SubmitFormatProcess {
                     log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                     StopWatch watch = new StopWatch();
                     watch.start();
-                    Runtime runtime=Runtime.getRuntime();
-                    String [] command = {"hive","-v","-f",files.getAbsolutePath()};
-                    process = runtime.exec(command);
-//                    printProcessOutput(process); //Enable when you need to debug.
+
+                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                log.info("pb.command is ==>{}", pb.command());
+                pb.redirectErrorStream(true);
+                process = pb.start();
+
+                printProcessOutput(process); //Enable when you need to debug.
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
