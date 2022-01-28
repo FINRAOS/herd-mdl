@@ -394,7 +394,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         String newTableName = jd.getTableName().concat("_LATEST");
         boolean result = partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) <=
                 partitionsDAO.getTotalPartitionCount(newTableName, jd.getObjectDefinition().getDbName());
-        if (result) {
+        if (!result) {
             notificationSender.sendFailureEmail(jd, jd.getNumOfRetry(), "The latest object has lesser partitions count than curent object", jd.getClusterName());
         }
 
