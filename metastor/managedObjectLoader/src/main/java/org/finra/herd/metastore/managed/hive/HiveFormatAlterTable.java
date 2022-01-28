@@ -15,16 +15,15 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class HiveFormatAlterTable  {
+public class HiveFormatAlterTable {
 
     @Autowired
     protected DataMgmtSvc dataMgmtSvc;
 
 
-    public void formatRegularColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName,boolean isCascade) throws org.finra.herd.sdk.invoker.ApiException
-    {
+    public void formatRegularColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName, boolean isCascade) throws org.finra.herd.sdk.invoker.ApiException {
         if (change.hasColumnChanges()) {
-            boolean cascade = isCascade ;
+            boolean cascade = isCascade;
             String cascadeStr = "";
             if (cascade) {
                 cascadeStr = "CASCADE";
@@ -43,8 +42,7 @@ public class HiveFormatAlterTable  {
                     ColumnDef newColum = pair.getSecond();
 
                     list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
-                        existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
-
+                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
 
 
                 }
@@ -53,7 +51,7 @@ public class HiveFormatAlterTable  {
                     ColumnDef existing = pair.getFirst();
                     ColumnDef newColum = pair.getSecond();
                     list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
-                        existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
+                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
                 }
 
                 if (!change.getNewColumns().isEmpty()) {
@@ -63,25 +61,24 @@ public class HiveFormatAlterTable  {
                     }
                     sb.deleteCharAt(sb.length() - 1);
                     list.add(String.format("Alter table %s add columns (%s) %s;", tableName, sb.toString(),
-                        cascadeStr));
+                            cascadeStr));
                 }
 
 
-                log.info("the formatRegularColumn list is :{}",list);
+                log.info("the formatRegularColumn list is :{}", list);
             }
         }
 
 
     }
 
-    public void formatClusterColumn(FormatChange change,JobDefinition jd,List<String> list,String tableName)  {
+    public void formatClusterColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) {
 
-        if(change.isClusteredSortedChange())
-        {
+        if (change.isClusteredSortedChange()) {
 
             log.info("Clustered Change :Alter table {}  {}", tableName, change.getClusteredDef().getClusterSql());
             list.add(String.format("Alter table %s  %s ;", tableName,
-                change.getClusteredDef().getClusterSql()));
+                    change.getClusteredDef().getClusterSql()));
 
 
         }
@@ -90,19 +87,18 @@ public class HiveFormatAlterTable  {
 
     public void formatPartitionColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) {
 
-        if(change.hasPartitionColumnChanges())
-        {
+        if (change.hasPartitionColumnChanges()) {
 
 
             for (Pair<ColumnDef, ColumnDef> pair : change.getPartitionColTypeChanges()) {
                 ColumnDef existing = pair.getFirst();
                 ColumnDef newColum = pair.getSecond();
                 list.add(String.format("Alter table %s partition column ( %s %s);", tableName,
-                    newColum.getName(), newColum.getType()));
+                        newColum.getName(), newColum.getType()));
             }
 
 
-            log.info("the formatPartitionColumn list is :{}",list);
+            log.info("the formatPartitionColumn list is :{}", list);
 
         }
 
@@ -110,30 +106,27 @@ public class HiveFormatAlterTable  {
     }
 
 
-
-
-    public List<String> getFormatHiveStatements(FormatChange formatChange, JobDefinition jd, boolean isCascade)  {
+    public List<String> getFormatHiveStatements(FormatChange formatChange, JobDefinition jd, boolean isCascade) {
 
         List<String> hiveStatements = new ArrayList<>();
-        String setHiveClientTimeout="set hive.metastore.client.socket.timeout=3600;";
-        String useDb = "use "+jd.getObjectDefinition().getDbName()+";";
+        String setHiveClientTimeout = "set hive.metastore.client.socket.timeout=3600;";
+        String useDb = "use " + jd.getObjectDefinition().getDbName() + ";";
         hiveStatements.add(setHiveClientTimeout);
         hiveStatements.add(useDb);
 
 
-        try{
-            formatRegularColumn(formatChange,jd,hiveStatements,jd.getTableName(),isCascade);
+        try {
+            formatRegularColumn(formatChange, jd, hiveStatements, jd.getTableName(), isCascade);
 
-        }catch( org.finra.herd.sdk.invoker.ApiException ie){
+        } catch (org.finra.herd.sdk.invoker.ApiException ie) {
             throw new RuntimeException("Error in Comparing Formats");
         }
-        formatPartitionColumn(formatChange,jd,hiveStatements,jd.getTableName());
-        formatClusterColumn(formatChange,jd,hiveStatements,jd.getTableName());
+        formatPartitionColumn(formatChange, jd, hiveStatements, jd.getTableName());
+        formatClusterColumn(formatChange, jd, hiveStatements, jd.getTableName());
 
         return hiveStatements;
 
     }
-
 
 
 }

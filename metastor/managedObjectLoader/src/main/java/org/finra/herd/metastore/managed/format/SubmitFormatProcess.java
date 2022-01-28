@@ -27,26 +27,25 @@ public class SubmitFormatProcess {
 
 
     @Async("formatExecutor")
-    public CompletableFuture<Process> submitProcess(File files) {
+    public synchronized CompletableFuture<Process> submitProcess(File files) {
 
 
         Supplier<Process> processSupplier = () -> {
 
             Process process = null;
             try {
-                synchronized (this) {
-                    log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
-                    StopWatch watch = new StopWatch();
-                    watch.start();
+                log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
+                StopWatch watch = new StopWatch();
+                watch.start();
                 ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
                 pb.redirectErrorStream(true);
                 process = pb.start();
-                 printProcessOutput(process); //Enable when you need to debug.
+                printProcessOutput(process); //Enable when you need to debug.
 
-                    process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
-                    watch.stop();
-                    log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
-                }
+                process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
+                watch.stop();
+                log.info("format Process ran for {} in thread for:{}", watch.getTime(TimeUnit.SECONDS), Thread.currentThread().getName());
+
 
             } catch (InterruptedException iex) {
                 if (process != null && process.isAlive()) {
@@ -69,7 +68,7 @@ public class SubmitFormatProcess {
     }
 
     @Async("formatExecutor")
-    public CompletableFuture<FormatProcessObject> submitProcess(File files, FormatProcessObject formatProcessObject) {
+    public synchronized CompletableFuture<FormatProcessObject> submitProcess(File files, FormatProcessObject formatProcessObject) {
 
 
         Supplier<FormatProcessObject> processSupplier = () -> {
@@ -77,17 +76,16 @@ public class SubmitFormatProcess {
             Process process = null;
             try {
 
-                synchronized (this) {
                     log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
                     StopWatch watch = new StopWatch();
                     watch.start();
 
-                ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                log.info("pb.command is ==>{}", pb.command());
-                pb.redirectErrorStream(true);
-                process = pb.start();
+                    ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
+                    log.info("pb.command is ==>{}", pb.command());
+                    pb.redirectErrorStream(true);
+                    process = pb.start();
 
-                printProcessOutput(process); //Enable when you need to debug.
+                    printProcessOutput(process); //Enable when you need to debug.
 
                     process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
                     watch.stop();
@@ -97,7 +95,7 @@ public class SubmitFormatProcess {
                             formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
                                     .getAbsolutePath(), process.exitValue(), Thread.currentThread().getName());
 
-                }
+
             } catch (InterruptedException iex) {
                 if (process != null && process.isAlive()) {
                     log.error("Process interrupted or timeout going to kill it");
@@ -123,17 +121,17 @@ public class SubmitFormatProcess {
         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
         try {
-                String line = in.readLine();
-                while (line != null) {
+            String line = in.readLine();
+            while (line != null) {
                 log.info("====>{}", line);
-                    line = in.readLine();
-                }
-                in.close();
+                line = in.readLine();
+            }
+            in.close();
         } catch (Exception ex) {
             log.error("ERROR {}", ex.getMessage());
         } finally {
             try {
-                    in.close();
+                in.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }

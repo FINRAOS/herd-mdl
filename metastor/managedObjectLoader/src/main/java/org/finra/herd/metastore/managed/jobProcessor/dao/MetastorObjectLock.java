@@ -25,23 +25,22 @@ public class MetastorObjectLock {
     Timestamp expiryDT;
 
 
-    public static class MetastorObjectLockMapper implements RowMapper<MetastorObjectLock>
-    {
+    public static class MetastorObjectLockMapper implements RowMapper<MetastorObjectLock> {
 
         @Override
         public MetastorObjectLock mapRow(ResultSet resultSet, int i) throws SQLException {
 
             return MetastorObjectLock.builder()
-                .namespace(  resultSet.getString("NAMESPACE"))
-                .objectName( resultSet.getString("OBJ_NAME") )
-                .fileType( resultSet.getString("FILE_TYPE") )
-                .usagecode(resultSet.getString("USAGE_CODE"))
-                .clusterId( resultSet.getString("CLUSTER_ID") )
-                .workerId( resultSet.getString("WORKER_ID") )
-                .wfType(  resultSet.getString("WF_TYPE") )
-                .expiryDT(resultSet.getTimestamp("EXPIRATION_DT"))
-                .createdDate(resultSet.getTimestamp("CREATED_DATE"))
-                .build();
+                    .namespace(resultSet.getString("NAMESPACE"))
+                    .objectName(resultSet.getString("OBJ_NAME"))
+                    .fileType(resultSet.getString("FILE_TYPE"))
+                    .usagecode(resultSet.getString("USAGE_CODE"))
+                    .clusterId(resultSet.getString("CLUSTER_ID"))
+                    .workerId(resultSet.getString("WORKER_ID"))
+                    .wfType(resultSet.getString("WF_TYPE"))
+                    .expiryDT(resultSet.getTimestamp("EXPIRATION_DT"))
+                    .createdDate(resultSet.getTimestamp("CREATED_DATE"))
+                    .build();
         }
     }
 }

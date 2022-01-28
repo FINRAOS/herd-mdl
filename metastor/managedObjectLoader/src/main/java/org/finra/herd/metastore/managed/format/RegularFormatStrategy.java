@@ -110,7 +110,7 @@ public class RegularFormatStrategy implements FormatStrategy {
             formatUtil.checkFutureComplete(jobDefinition, formatProcess, this.clusterId, this.workerId);
 
             //TODO remove once testing is done.
-            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
+//            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
 
             formatProcess.whenComplete((proc, err) -> {
 

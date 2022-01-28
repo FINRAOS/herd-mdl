@@ -13,7 +13,7 @@ public class ProcessAsyncUncaughtExceptionHandler implements AsyncUncaughtExcept
     public void handleUncaughtException(Throwable throwable, Method method, Object... objects ) {
         log.error( "Uncaught exception thrown by " + method.getName(), throwable );
         for ( Object param : objects ) {
-          log.info("Error --->{}",param);
+          log.error("Error --->{}",param);
         }
     }
 }

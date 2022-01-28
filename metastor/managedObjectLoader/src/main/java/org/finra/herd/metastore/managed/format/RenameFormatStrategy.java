@@ -306,7 +306,8 @@ public class RenameFormatStrategy implements FormatStrategy {
                 }
                 try {
                     Thread.sleep(5000); //Pause for some time before submitting the next job
-                }catch (InterruptedException ie){}
+                } catch (InterruptedException ie) {
+                }
             });
         } else {
             log.info("" +
@@ -391,8 +392,13 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         String existingTableName = jd.getTableName();
         String newTableName = jd.getTableName().concat("_LATEST");
-        return partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) <=
+        boolean result = partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) <=
                 partitionsDAO.getTotalPartitionCount(newTableName, jd.getObjectDefinition().getDbName());
+        if (result) {
+            notificationSender.sendFailureEmail(jd, jd.getNumOfRetry(), "The latest object has lesser partitions count than curent object", jd.getClusterName());
+        }
+
+        return result;
 
     }
 
