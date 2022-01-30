@@ -1,6 +1,7 @@
 package org.finra.herd.metastore.managed.format;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.exec.*;
 import org.apache.commons.lang3.time.StopWatch;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.scheduling.annotation.Async;
@@ -68,45 +69,38 @@ public class SubmitFormatProcess {
     }
 
     @Async("formatExecutor")
-    public synchronized CompletableFuture<FormatProcessObject> submitProcess(File files, FormatProcessObject formatProcessObject) {
+    public  CompletableFuture<FormatProcessObject> submitProcess(CommandLine cmdline, FormatProcessObject formatProcessObject) {
 
+
+        DefaultExecutor executor = new DefaultExecutor();
+        executor.setExitValue(0);
+        ExecuteWatchdog watchdog = new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT);
+        executor.setWatchdog(watchdog);
+        DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
 
         Supplier<FormatProcessObject> processSupplier = () -> {
 
-            Process process = null;
             try {
 
-                    log.info("File submitProcess {} in thread {}", files.getAbsolutePath(), Thread.currentThread().getName());
-                    StopWatch watch = new StopWatch();
-                    watch.start();
-
-                    ProcessBuilder pb = new ProcessBuilder("hive", "-v", "-f", files.getAbsolutePath());
-                    log.info("pb.command is ==>{}", pb.command());
-                    pb.redirectErrorStream(true);
-                    process = pb.start();
-
-                    printProcessOutput(process); //Enable when you need to debug.
-
-                    process.waitFor(JobProcessorConstants.MAX_JOB_WAIT_TIME, TimeUnit.SECONDS);
-                    watch.stop();
-                    formatProcessObject.setProcess(process);
-
-                    log.info("format Process for table :{} and these partitions :{} ran for:{} in the file: {} with exit Value:{} in Thread :{}",
-                            formatProcessObject.getJobDefinition().getTableName(), formatProcessObject.getPartitionList(), watch.getTime(TimeUnit.SECONDS), files
-                                    .getAbsolutePath(), process.exitValue(), Thread.currentThread().getName());
+                log.info("File submitProcess {} in thread {}", cmdline.toString(), Thread.currentThread().getName());
+                executor.setWorkingDirectory(new File("/tmp"));
+                executor.execute(cmdline,resultHandler);
+                resultHandler.wait(JobProcessorConstants.MAX_JOB_WAIT_TIME);
+                formatProcessObject.setResultHandler(resultHandler);
 
 
             } catch (InterruptedException iex) {
-                if (process != null && process.isAlive()) {
-                    log.error("Process interrupted or timeout going to kill it");
-                    process.destroyForcibly();
+
+                if(resultHandler.getExitValue() !=0 )
+                {
+                    watchdog.destroyProcess();
                 }
-                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" );
 
 
             } catch (Exception ie) {
                 log.error("Exceptiopn in submitProcess {}", ie.getMessage());
-                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" + files.getAbsolutePath());
+                throw new RuntimeException("Unable to execute  hive process Rename Format ==>" );
             }
             return formatProcessObject;
         };
@@ -158,6 +152,15 @@ public class SubmitFormatProcess {
         }
 
         return hqlFilePath;
+
+    }
+
+
+    public CommandLine getCommandLine(File file) {
+
+
+        String line = "hive -v -f " + file.getAbsolutePath();
+        return  CommandLine.parse(line);
 
     }
 

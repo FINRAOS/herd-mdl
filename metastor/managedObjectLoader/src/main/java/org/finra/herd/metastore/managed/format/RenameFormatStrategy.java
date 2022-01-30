@@ -161,7 +161,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                         fl -> {
                             boolean isProcessed = false;
                             try {
-                                isProcessed = fl.thenApply(f -> f.getProcess().exitValue()).get() != 0;
+                                isProcessed = fl.thenApply(f -> f.getResultHandler().getExitValue()).get() != 0;
                             } catch (Exception e) {
                             }
                             return isProcessed;
@@ -173,7 +173,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                             fl.thenAccept(
                                     fop -> {
 
-                                        if (fop.getProcess().exitValue() == 0) {
+                                        if (fop.getResultHandler().getExitValue() == 0) {
                                             updateFormatStatus(fop, "P");
 
                                         } else {
@@ -196,40 +196,11 @@ public class RenameFormatStrategy implements FormatStrategy {
             log.error("Error in execute {}", e.getMessage());
             errMsg.append("Error in execute {}" + e.getMessage());
             notificationSender.sendFailureEmail(jobDefinition, 1, "Unbale to create  the new latest object (Rename) after format change" + this.getErr(), "");
-        } finally {
-
-            if (formatProcessObjectList != null) {
-                cleanUp(formatProcessObjectList);
-
-            }
-
         }
 
         return result;
     }
 
-    private void cleanUp(List<CompletableFuture<FormatProcessObject>> futureList) {
-
-        futureList.forEach(
-                fl -> {
-                    fl.thenAccept(
-
-                            f -> {
-                                if (f.getProcess().exitValue() != 0 || f.getProcess().isAlive()) {
-                                    log.info("Going to kill process");
-
-                                    try {
-                                        f.getProcess().destroyForcibly();
-                                    } catch (Exception e) {
-                                        log.info("Unable to kill process");
-                                    }
-                                }
-                            });
-                    ;
-                }
-        );
-
-    }
 
     @Override
     public boolean hasFormatCompleted() {
@@ -325,7 +296,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                 .partitionList(partitionList)
                 .jobDefinition(jobDefinition)
                 .build();
-        formatProcessObjectList.add(submitFormatProcess.submitProcess(tmpFile, formatProcessObject));
+        formatProcessObjectList.add(submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile), formatProcessObject));
         jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
     }
 
