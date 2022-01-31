@@ -54,7 +54,6 @@ public class RenameFormatStrategy implements FormatStrategy {
     private FormatUtil formatUtil;
     private NotificationSender notificationSender;
     private HRoles hRoles;
-
     private FormatProcessorDAO formatProcessorDAO;
     private StatsHelper statsHelper;
     private JobProcessorConstants jobProcessorConstants;
@@ -398,11 +397,11 @@ public class RenameFormatStrategy implements FormatStrategy {
 
             DefaultExecuteResultHandler renameProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 
-            int count=0;
+            int count = 0;
             /*
              Every 3 minutes extend the lock and after an hour break
              */
-            while(!renameProcess.hasResult() && count<20){
+            while (!renameProcess.hasResult() && count < 20) {
                 jobPicker.extendLock(jobDefinition, clusterId, workerId);
                 try {
                     Thread.sleep(180_0000);
@@ -410,15 +409,13 @@ public class RenameFormatStrategy implements FormatStrategy {
                 } catch (InterruptedException ie) {
                     log.info("Not done yet keep retrying");
                 }
-                }
+            }
 
-            this.isComplete=renameProcess.getExitValue()==0;
+            this.isComplete = renameProcess.getExitValue() == 0;
 
-            if(!this.isComplete) {
-                notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation" , this.clusterId);
-                }
-
-
+            if (!this.isComplete) {
+                notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation", this.clusterId);
+            }
 
 
         } catch (Exception e) {

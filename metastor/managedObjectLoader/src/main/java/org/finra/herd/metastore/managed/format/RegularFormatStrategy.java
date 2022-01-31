@@ -110,11 +110,11 @@ public class RegularFormatStrategy implements FormatStrategy {
 
             DefaultExecuteResultHandler formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 
-            int count=0;
+            int count = 0;
             /*
              Every 3 minutes extend the lock and after an hour break
              */
-            while(!formatProcess.hasResult() && count<20){
+            while (!formatProcess.hasResult() && count < 20) {
                 jobPicker.extendLock(jobDefinition, clusterId, workerId);
                 try {
                     Thread.sleep(180_000);
@@ -124,13 +124,12 @@ public class RegularFormatStrategy implements FormatStrategy {
                 }
             }
 
-            this.isComplete=formatProcess.getExitValue()==0;
-            if(!this.isComplete)
-            {
-                    notificationSender.sendFailureEmail(
-                            jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change for " + dbName + objectName + " ==>" + this.getErr(), this.clusterId
-                    );
-                }
+            this.isComplete = formatProcess.getExitValue() == 0;
+            if (!this.isComplete) {
+                notificationSender.sendFailureEmail(
+                        jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change for " + dbName + objectName + " ==>" + this.getErr(), this.clusterId
+                );
+            }
 
 
         } catch (Exception e) {
