@@ -5,6 +5,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.io.CharStreams;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.exec.DefaultExecuteResultHandler;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteResultHandler;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
@@ -18,6 +21,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -101,24 +105,32 @@ public class RegularFormatStrategy implements FormatStrategy {
         String objectName = jobDefinition.getObjectDefinition().getObjectName();
         String dbName = jobDefinition.getObjectDefinition().getNameSpace();
         try {
-            String tmpdir = Files.createTempDirectory("format").toFile().getAbsolutePath();
 
-            log.info("The tmp dir for format is ==> {}", tmpdir);
+            File tmpFile = submitFormatProcess.createHqlFile(hiveStatements);
 
-            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hiveStatements));
+            DefaultExecuteResultHandler formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 
-            formatUtil.checkFutureComplete(jobDefinition, formatProcess, this.clusterId, this.workerId);
+            int count=0;
+            /*
+             Every 3 minutes extend the lock and after an hour break
+             */
+            while(!formatProcess.hasResult() && count<20){
+                jobPicker.extendLock(jobDefinition, clusterId, workerId);
+                try {
+                    Thread.sleep(180_000);
+                    count++;
+                } catch (InterruptedException ie) {
+                    log.info("Not done yet keep waiting");
+                }
+            }
 
-            //TODO remove once testing is done.
-//            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
-
-            formatProcess.whenComplete((proc, err) -> {
-
-                this.isComplete = formatUtil.processComplete(objectName, dbName, err);
-            });
-
-
-            errMsg.append(formatUtil.getErr());
+            this.isComplete=formatProcess.getExitValue()==0;
+            if(!this.isComplete)
+            {
+                    notificationSender.sendFailureEmail(
+                            jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change for " + dbName + objectName + " ==>" + this.getErr(), this.clusterId
+                    );
+                }
 
 
         } catch (Exception e) {

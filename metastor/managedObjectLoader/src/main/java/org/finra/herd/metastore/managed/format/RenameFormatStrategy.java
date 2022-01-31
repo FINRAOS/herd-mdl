@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.exec.DefaultExecuteResultHandler;
+import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.finra.herd.metastore.managed.JobDefinition;
@@ -161,7 +163,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                         fl -> {
                             boolean isProcessed = false;
                             try {
-                                isProcessed = fl.thenApply(f -> f.getResultHandler().getExitValue()).get() != 0;
+                                isProcessed = fl.thenApply(f -> f.getExitValue()).get() != 0;
                             } catch (Exception e) {
                             }
                             return isProcessed;
@@ -173,7 +175,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                             fl.thenAccept(
                                     fop -> {
 
-                                        if (fop.getResultHandler().getExitValue() == 0) {
+                                        if (fop.getExitValue() == 0) {
                                             updateFormatStatus(fop, "P");
 
                                         } else {
@@ -392,23 +394,31 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         try {
 
-            CompletableFuture<Process> formatProcess = submitFormatProcess.submitProcess(submitFormatProcess.createHqlFile(hqlStatements));
-            //TODO Comment after finishing testing
-//            CompletableFuture<String> processOutput = formatUtil.printProcessOutput(formatProcess);
+            File tmpFile = submitFormatProcess.createHqlFile(hqlStatements);
 
+            DefaultExecuteResultHandler renameProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 
-            formatUtil.checkFutureComplete(jobDefinition, formatProcess, this.clusterId, this.workerId);
-
-            formatProcess.whenComplete((proc, err) -> {
-
-                this.isComplete = formatUtil.processComplete(existingTableName, dbName, err);
-                if (err != null) {
-                    log.error("Error occurred during rename operation");
-
-                    notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation" + err.getMessage(), this.clusterId);
-
+            int count=0;
+            /*
+             Every 3 minutes extend the lock and after an hour break
+             */
+            while(!renameProcess.hasResult() && count<20){
+                jobPicker.extendLock(jobDefinition, clusterId, workerId);
+                try {
+                    Thread.sleep(180_0000);
+                    count++;
+                } catch (InterruptedException ie) {
+                    log.info("Not done yet keep retrying");
                 }
-            });
+                }
+
+            this.isComplete=renameProcess.getExitValue()==0;
+
+            if(!this.isComplete) {
+                notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation" , this.clusterId);
+                }
+
+
 
 
         } catch (Exception e) {

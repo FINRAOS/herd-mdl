@@ -4,6 +4,8 @@ import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.exec.DefaultExecuteResultHandler;
+import org.apache.commons.exec.ExecuteResultHandler;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
@@ -111,9 +113,9 @@ public class FormatUtil {
         return null;
     }
 
-    protected void checkFutureComplete(JobDefinition jobDefinition, CompletableFuture<Process> formatProcess,String clusterId,String workerId
+    protected void checkFutureComplete(JobDefinition jobDefinition, CompletableFuture<DefaultExecuteResultHandler> formatProcess, String clusterId, String workerId
     ) throws InterruptedException, java.util.concurrent.ExecutionException {
-        while(!formatProcess.isDone()){
+        while(!formatProcess.get().hasResult()){
 
             try {
                 formatProcess.get(1, TimeUnit.MINUTES);
