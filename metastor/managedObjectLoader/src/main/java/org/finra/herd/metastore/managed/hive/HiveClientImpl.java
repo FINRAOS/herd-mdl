@@ -19,8 +19,11 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
+import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
+import org.finra.herd.metastore.managed.format.HRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -346,7 +349,7 @@ public class HiveClientImpl implements HiveClient {
     }
 
     @Override
-    public void executeQueries(String database, List<String> hqlStatement) {
+    public   void executeQueries(String database, List<String> hqlStatement) {
         log.info("Executing schemaSQL: {}", hqlStatement);
 
         try (Connection con = getDatabaseConnection(database)) {
@@ -364,6 +367,33 @@ public class HiveClientImpl implements HiveClient {
         }
     }
 
+    public List<HRoles> getRoles(JobDefinition jobDefinition){
+
+        List<HRoles> hRoles=Lists.newArrayList();
+
+        hRoles.addAll(hiveJdbcTemplate.query(
+                String.format("SHOW grant on table %s.%s", jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName())
+                , new RowMapper<HRoles>() {
+
+                    @Override
+                    public HRoles mapRow(ResultSet resultSet, int i) throws SQLException {
+                        return HRoles.builder().dbName(resultSet.getString(1))
+                                .tableName(resultSet.getString(2))
+                                .principalName(resultSet.getString(5))
+                                .principalType(resultSet.getString(6))
+                                .privilege(resultSet.getString(7))
+                                .grantOption(resultSet.getBoolean(8))
+                                .build();
+                    }
+                }
+        ));
+
+        return  hRoles;
+
+    }
+
+
+
 
     public boolean runHiveQuery(String dbName, String hqlStatement) throws SQLException {
 
@@ -375,6 +405,7 @@ public class HiveClientImpl implements HiveClient {
         }
 
     }
+
 
 
 }

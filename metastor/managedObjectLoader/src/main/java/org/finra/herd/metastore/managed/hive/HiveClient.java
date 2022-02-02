@@ -30,7 +30,7 @@ public interface HiveClient {
 
     List<HivePartition> getExistingPartitions( String database, String tableName);
 
-	void executeQueries(String database, List<String> schemaSql);
+    void  executeQueries(String database, List<String> schemaSql);
 
 
 }

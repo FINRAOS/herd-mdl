@@ -28,10 +28,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -385,7 +382,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
         hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
         hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
-        List<String> grantRolesHql = hRoles.grantPrestoRoles(jobDefinition);
+        List<String> grantRolesHql = grantPrestoRoles(jobDefinition);
         if (!grantRolesHql.isEmpty()) {
             hqlStatements.addAll(grantRolesHql);
         }
@@ -428,6 +425,31 @@ public class RenameFormatStrategy implements FormatStrategy {
 
 
     }
+
+    protected   List<String> grantPrestoRoles(JobDefinition jobDefinition){
+
+        List<HRoles> roles=hiveClient.getRoles(jobDefinition);
+        log.info("Roles are ==>{}",roles);
+
+        String dbName=jobDefinition.getObjectDefinition().getDbName();
+        String tableName=jobDefinition.getTableName();
+        String objName=dbName+"."+tableName;
+        if(!roles.isEmpty()){
+
+            return roles.stream().map(role->role.grantOption ?
+                    ("GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role.principalName+" WITH GRANT OPTION ;"):
+                    ("GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role.principalName+" ;")).collect(Collectors.toList());
+
+
+            //false GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role+"
+            //true GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role+" with grant_option
+        }
+
+
+        return Collections.emptyList();
+
+    }
+
 
 
 }
