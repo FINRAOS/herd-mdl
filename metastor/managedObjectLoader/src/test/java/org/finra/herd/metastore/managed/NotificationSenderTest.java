@@ -18,11 +18,10 @@ package org.finra.herd.metastore.managed;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
-import org.finra.herd.metastore.managed.hive.ColumnDef;
-import org.finra.herd.metastore.managed.hive.FormatChange;
+import org.finra.herd.metastore.managed.format.ColumnDef;
+import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.HiveTableSchema;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 

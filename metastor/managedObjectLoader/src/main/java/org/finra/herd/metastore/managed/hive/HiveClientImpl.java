@@ -19,6 +19,8 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.finra.herd.metastore.managed.format.ClusteredDef;
+import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -66,9 +68,9 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-   public static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
+    public static ClusteredDef getClusterByClause(String ddl, List<ColumnDef> columnDefs) {
 
-        ClusteredDef clusteredDef =  null;
+        ClusteredDef clusteredDef = null;
 
         List<String> clusteredSortedColumns = Lists.newArrayList();
 
@@ -77,7 +79,7 @@ public class HiveClientImpl implements HiveClient {
 
             String clusterclause = ddl.substring(ddl.indexOf("CLUSTERED BY"), ddl.indexOf("ROW"));
 
-            log.info("ClusterSortedclauseSQL:{}",clusterclause);
+            log.info("ClusterSortedclauseSQL:{}", clusterclause);
 
             List<String> clusterColumns = getClusteredColumns(clusterclause);
             List<String> sortedColumns = getSortedColumns(clusterclause);
@@ -92,16 +94,15 @@ public class HiveClientImpl implements HiveClient {
                     clusterCols(clusterColumns).
                     clusterSql(clusterclause).
                     sortedCols(sortedColumns).
-                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns,columnDefs)).build();
+                    clusteredSortedColDefs(getClusteredSortedColDefs(clusteredSortedColumns, columnDefs)).build();
 
 
-        }else{
+        } else {
             clusteredDef = clusteredDef.builder().build();
         }
 
 
-
-       return clusteredDef;
+        return clusteredDef;
 
     }
 
@@ -127,23 +128,22 @@ public class HiveClientImpl implements HiveClient {
         List<String> sortedColumns = Lists.newArrayList();
 
 
-        if(ddl.contains("SORTED BY")||ddl.contains("sorted by")){
+        if (ddl.contains("SORTED BY") || ddl.contains("sorted by")) {
 
             String sb = StringUtils.substringBetween(ddl, "SORTED BY ", ")");
             log.info("SORTED BY COLUMNS :{}", sb);
 
             sb = StringUtils.remove(sb, "(");
-            if(sb.contains("ASC")||sb.contains("asc")){
+            if (sb.contains("ASC") || sb.contains("asc")) {
                 sb = StringUtils.removeIgnoreCase(sb, "ASC");
             }
-            if(sb.contains("DESC")||sb.contains("desc"))
-            {
+            if (sb.contains("DESC") || sb.contains("desc")) {
                 sb = StringUtils.removeIgnoreCase(sb, "DESC");
             }
             final String[] array1 = sb.split(",");
             Arrays.stream(array1).map(String::trim).toArray(arr -> array1);
             sortedColumns = Arrays.asList(array1);
-            log.info("sortedColumns:{}",sortedColumns);
+            log.info("sortedColumns:{}", sortedColumns);
 
         }
 
@@ -160,7 +160,6 @@ public class HiveClientImpl implements HiveClient {
                 cols -> clusteredSortedColumns.stream().anyMatch(
                         clusCol -> clusCol.trim().equalsIgnoreCase(cols.getName().trim())
                 )).collect(Collectors.toList());
-
 
 
         log.info("clusterSortedColDefs:{}", clusterSortedColDefs);
@@ -251,7 +250,7 @@ public class HiveClientImpl implements HiveClient {
     public boolean tableExist(String dbName, String tableName) throws SQLException {
         try (Connection con = getDatabaseConnection("default")) {
             Statement stmt = con.createStatement();
-
+            log.info("tableExist? {},{}",dbName,tableName);
             stmt.execute("show databases like \'" + dbName + "\'");
             if (stmt.getResultSet().next()) {
                 stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
@@ -347,8 +346,35 @@ public class HiveClientImpl implements HiveClient {
     }
 
     @Override
-    public void executeQueries(String database, List<String> schemaSql) {
-        log.info("Executing schemaSQL: {}", schemaSql);
-        hiveJdbcTemplate.batchUpdate(schemaSql.stream().map(s -> s.replaceAll(";", "")).toArray(String[]::new));
+    public void executeQueries(String database, List<String> hqlStatement) {
+        log.info("Executing schemaSQL: {}", hqlStatement);
+
+        try (Connection con = getDatabaseConnection(database)) {
+
+            Statement stmt = con.createStatement();
+            hqlStatement.forEach(hql->{
+                try {
+                    stmt.execute(hql);
+                }catch (SQLException sqe){}
+            });
+
+
+        }catch (SQLException sqe){
+
+        }
     }
+
+
+    public boolean runHiveQuery(String dbName, String hqlStatement) throws SQLException {
+
+        try (Connection con = getDatabaseConnection(dbName)) {
+
+            Statement stmt = con.createStatement();
+            return stmt.execute(hqlStatement);
+
+        }
+
+    }
+
+
 }

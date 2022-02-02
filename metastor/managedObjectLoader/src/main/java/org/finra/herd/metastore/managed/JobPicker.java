@@ -15,15 +15,21 @@
 **/
 package org.finra.herd.metastore.managed;
 
+import lombok.extern.slf4j.Slf4j;
+import org.finra.herd.metastore.managed.jobProcessor.dao.MetastorObjectLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Logger;
 
 @Component
+@Slf4j
 public class JobPicker {
 	Logger logger = Logger.getLogger( "JobPicker" );
 
@@ -47,6 +53,7 @@ public class JobPicker {
 
 
     static final String DELETE_EXPIRED_LOCKS = "delete from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
+	static final String DISPLAY_EXPIRED_LOCKS = "select * from METASTOR_OBJECT_LOCKS where EXPIRATION_DT < now()";
 
 	static final String LOCK_QUERY = "insert ignore into METASTOR_OBJECT_LOCKS (NAMESPACE,\n" +
 			"OBJ_NAME, USAGE_CODE,\n" +
@@ -139,6 +146,8 @@ public class JobPicker {
 
 	void deleteExpiredLocks() {
 		int numberOfRowsDeleted = template.update( DELETE_EXPIRED_LOCKS );
+		List<MetastorObjectLock> displayList=template.query(DISPLAY_EXPIRED_LOCKS, new MetastorObjectLock.MetastorObjectLockMapper());
+		logger.info("LOCKS TO BE DELETED ==> "+displayList);
 		logger.info( "Number of Locks Deleted = " + numberOfRowsDeleted );
 	}
 
@@ -165,6 +174,7 @@ public class JobPicker {
 	public boolean extendLock( JobDefinition jd, String clusterID, String workerID ) {
 		ObjectDefinition od = jd.getObjectDefinition();
 		String objectName = jd.getActualObjectName();
+		log.info("Going to extend lock for Object {} , Cluster {}, Worker Id {}",jd,clusterID,workerID);
 
 		int updated = template.update( UPDATE_LOCK_EXPIRATION, od.getNameSpace(), objectName, od.getUsageCode(),
 				od.getFileType(), clusterID, workerID ,jd.getWfType());

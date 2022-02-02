@@ -76,6 +76,19 @@ public abstract class JobProcessor {
 		logger.info( "Partition Key: " + od.getPartitionKey() );
 	}
 
+	protected void setPartitionKeyRegardless( JobDefinition od ) {
+
+			try {
+				logger.info( "Partition Key NULL or EMPTY, calling Herd to get Partition Key" );
+				BusinessObjectFormat dmFormat = dataMgmtSvc.getDMFormat( od );
+				od.setPartitionKey( dmFormat.getPartitionKey() );
+			} catch ( ApiException e ) {
+				e.printStackTrace();
+			}
+
+		logger.info( "Partition Key: " + od.getPartitionKey() );
+	}
+
 	protected abstract ProcessBuilder createProcessBuilder( JobDefinition od );
 
 	protected final StringBuffer errorBuffer = new StringBuffer();

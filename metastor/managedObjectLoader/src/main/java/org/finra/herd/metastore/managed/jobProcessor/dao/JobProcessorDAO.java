@@ -16,6 +16,8 @@
 package org.finra.herd.metastore.managed.jobProcessor.dao;
 
 import lombok.extern.slf4j.Slf4j;
+import org.finra.herd.metastore.managed.JobDefinition;
+import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -45,5 +47,22 @@ public class JobProcessorDAO {
 				, new Object[]{ executionId }
 				, new DMNotification.DMNotificationMapper() );
 	}
+
+	public List<DMNotification> getFormatNotification(JobDefinition jobDefinition) {
+		return template.query( "" +
+						"SELECT ID, NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, WF_TYPE, EXECUTION_ID, PARTITION_VALUES, PARTITION_KEY\n" +
+						"FROM DM_NOTIFICATION\n" +
+						"WHERE NAMESPACE = ?\n" +
+						"AND  OBJECT_DEF_NAME = ?\n" +
+						"AND  USAGE_CODE = ?\n" +
+						"AND  FILE_TYPE = ?\n" +
+						"AND  WF_TYPE = ?\n" +
+						"ORDER BY ID;"
+				, new Object[]{ jobDefinition.getObjectDefinition().getNameSpace(), jobDefinition.getObjectDefinition().getObjectName(),
+						jobDefinition.getObjectDefinition().getUsageCode(), jobDefinition.getObjectDefinition().getFileType(),
+						ObjectProcessor.WF_TYPE_FORMAT}
+				, new DMNotification.DMNotificationMapper() );
+	}
+
 }
 

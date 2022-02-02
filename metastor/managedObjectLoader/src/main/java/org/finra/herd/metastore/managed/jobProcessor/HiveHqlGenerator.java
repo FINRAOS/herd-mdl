@@ -15,21 +15,21 @@
  **/
 package org.finra.herd.metastore.managed.jobProcessor;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.Pair;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.ObjectProcessor;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
+import org.finra.herd.metastore.managed.format.DetectSchemaChanges;
+import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
+import org.finra.herd.metastore.managed.stats.StatsHelper;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
-import org.finra.herd.sdk.model.BusinessObjectFormat;
 import org.finra.herd.sdk.model.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -65,7 +65,15 @@ public class HiveHqlGenerator {
     protected NotificationSender notificationSender;
 
     @Autowired
-    JobProcessorDAO jobProcessorDAO;
+    protected JobProcessorDAO jobProcessorDAO;
+
+    @Autowired
+    protected DetectSchemaChanges detectSchemaChanges;
+
+    @Autowired
+    protected StatsHelper statsHelper;
+
+    protected  FormatChange formatChange;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
@@ -78,22 +86,18 @@ public class HiveHqlGenerator {
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
                 list.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
-                HiveTableSchema hiveTableSchema = hiveClient.getExistingDDL(jd.getObjectDefinition().getDbName(), tableName);
-
-                BusinessObjectFormat format = dataMgmtSvc.getDMFormat(jd);
-
-                String ddl = dataMgmtSvc.getTableSchema(jd, false);
-
-                log.info("DDL from DM: " + ddl);
-
-
                 try {
+                    this.formatChange = detectSchemaChanges.getFormatChange(jd);
+                    if (this.formatChange.hasChange()) {
+                        List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
+                        log.info("formatNotification:{}",formatNotification);
+                        if(formatNotification!=null && formatNotification.size()<=0){
+                            submitFormatJob(jd);
+                        }else{
+                            log.info("A format notification:  {} is being currently processed for this job definition:  {}",formatNotification,jd);
+                        }
 
-                    FormatChange change = detectSchemaChange(jd, hiveTableSchema, format, ddl);
-                    formatRegularColumn(change,jd,list,tableName);
-                    formatPartitionColumn(change,jd,list,tableName);
-                    formatClusterColumn(change,jd,list,tableName);
-
+                    }
                 } catch (Exception ex) {
                     log.warn("Error comparing formats", ex);
                     notificationSender.sendNotificationEmail(ex.getMessage(), "Error comparing formats", jd);
@@ -112,265 +116,37 @@ public class HiveHqlGenerator {
     }
 
 
-
-    void formatRegularColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) throws org.finra.herd.sdk.invoker.ApiException
-    {
-        if (change.hasColumnChanges()) {
-            boolean cascade = cascade(jd);
-            String cascadeStr = "";
-            if (cascade) {
-                cascadeStr = "CASCADE";
-            }
-            if (!jd.getObjectDefinition().getFileType().equalsIgnoreCase("ORC")) {
-                String sql = dataMgmtSvc.getTableSchema(jd, true);
-
-
-                if (cascade) {
-                    sql = sql.substring(0, sql.lastIndexOf(";")) + " CASCADE;";
-                }
-                list.add(sql);
-            } else {
-                for (Pair<ColumnDef, ColumnDef> pair : change.getNameChanges()) {
-                    ColumnDef existing = pair.getFirst();
-                    ColumnDef newColum = pair.getSecond();
-
-                    list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
-                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
-
-
-
-                }
-
-                for (Pair<ColumnDef, ColumnDef> pair : change.getTypeChanges()) {
-                    ColumnDef existing = pair.getFirst();
-                    ColumnDef newColum = pair.getSecond();
-                    list.add(String.format("Alter table %s change %s %s %s %s;", tableName,
-                            existing.getName(), newColum.getName(), newColum.getType(), cascadeStr));
-                }
-
-                if (!change.getNewColumns().isEmpty()) {
-                    StringBuffer sb = new StringBuffer();
-                    for (ColumnDef c : change.getNewColumns()) {
-                        sb.append(String.format("%s %s,", c.getName(), c.getType()));
-                    }
-                    sb.deleteCharAt(sb.length() - 1);
-                    list.add(String.format("Alter table %s add columns (%s) %s;", tableName, sb.toString(),
-                            cascadeStr));
-                }
-
-
-                log.info("the formatRegularColumn list is :{}",list);
-            }
-        }
-
-
-    }
-
-    void formatClusterColumn(FormatChange change,JobDefinition jd,List<String> list,String tableName) throws org.finra.herd.sdk.invoker.ApiException {
-
-        if(change.isClusteredSortedChange())
-        {
-
-                    log.info("Clustered Change :Alter table {}  {}", tableName, change.getClusteredDef().getClusterSql());
-                    list.add(String.format("Alter table %s  %s ;", tableName,
-                            change.getClusteredDef().getClusterSql()));
-
-
-        }
-
-    }
-
-    void formatPartitionColumn(FormatChange change, JobDefinition jd, List<String> list, String tableName) throws org.finra.herd.sdk.invoker.ApiException{
-
-        if(change.hasPartitionColumnChanges())
-        {
-
-
-                for (Pair<ColumnDef, ColumnDef> pair : change.getPartitionColTypeChanges()) {
-                    ColumnDef existing = pair.getFirst();
-                    ColumnDef newColum = pair.getSecond();
-                    list.add(String.format("Alter table %s partition column ( %s %s);", tableName,
-                             newColum.getName(), newColum.getType()));
-                }
-
-
-                log.info("the formatPartitionColumn list is :{}",list);
-
-        }
-
-
-    }
-
-
-
-
-    @VisibleForTesting
-    FormatChange detectSchemaChange(JobDefinition jd,
-                                    HiveTableSchema existingHiveTableSchema,
-                                    BusinessObjectFormat format, String ddl) throws ApiException {
-
-
-        HiveTableSchema newSchema = HiveClientImpl.getHiveTableSchema(ddl);
-        List<ColumnDef> existingColumns = existingHiveTableSchema.getColumns();
-        List<ColumnDef> existingPartitionColumns = existingHiveTableSchema.getPartitionColumns();
-        List<ColumnDef> newColumns = newSchema.getColumns();
-        List<ColumnDef> newPartitionColumns = newSchema.getPartitionColumns();
-        ClusteredDef existingClusteredDef = existingHiveTableSchema.getClusteredDef();
-        ClusteredDef newClusterDef = newSchema.getClusteredDef();
-
-
-        log.info("Existing Partition columns = " + existingPartitionColumns.size() + ", ddl from Herd  Partitioncolumns = " + newPartitionColumns.size());
-
-        log.info("Existing columns = " + existingColumns.size() + ", ddl from Herd has columns = " + newColumns.size());
-
-
-        FormatChange formatChange = FormatChange.builder().build();
-
-        detectandSetRegularColumnChanges(existingColumns,newColumns,formatChange);
-        detectandSetPartitionColumnChanges(existingPartitionColumns,newPartitionColumns,formatChange);
-
-        if(detectClusterSortedColChanges(existingClusteredDef,newClusterDef))
-        {
-            formatChange.setClusteredSortedChange(true);
-            formatChange.setClusteredDef(newClusterDef);
-        }
-
-
-        if (formatChange.hasChange() ) {
-            notificationSender.sendFormatChangeEmail(formatChange, format.getBusinessObjectFormatVersion(), jd,
-                    existingHiveTableSchema, newSchema);
-        }
-
-        return formatChange;
-    }
-
-    boolean detectClusterSortedColChanges(ClusteredDef existing,ClusteredDef recent){
-
-        boolean isClusterSortedChg = false;
-        List<ColumnDef> existingColumns = existing.getClusteredSortedColDefs();
-        List<ColumnDef> newColumns = recent.getClusteredSortedColDefs();
-        log.info("existing Cluster by Sorted by Columns:{}",existingColumns);
-        log.info("recent Cluster by Sorted by Columns:{} ",newColumns);
-
-      if ((existingColumns !=null && !existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty()) )  {
-          int minColumns = Math.min(existingColumns.size(),newColumns.size());
-
-          for (int i = 0; i < minColumns; i++) {
-              ColumnDef old = existingColumns.get(i);
-              ColumnDef newColum = newColumns.get(i);
-
-              if (!newColum.getName().equalsIgnoreCase(old.getName()) )
-              {
-                  isClusterSortedChg = true;
-              }
-              }
-
-      }else if ((existingColumns == null || existingColumns.isEmpty()) && (newColumns !=null && !newColumns.isEmpty())  )
-      {
-          isClusterSortedChg = true;
-
-      }
-
-      log.info("is there a Cluster or Sorted Column Change?:{}",isClusterSortedChg);
-      return isClusterSortedChg;
-    }
-
-    @VisibleForTesting
-    void detectandSetRegularColumnChanges(List<ColumnDef> existingColumns, List<ColumnDef> newColumns,FormatChange formatChange)
-    {
-        List<Pair<ColumnDef, ColumnDef>> nameChanges = Lists.newArrayList();
-        List<Pair<ColumnDef, ColumnDef>> typeChanges = Lists.newArrayList();
-        List<ColumnDef> addedColumns = Lists.newArrayList();
-
-
-
-        int minColumns = Math.min(existingColumns.size(), newColumns.size());
-
-        //@TODO - Refactor and Move all of these logic out of HqlGenerator when we implement Format Change api using sns
-            /*
-              Regular Column
-             */
-        for (int i = 0; i < minColumns; i++) {
-            ColumnDef existing = existingColumns.get(i);
-            ColumnDef newColum = newColumns.get(i);
-
-            if (!newColum.getName().equalsIgnoreCase(existing.getName())) {
-                nameChanges.add(new Pair<>(existing, newColum));
-            } else if (!newColum.isSameType(existing)) {
-                typeChanges.add(new Pair<>(existing, newColum));
-            }
-
-        }
-
-        if (newColumns.size() > existingColumns.size()) {
-            for (int i = existingColumns.size(); i < newColumns.size(); i++) {
-                ColumnDef newColum = newColumns.get(i);
-                addedColumns.add(newColum);
-            }
-        }
-
-        log.info("Regular Column Changes nameChanges :{}, typeChanges:{},addedColumns :{}",nameChanges,typeChanges,addedColumns);
-
-        formatChange.setNameChanges(nameChanges);
-        formatChange.setTypeChanges(typeChanges);
-        formatChange.setNewColumns(addedColumns);
-
-
-    }
-
-    @VisibleForTesting
-    void detectandSetPartitionColumnChanges(List<ColumnDef> existingPartitionColumns, List<ColumnDef> newPartitionColumns,FormatChange formatChange)
-    {
-        List<Pair<ColumnDef, ColumnDef>> partitionColTypeChanges = Lists.newArrayList();
-        List<Pair<ColumnDef, ColumnDef>> partitionColNameChanges = Lists.newArrayList();
-
-
-        int minColumns = Math.min(existingPartitionColumns.size(), newPartitionColumns.size());
-
-
-        for (int i = 0; i < minColumns; i++) {
-            ColumnDef existing = existingPartitionColumns.get(i);
-            ColumnDef newColum = newPartitionColumns.get(i);
-
-            if (!newColum.getName().equalsIgnoreCase(existing.getName())) {
-                partitionColNameChanges.add(new Pair<>(existing, newColum));
-                log.error("Hive does not support partition Column Name changes:{}",partitionColNameChanges);
-
-            } else if (!newColum.isSameType(existing)) {
-                partitionColTypeChanges.add(new Pair<>(existing, newColum));
-            }
-
-        }
-
-        formatChange.setPartitionColNameChanges(partitionColNameChanges);
-        formatChange.setPartitionColTypeChanges(partitionColTypeChanges);
-
-
-    }
-
-
-
-
     public String buildHql(JobDefinition jd, List<String> partitions) throws IOException, ApiException, SQLException {
         boolean tableExists = hiveClient.tableExist(jd.getObjectDefinition().getDbName(), jd.getTableName());
         BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions);
 
+        //Check for Format changes
         List<String> schemaHql = schemaSql(tableExists, jd);
 
-        // Add database Statements
-        selectDatabase(jd, schemaHql);
+        log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
 
-        // Add DDL's from data DDL
-        addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
+        //Execute only when no format change
+        if(!this.formatChange.hasChange()){
+            // Add database Statements
+            selectDatabase(jd, schemaHql);
 
-        //Stats
-        addAnalyzeStats(jd, partitions);
+            // Add DDL's from data DDL
+            addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
-        // Create file
-        Path hqlFilePath = createHqlFile(jd);
-        Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
+            //Stats
+            statsHelper.addAnalyzeStats(jd, partitions);
 
-        return hqlFilePath.toString();
+            // Create file
+            Path hqlFilePath = createHqlFile(jd);
+            Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
+
+            return hqlFilePath.toString();
+        } else{
+            return null;
+        }
+
+
+
     }
 
     protected void selectDatabase(JobDefinition jd, List<String> schemaHql) {
@@ -396,41 +172,22 @@ public class HiveHqlGenerator {
         }
     }
 
-    protected void addAnalyzeStats(JobDefinition jd, List<String> partitions) {
 
-        log.info("Adding gather Stats job");
-        try {
 
-            if (partitions.size() == 1) {
-                submitStatsJob(jd, jd.partitionValuesForStats(partitions.get(0)));
-            } else {
-                //Filter not available Partitions
-                dataMgmtSvc.filterPartitionsAsPerAvailability(jd, partitions);
 
-                partitions.stream()
-                        .forEach(s -> submitStatsJob(jd, s));
-            }
-
-            // Start Stats cluster is not running
-            dataMgmtSvc.createCluster(true, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME);
-        } catch (Exception e) {
-            log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
-        }
-    }
-
-    private void submitStatsJob(JobDefinition jd, String partitionValue) {
+    private void submitFormatJob(JobDefinition jd) {
         DMNotification dmNotification = buildDMNotification(jd);
 
-        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_MANAGED_STATS);
+        dmNotification.setWorkflowType(ObjectProcessor.WF_TYPE_FORMAT);
         dmNotification.setExecutionId(SUBMITTED_BY_JOB_PROCESSOR);
 
         dmNotification.setPartitionKey(jd.partitionKeysForStats());
-        dmNotification.setPartitionValue(partitionValue);
+        dmNotification.setPartitionValue(jd.getPartitionValue());
 
-        log.info("Herd Notification DB request: \n{}", dmNotification);
+
+        log.info("Herd Format Notification DB request: \n{}", dmNotification);
         jobProcessorDAO.addDMNotification(dmNotification);
     }
-
 
     protected String partition(Set<String> partitionKeys) {
         return partitionKeys.stream().collect(Collectors.joining("`,`", "`", "`"));
@@ -451,6 +208,8 @@ public class HiveHqlGenerator {
                 .correlationData(jd.getCorrelation())
                 .build();
     }
+
+    // This method is used in the child class to override some objects for which we do not want cascade operation.
 
     protected boolean cascade(JobDefinition jd) {
         return true;

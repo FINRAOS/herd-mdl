@@ -1,4 +1,4 @@
-package org.finra.herd.metastore.managed.hive;
+package org.finra.herd.metastore.managed.format;
 
 import com.google.common.collect.Lists;
 import lombok.*;

@@ -17,6 +17,7 @@ package org.finra.herd.metastore.managed.hive;
 
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.HerdMetastoreTest;
+import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
