@@ -379,13 +379,15 @@ public class RenameFormatStrategy implements FormatStrategy {
         String renameTime = new SimpleDateFormat("yyyy_MM_dd_HmsS").format(new Date());
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         List<String> hqlStatements = new ArrayList<>();
-        hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
-        hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
-        hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
         List<String> grantRolesHql = grantPrestoRoles(jobDefinition);
+
         if (!grantRolesHql.isEmpty()) {
             hqlStatements.addAll(grantRolesHql);
         }
+
+        hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
+        hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
+        hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
 
 
         try {
@@ -432,7 +434,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         log.info("Roles are ==>{}",roles);
 
         String dbName=jobDefinition.getObjectDefinition().getDbName();
-        String tableName=jobDefinition.getTableName();
+        String tableName=jobDefinition.getTableName().concat("_LATEST");
         String objName=dbName+"."+tableName;
         if(!roles.isEmpty()){
 
