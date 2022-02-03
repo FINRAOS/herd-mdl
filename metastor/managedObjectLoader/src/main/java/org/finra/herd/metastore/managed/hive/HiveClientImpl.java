@@ -372,7 +372,7 @@ public class HiveClientImpl implements HiveClient {
         List<HRoles> hRoles=Lists.newArrayList();
 
         hRoles.addAll(hiveJdbcTemplate.query(
-                String.format("SHOW grant on table %s.%s", jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName())
+                String.format("set role admin;SHOW grant on table %s.%s", jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName())
                 , new RowMapper<HRoles>() {
 
                     @Override
