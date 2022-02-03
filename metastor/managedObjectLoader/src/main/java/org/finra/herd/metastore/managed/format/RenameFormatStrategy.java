@@ -159,7 +159,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                         fl -> {
                             boolean isProcessed = false;
                             try {
-                                isProcessed = fl.thenApply(f -> f.getExitValue()).get() != 0;
+                                isProcessed = fl.thenApply(f -> f.getExitValue()).get() == 0;
                             } catch (Exception e) {
                             }
                             return isProcessed;
@@ -181,6 +181,8 @@ public class RenameFormatStrategy implements FormatStrategy {
                             );
                         }
                 );
+
+                log.info("Failed Processing ? {}",failedProcessing);
 
 
                 result = failedProcessing.size() <= 0;
