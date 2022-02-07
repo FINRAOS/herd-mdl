@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
+import org.apache.hive.jdbc.HiveStatement;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
@@ -43,10 +44,6 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 @Slf4j
 public class HiveClientImpl implements HiveClient {
 
-    @Autowired
-    JdbcTemplate hiveJdbcTemplate;
-
-
     static {
         try {
             Class.forName(DRIVER_NAME);
@@ -57,9 +54,8 @@ public class HiveClientImpl implements HiveClient {
         DriverManager.setLoginTimeout(45);
     }
 
-    protected Connection getDatabaseConnection(String databaseName) throws SQLException {
-        return DriverManager.getConnection(String.format(HIVE_URL + "%s", databaseName), HIVE_USER, HIVE_PASSWORD);
-    }
+    @Autowired
+    JdbcTemplate hiveJdbcTemplate;
 
     public static List<ColumnDef> getDMSchemaColumns(String ddl) {
 
@@ -126,7 +122,6 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-
     static List<String> getSortedColumns(String ddl) {
         List<String> sortedColumns = Lists.newArrayList();
 
@@ -154,7 +149,6 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-
     static List<ColumnDef> getClusteredSortedColDefs(List<String> clusteredSortedColumns, List<ColumnDef> columnDefs) {
 
         log.info("clusteredSortedColumns:{}", clusteredSortedColumns);
@@ -168,30 +162,6 @@ public class HiveClientImpl implements HiveClient {
         log.info("clusterSortedColDefs:{}", clusterSortedColDefs);
         return clusterSortedColDefs;
 
-    }
-
-    @Override
-    public HiveTableSchema getExistingDDL(String dbName, String tableName) throws SQLException {
-
-        try (Connection con = getDatabaseConnection(dbName)) {
-            Statement stmt = con.createStatement();
-
-            stmt.execute("SHOW CREATE TABLE " + tableName);
-
-            ResultSet resultSet = stmt.getResultSet();
-
-            StringBuffer sb = new StringBuffer();
-
-            while (resultSet.next()) {
-                sb.append(resultSet.getString(1).trim() + "\n");
-            }
-            String ddl = sb.toString();
-            log.info("Existing Hive Schema: " + ddl);
-
-            HiveTableSchema schema = getHiveTableSchema(ddl);
-
-            return schema;
-        }
     }
 
     public static HiveTableSchema getHiveTableSchema(String ddl) {
@@ -249,21 +219,6 @@ public class HiveClientImpl implements HiveClient {
         return escapeStr;
     }
 
-    @Override
-    public boolean tableExist(String dbName, String tableName) throws SQLException {
-        try (Connection con = getDatabaseConnection("default")) {
-            Statement stmt = con.createStatement();
-            log.info("tableExist? {},{}",dbName,tableName);
-            stmt.execute("show databases like \'" + dbName + "\'");
-            if (stmt.getResultSet().next()) {
-                stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
-                return stmt.getResultSet().next();
-            }
-            return false;
-        }
-    }
-
-
     static List<ColumnDef> getPartitionColumns(String ddl) {
         String s = ddl.substring(ddl.indexOf("PARTITIONED BY") + 14, ddl.indexOf("ROW FORMAT")).trim();
 
@@ -309,6 +264,48 @@ public class HiveClientImpl implements HiveClient {
         return entries;
     }
 
+    protected Connection getDatabaseConnection(String databaseName) throws SQLException {
+        return DriverManager.getConnection(String.format(HIVE_URL + "%s", databaseName), HIVE_USER, HIVE_PASSWORD);
+    }
+
+    @Override
+    public HiveTableSchema getExistingDDL(String dbName, String tableName) throws SQLException {
+
+        try (Connection con = getDatabaseConnection(dbName)) {
+            Statement stmt = con.createStatement();
+
+            stmt.execute("SHOW CREATE TABLE " + tableName);
+
+            ResultSet resultSet = stmt.getResultSet();
+
+            StringBuffer sb = new StringBuffer();
+
+            while (resultSet.next()) {
+                sb.append(resultSet.getString(1).trim() + "\n");
+            }
+            String ddl = sb.toString();
+            log.info("Existing Hive Schema: " + ddl);
+
+            HiveTableSchema schema = getHiveTableSchema(ddl);
+
+            return schema;
+        }
+    }
+
+    @Override
+    public boolean tableExist(String dbName, String tableName) throws SQLException {
+        try (Connection con = getDatabaseConnection("default")) {
+            Statement stmt = con.createStatement();
+            log.info("tableExist? {},{}", dbName, tableName);
+            stmt.execute("show databases like \'" + dbName + "\'");
+            if (stmt.getResultSet().next()) {
+                stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
+                return stmt.getResultSet().next();
+            }
+            return false;
+        }
+    }
+
     @Override
     public List<HivePartition> getExistingPartitions(String database, String tableName, Set<String> partitionSpec) {
         List<HivePartition> partName = Lists.newArrayList();
@@ -349,50 +346,58 @@ public class HiveClientImpl implements HiveClient {
     }
 
     @Override
-    public   void executeQueries(String database, List<String> hqlStatement) {
+    public void executeQueries(String database, List<String> hqlStatement) throws SQLException {
         log.info("Executing schemaSQL: {}", hqlStatement);
 
         try (Connection con = getDatabaseConnection(database)) {
 
             Statement stmt = con.createStatement();
-            hqlStatement.forEach(hql->{
+            hqlStatement.forEach(hql -> {
                 try {
                     stmt.execute(hql);
-                }catch (SQLException sqe){}
+                } catch (SQLException sqe) {
+                    throw new RuntimeException("HQL can not be executed" + sqe.getMessage());
+                }
+
             });
 
-
-        }catch (SQLException sqe){
 
         }
     }
 
-    public List<HRoles> getRoles(JobDefinition jobDefinition){
 
-        List<HRoles> hRoles=Lists.newArrayList();
+    public List<HRoles> getRoles( String dbName ,String tableName ) throws SQLException {
 
-        hRoles.addAll(hiveJdbcTemplate.query(
-                String.format("set role admin;SHOW grant on table %s.%s", jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName())
-                , new RowMapper<HRoles>() {
+        List<HRoles> hRoles = Lists.newArrayList();
+//        String dbName = jobDefinition.getObjectDefinition().getDbName().toLowerCase();
+//        String tableName = jobDefinition.getTableName().toLowerCase();
+        String sql = String.format("show grant on table %s.%s", dbName, tableName);
+        try (Connection con = getDatabaseConnection(dbName)) {
 
-                    @Override
-                    public HRoles mapRow(ResultSet resultSet, int i) throws SQLException {
-                        return HRoles.builder().dbName(resultSet.getString(1))
-                                .tableName(resultSet.getString(2))
-                                .principalName(resultSet.getString(5))
-                                .principalType(resultSet.getString(6))
-                                .privilege(resultSet.getString(7))
-                                .grantOption(resultSet.getBoolean(8))
-                                .build();
-                    }
+            Statement stmt = con.createStatement();
+            stmt.execute("set role admin");
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String principalName = rs.getString(5);
+                if (principalName.contains("bdsql")) {
+                    hRoles.add(HRoles.builder().dbName(rs.getString("database"))
+                            .tableName(rs.getString("table"))
+                            .principalName(rs.getString("principal_name"))
+                            .principalType(rs.getString("principal_type"))
+                            .privilege(rs.getString("privilege"))
+                            .grantOption(rs.getBoolean("grant_option"))
+                            .build());
                 }
-        ));
 
-        return  hRoles;
+
+            }
+
+        }
+
+
+        return hRoles;
 
     }
-
-
 
 
     public boolean runHiveQuery(String dbName, String hqlStatement) throws SQLException {
@@ -405,7 +410,6 @@ public class HiveClientImpl implements HiveClient {
         }
 
     }
-
 
 
 }
