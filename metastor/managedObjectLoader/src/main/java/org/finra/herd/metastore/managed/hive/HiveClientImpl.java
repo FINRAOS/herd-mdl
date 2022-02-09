@@ -24,6 +24,7 @@ import org.apache.hive.jdbc.HiveStatement;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
+import org.finra.herd.metastore.managed.format.HRoleComparator;
 import org.finra.herd.metastore.managed.format.HRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,9 +33,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.sql.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -366,7 +365,7 @@ public class HiveClientImpl implements HiveClient {
     }
 
 
-    public List<HRoles> getRoles( String dbName ,String tableName ) throws SQLException {
+    public List<HRoles> getRoles(String dbName, String tableName) throws SQLException {
 
         List<HRoles> hRoles = Lists.newArrayList();
 //        String dbName = jobDefinition.getObjectDefinition().getDbName().toLowerCase();
@@ -394,8 +393,16 @@ public class HiveClientImpl implements HiveClient {
 
         }
 
+        Set<HRoles> hRolesSet = new TreeSet<>(new HRoleComparator());
 
-        return hRoles;
+
+        if (!hRoles.isEmpty()) {
+            for (HRoles roles : hRoles) {
+                hRolesSet.add(roles);
+            }
+        }
+
+        return hRoles.isEmpty() ? hRoles : new ArrayList<HRoles>(hRolesSet);
 
     }
 

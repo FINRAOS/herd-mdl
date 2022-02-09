@@ -2,6 +2,7 @@ package org.finra.herd.metastore.managed.format;
 
 import com.google.common.collect.Lists;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @Builder
+@Getter
 public  class HRoles {
 
     String dbName;

@@ -15,6 +15,7 @@ import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+
 import java.io.File;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
@@ -31,7 +32,6 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.LATEST
 @Slf4j
 @Scope("prototype")
 public class FormatUtil {
-
 
 
     private SubmitFormatProcess submitFormatProcess;
@@ -76,15 +76,15 @@ public class FormatUtil {
             List<String> hqlStatements = new ArrayList<>();
             hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
             hqlStatements.add("set role admin;");
-            List<HRoles> existingRoles= new ArrayList<>();
-            List<String> grantRolesHql = grantPrestoRoles(jobDefinition,existingRoles);
+            List<HRoles> existingRoles = new ArrayList<>();
+            List<String> grantRolesHql = grantPrestoRoles(jobDefinition, existingRoles);
 
             if (!grantRolesHql.isEmpty()) {
-                grantRolesHql.add(0,"set role admin");
-                hiveClient.executeQueries(dbName,grantRolesHql);
+                grantRolesHql.add(0, "set role admin");
+                hiveClient.executeQueries(dbName, grantRolesHql);
                 Thread.sleep(5000);
-                List<HRoles> grantedRoles = hiveClient.getRoles(dbName.toLowerCase(),newTableName.toLowerCase());
-                log.info("Are the roles set properly? :{}", CollectionUtils.subtract(existingRoles,grantedRoles).size());
+                List<HRoles> grantedRoles = hiveClient.getRoles(dbName.toLowerCase(), newTableName.toLowerCase());
+                log.info("Are the roles set properly? :{}", CollectionUtils.subtract(existingRoles, grantedRoles).size());
             }
 
             hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
@@ -107,7 +107,7 @@ public class FormatUtil {
             }
 
             isComplete = renameProcess.getExitValue() == 0;
-            log.info("Rename of object completed? :{} ==> {}",jobDefinition,isComplete);
+            log.info("Rename of object completed? :{} ==> {}", jobDefinition, isComplete);
 
             if (!isComplete) {
                 notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation", clusterId);
@@ -125,24 +125,22 @@ public class FormatUtil {
 
     }
 
-    private List<String> grantPrestoRoles(JobDefinition jobDefinition,List<HRoles> roles) throws SQLException {
+    private List<String> grantPrestoRoles(JobDefinition jobDefinition, List<HRoles> roles) throws SQLException {
 
 
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         String tableName = jobDefinition.getTableName().concat(LATEST);
-        roles = hiveClient.getRoles(dbName.toLowerCase(),jobDefinition.getTableName().toLowerCase());
+        roles = hiveClient.getRoles(dbName.toLowerCase(), jobDefinition.getTableName().toLowerCase());
         log.info("Roles are ==>{}", roles);
 
         String objName = dbName + "." + tableName;
         if (!roles.isEmpty()) {
 
-            return roles.stream().map(role -> role.grantOption ?
-                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.principalName + " WITH GRANT OPTION") :
-                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.principalName )).collect(Collectors.toList());
+            return roles.stream().map(role -> role.isGrantOption() ?
+                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.getPrincipalName() + " WITH GRANT OPTION") :
+                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.getPrincipalName())).collect(Collectors.toList());
 
 
-            //false GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role+"
-            //true GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role+" with grant_option
         }
 
 
