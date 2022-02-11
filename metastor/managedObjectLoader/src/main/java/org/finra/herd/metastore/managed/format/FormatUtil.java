@@ -137,8 +137,8 @@ public class FormatUtil {
         if (!roles.isEmpty()) {
 
             return roles.stream().map(role -> role.isGrantOption() ?
-                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.getPrincipalName() + " WITH GRANT OPTION") :
-                    ("GRANT SELECT ON TABLE " + objName + " TO ROLE " + role.getPrincipalName())).collect(Collectors.toList());
+                    ("GRANT " + role.getPrincipalType()  +" ON TABLE " + objName + " TO ROLE " + role.getPrincipalName() + " WITH GRANT OPTION") :
+                    ("GRANT "+ role.getPrincipalType() +" ON TABLE " + objName + " TO ROLE " + role.getPrincipalName())).collect(Collectors.toList());
 
 
         }
