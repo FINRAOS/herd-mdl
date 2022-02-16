@@ -94,7 +94,7 @@ public class SubmitFormatProcess {
             log.info("Thread in writetoFile {}", Thread.currentThread().getName());
 
 
-            hqlFilePath = File.createTempFile("str-format", ".hql", new File("/home/hadoop"));
+            hqlFilePath = File.createTempFile("str-format", ".hql", new File("/tmp"));
             Path path = Paths.get(hqlFilePath.getAbsolutePath());
 
             String str = stringList.stream().collect(Collectors.joining(" "));

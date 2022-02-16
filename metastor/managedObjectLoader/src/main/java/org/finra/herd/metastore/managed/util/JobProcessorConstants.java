@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 public interface JobProcessorConstants {
 	String METASTOR_CLUSTER_NAME 		= "metastore";
 	String METASTOR_STATS_CLUSTER_NAME 	= "metastore_stats";
+	static final String LATEST = "_latest";
 
 	String SVC_ACC_PREFIX = "svc";
 	String UNDERSCORE = "_";

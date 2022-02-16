@@ -1,5 +1,8 @@
 package org.finra.herd.metastore.managed.format;
 
+import com.google.common.collect.Lists;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
@@ -13,29 +16,18 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public abstract class HRoles {
+@Builder
+@Getter
+public  class HRoles {
+
+    String dbName;
+    String tableName;
+    String principalName;
+    String principalType;
+    String privilege;
+    boolean grantOption;
 
 
-    protected abstract <T> List<T>  getRoles(JobDefinition jobDefinition);
 
 
-    protected   List<String> grantPrestoRoles(JobDefinition jobDefinition){
-
-        List<String> roles=getRoles(jobDefinition);
-        log.info("Roles are ==>{}",roles);
-
-        String dbName=jobDefinition.getObjectDefinition().getDbName();
-        String tableName=jobDefinition.getTableName();
-        String objName=dbName+"."+tableName;
-        if(!roles.isEmpty()){
-
-            return roles.stream().map(role->new String ("GRANT SELECT ON TABLE "+objName+ " TO ROLE "+role+" ;")).collect(Collectors.toList());
-
-
-        }
-
-
-        return Collections.emptyList();
-
-    }
-}
+   }

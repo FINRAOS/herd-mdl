@@ -28,14 +28,13 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+
+import static org.finra.herd.metastore.managed.util.JobProcessorConstants.LATEST;
 
 
 @Component("renameFormat")
@@ -44,6 +43,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @Scope("prototype")
 public class RenameFormatStrategy implements FormatStrategy {
+
 
     @Getter
     private boolean isComplete;
@@ -93,8 +93,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         List<List<String>> rootPartitionList = getSplitRootPartitionList(jobDefinition);
 
         if (runProcess(jobDefinition, rootPartitionList) && isPartitionCountCorrect(jobDefinition)) {
-            renameExisitingTable(jobDefinition);
-
+            this.isComplete = formatUtil.renameExisitingTable(jobDefinition, clusterId, workerId, Optional.empty());
             if (this.isComplete) {
                 rootPartitionList.forEach(
                         partitionList ->
@@ -185,6 +184,8 @@ public class RenameFormatStrategy implements FormatStrategy {
                         }
                 );
 
+                log.info("Failed Processing ? :{}", failedProcessing);
+
 
                 result = failedProcessing.size() <= 0;
             } else {
@@ -242,7 +243,7 @@ public class RenameFormatStrategy implements FormatStrategy {
 
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
         request.combineMultiplePartitionsInSingleAlterTable(true);
-        request.setTableName(jobDefinition.getTableName() + "_LATEST");
+        request.setTableName(jobDefinition.getTableName() + LATEST);
 
         List<CompletableFuture<FormatProcessObject>> formatProcessObjectList = new ArrayList<>();
 
@@ -256,7 +257,7 @@ public class RenameFormatStrategy implements FormatStrategy {
             isTableCreated = createTable(jobDefinition, rootPartitionList, request);
             while (!isTableCreated && count < 2) {
                 Thread.sleep(5000);
-                isTableCreated = hiveClient.tableExist(jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName() + "_LATEST");
+                isTableCreated = hiveClient.tableExist(jobDefinition.getObjectDefinition().getDbName(), jobDefinition.getTableName() + LATEST);
                 count++;
             }
 
@@ -363,7 +364,7 @@ public class RenameFormatStrategy implements FormatStrategy {
     private boolean isPartitionCountCorrect(JobDefinition jd) {
 
         String existingTableName = jd.getTableName();
-        String newTableName = jd.getTableName().concat("_LATEST");
+        String newTableName = jd.getTableName().concat(LATEST);
         boolean result = partitionsDAO.getTotalPartitionCount(existingTableName, jd.getObjectDefinition().getDbName()) <=
                 partitionsDAO.getTotalPartitionCount(newTableName, jd.getObjectDefinition().getDbName());
         if (!result) {
@@ -371,61 +372,6 @@ public class RenameFormatStrategy implements FormatStrategy {
         }
 
         return result;
-
-    }
-
-
-    private void renameExisitingTable(JobDefinition jobDefinition) {
-
-        String existingTableName = jobDefinition.getTableName();
-        String newTableName = jobDefinition.getTableName().concat("_LATEST");
-        String renameTime = new SimpleDateFormat("yyyy_MM_dd_HmsS").format(new Date());
-        String dbName = jobDefinition.getObjectDefinition().getDbName();
-        List<String> hqlStatements = new ArrayList<>();
-        hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
-        hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
-        hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
-        List<String> grantRolesHql = hRoles.grantPrestoRoles(jobDefinition);
-        if (!grantRolesHql.isEmpty()) {
-            hqlStatements.addAll(grantRolesHql);
-        }
-
-
-        try {
-
-            File tmpFile = submitFormatProcess.createHqlFile(hqlStatements);
-
-            DefaultExecuteResultHandler renameProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
-
-            int count = 0;
-            /*
-             Every 3 minutes extend the lock and after an hour break
-             */
-            while (!renameProcess.hasResult() && count < 20) {
-                jobPicker.extendLock(jobDefinition, clusterId, workerId);
-                try {
-                    Thread.sleep(180_0000);
-                    count++;
-                } catch (InterruptedException ie) {
-                    log.info("Not done yet keep retrying");
-                }
-            }
-
-            this.isComplete = renameProcess.getExitValue() == 0;
-
-            if (!this.isComplete) {
-                notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Error occurred during rename operation", this.clusterId);
-            }
-
-
-        } catch (Exception e) {
-            log.error("Unable to rename the latest Object in hive after format change" + e.getMessage());
-            errMsg.append("Unable to rename the latest Object in hive after format change" + e.getMessage());
-            notificationSender.sendFailureEmail(jobDefinition, jobDefinition.getNumOfRetry(), "Unable to rename the object in Hive " + this.getErr(), this.clusterId);
-
-
-        }
-
 
     }
 

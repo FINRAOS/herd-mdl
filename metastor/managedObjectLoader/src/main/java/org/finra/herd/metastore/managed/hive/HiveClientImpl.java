@@ -19,8 +19,13 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.yarn.webapp.hamlet.Hamlet;
+import org.apache.hive.jdbc.HiveStatement;
+import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
+import org.finra.herd.metastore.managed.format.HRoleComparator;
+import org.finra.herd.metastore.managed.format.HRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -28,9 +33,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.sql.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -39,10 +42,6 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 @Component
 @Slf4j
 public class HiveClientImpl implements HiveClient {
-
-    @Autowired
-    JdbcTemplate hiveJdbcTemplate;
-
 
     static {
         try {
@@ -54,9 +53,8 @@ public class HiveClientImpl implements HiveClient {
         DriverManager.setLoginTimeout(45);
     }
 
-    protected Connection getDatabaseConnection(String databaseName) throws SQLException {
-        return DriverManager.getConnection(String.format(HIVE_URL + "%s", databaseName), HIVE_USER, HIVE_PASSWORD);
-    }
+    @Autowired
+    JdbcTemplate hiveJdbcTemplate;
 
     public static List<ColumnDef> getDMSchemaColumns(String ddl) {
 
@@ -123,7 +121,6 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-
     static List<String> getSortedColumns(String ddl) {
         List<String> sortedColumns = Lists.newArrayList();
 
@@ -151,7 +148,6 @@ public class HiveClientImpl implements HiveClient {
 
     }
 
-
     static List<ColumnDef> getClusteredSortedColDefs(List<String> clusteredSortedColumns, List<ColumnDef> columnDefs) {
 
         log.info("clusteredSortedColumns:{}", clusteredSortedColumns);
@@ -165,30 +161,6 @@ public class HiveClientImpl implements HiveClient {
         log.info("clusterSortedColDefs:{}", clusterSortedColDefs);
         return clusterSortedColDefs;
 
-    }
-
-    @Override
-    public HiveTableSchema getExistingDDL(String dbName, String tableName) throws SQLException {
-
-        try (Connection con = getDatabaseConnection(dbName)) {
-            Statement stmt = con.createStatement();
-
-            stmt.execute("SHOW CREATE TABLE " + tableName);
-
-            ResultSet resultSet = stmt.getResultSet();
-
-            StringBuffer sb = new StringBuffer();
-
-            while (resultSet.next()) {
-                sb.append(resultSet.getString(1).trim() + "\n");
-            }
-            String ddl = sb.toString();
-            log.info("Existing Hive Schema: " + ddl);
-
-            HiveTableSchema schema = getHiveTableSchema(ddl);
-
-            return schema;
-        }
     }
 
     public static HiveTableSchema getHiveTableSchema(String ddl) {
@@ -246,21 +218,6 @@ public class HiveClientImpl implements HiveClient {
         return escapeStr;
     }
 
-    @Override
-    public boolean tableExist(String dbName, String tableName) throws SQLException {
-        try (Connection con = getDatabaseConnection("default")) {
-            Statement stmt = con.createStatement();
-            log.info("tableExist? {},{}",dbName,tableName);
-            stmt.execute("show databases like \'" + dbName + "\'");
-            if (stmt.getResultSet().next()) {
-                stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
-                return stmt.getResultSet().next();
-            }
-            return false;
-        }
-    }
-
-
     static List<ColumnDef> getPartitionColumns(String ddl) {
         String s = ddl.substring(ddl.indexOf("PARTITIONED BY") + 14, ddl.indexOf("ROW FORMAT")).trim();
 
@@ -306,6 +263,48 @@ public class HiveClientImpl implements HiveClient {
         return entries;
     }
 
+    protected Connection getDatabaseConnection(String databaseName) throws SQLException {
+        return DriverManager.getConnection(String.format(HIVE_URL + "%s", databaseName), HIVE_USER, HIVE_PASSWORD);
+    }
+
+    @Override
+    public HiveTableSchema getExistingDDL(String dbName, String tableName) throws SQLException {
+
+        try (Connection con = getDatabaseConnection(dbName)) {
+            Statement stmt = con.createStatement();
+
+            stmt.execute("SHOW CREATE TABLE " + tableName);
+
+            ResultSet resultSet = stmt.getResultSet();
+
+            StringBuffer sb = new StringBuffer();
+
+            while (resultSet.next()) {
+                sb.append(resultSet.getString(1).trim() + "\n");
+            }
+            String ddl = sb.toString();
+            log.info("Existing Hive Schema: " + ddl);
+
+            HiveTableSchema schema = getHiveTableSchema(ddl);
+
+            return schema;
+        }
+    }
+
+    @Override
+    public boolean tableExist(String dbName, String tableName) throws SQLException {
+        try (Connection con = getDatabaseConnection("default")) {
+            Statement stmt = con.createStatement();
+            log.info("tableExist? {},{}", dbName, tableName);
+            stmt.execute("show databases like \'" + dbName + "\'");
+            if (stmt.getResultSet().next()) {
+                stmt.execute(String.format("Show tables in %s like \'%s\'", dbName, tableName));
+                return stmt.getResultSet().next();
+            }
+            return false;
+        }
+    }
+
     @Override
     public List<HivePartition> getExistingPartitions(String database, String tableName, Set<String> partitionSpec) {
         List<HivePartition> partName = Lists.newArrayList();
@@ -346,22 +345,65 @@ public class HiveClientImpl implements HiveClient {
     }
 
     @Override
-    public void executeQueries(String database, List<String> hqlStatement) {
+    public void executeQueries(String database, List<String> hqlStatement) throws SQLException {
         log.info("Executing schemaSQL: {}", hqlStatement);
 
         try (Connection con = getDatabaseConnection(database)) {
 
             Statement stmt = con.createStatement();
-            hqlStatement.forEach(hql->{
+            hqlStatement.forEach(hql -> {
                 try {
                     stmt.execute(hql);
-                }catch (SQLException sqe){}
+                } catch (SQLException sqe) {
+                    throw new RuntimeException("HQL can not be executed" + sqe.getMessage());
+                }
+
             });
 
 
-        }catch (SQLException sqe){
+        }
+    }
+
+
+    public List<HRoles> getRoles(String dbName, String tableName) throws SQLException {
+
+        List<HRoles> hRoles = Lists.newArrayList();
+//        String dbName = jobDefinition.getObjectDefinition().getDbName().toLowerCase();
+//        String tableName = jobDefinition.getTableName().toLowerCase();
+        String sql = String.format("show grant on table %s.%s", dbName, tableName);
+        try (Connection con = getDatabaseConnection(dbName)) {
+
+            Statement stmt = con.createStatement();
+            stmt.execute("set role admin");
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String principalName = rs.getString(5);
+                if (principalName.contains("bdsql")) {
+                    hRoles.add(HRoles.builder().dbName(rs.getString("database"))
+                            .tableName(rs.getString("table"))
+                            .principalName(rs.getString("principal_name"))
+                            .principalType(rs.getString("principal_type"))
+                            .privilege(rs.getString("privilege"))
+                            .grantOption(rs.getBoolean("grant_option"))
+                            .build());
+                }
+
+
+            }
 
         }
+
+        Set<HRoles> hRolesSet = new TreeSet<>(new HRoleComparator());
+
+
+        if (!hRoles.isEmpty()) {
+            for (HRoles roles : hRoles) {
+                hRolesSet.add(roles);
+            }
+        }
+
+        return hRoles.isEmpty() ? hRoles : new ArrayList<HRoles>(hRolesSet);
+
     }
 
 
