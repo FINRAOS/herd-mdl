@@ -40,6 +40,7 @@
 		<pebble.version>2.3.0</pebble.version>
 		<hive.jdbc.version>2.3.4</hive.jdbc.version>
 		<hadoop.common.version>2.7.3</hadoop.common.version>
+		<google.gson.version>2.8.5</google.gson.version>
 
 		<apache.commons>1.3</apache.commons>
 
@@ -112,6 +113,11 @@
 			<version>${aws.java.sdk}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>${google.gson.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
