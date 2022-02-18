@@ -11,6 +11,7 @@ import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
+import org.finra.herd.metastore.managed.operations.RenameTracker;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -64,10 +65,12 @@ public class FormatUtil {
     }
 
 
-    public boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId, Optional tableName, List<HRoles> roles) {
+    public boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId,
+                                        Optional currentTableName, Optional desiredTableName,  List<HRoles> roles) {
 
-        String existingTableName = jobDefinition.getTableName();
-        String newTableName = tableName.isPresent() ? tableName.get().toString() : jobDefinition.getTableName().concat(LATEST);
+
+        String existingTableName =  (String) currentTableName.orElse(jobDefinition.getTableName());
+        String newTableName = (String)desiredTableName.orElse(jobDefinition.getTableName().concat(LATEST));
         String renameTime = new SimpleDateFormat("yyyy_MM_dd_HmsS").format(new Date());
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         boolean isComplete = false;
@@ -87,7 +90,7 @@ public class FormatUtil {
 
 
             hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
-            hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
+            hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " +"."+ existingTableName + ";");
             File tmpFile = submitFormatProcess.createHqlFile(hqlStatements);
             DefaultExecuteResultHandler renameProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 
@@ -128,13 +131,15 @@ public class FormatUtil {
 
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         String tableName = jobDefinition.getTableName().concat(LATEST);
+        String objName = dbName + "." + tableName;
+
         if (roles.isEmpty()) {
             roles = hiveClient.getRoles(dbName.toLowerCase(), jobDefinition.getTableName().toLowerCase());
+
         }
 
-        log.info("Roles are ==>{}", roles);
+        log.info("Roles ===>",roles);
 
-        String objName = dbName + "." + tableName;
         if (!roles.isEmpty()) {
 
             return roles.stream().map(role -> role.isGrantOption() ?

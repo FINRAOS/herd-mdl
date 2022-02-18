@@ -37,9 +37,11 @@ public class RenameObjectProcessor extends JobProcessor {
         boolean isComplete=false;
         try {
             jobPicker.extendLock(od, clusterID, workerID);
-            RenameTracker renameTracker=getRenameObj(od);
-            Optional<String> newTableName = Optional.of(renameTracker.getDesiredTableName());
-            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID, newTableName, getRoles(renameTracker));
+            Optional<RenameTracker> optionalRenameTracker=getRenameObj(od);
+            RenameTracker renameTracker=optionalRenameTracker.isPresent() ?optionalRenameTracker.get():null;
+            Optional<String> newTableName = Optional.ofNullable(renameTracker.getDesiredTableName());
+            Optional<String> currentTableName = Optional.ofNullable(renameTracker.getExistingTableName());
+            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,currentTableName, newTableName, getRoles(renameTracker));
 
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
@@ -50,13 +52,12 @@ public class RenameObjectProcessor extends JobProcessor {
 
     }
 
-    private RenameTracker getRenameObj(JobDefinition jobDefinition){
+    private Optional<RenameTracker> getRenameObj(JobDefinition jobDefinition){
         Gson gson = new Gson();
         RenameTracker renameTracker = gson.fromJson(jobDefinition.getCorrelation(), RenameTracker.class);
-        jobDefinition.setTableName(renameTracker.getExistingTableName());
         log.info("===>{}", renameTracker);
 
-        return  renameTracker;
+        return  Optional.ofNullable(renameTracker);
     }
 
     private List<HRoles> getRoles(RenameTracker renameTracker) {
