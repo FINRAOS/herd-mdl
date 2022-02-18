@@ -41,7 +41,7 @@ public class RenameObjectProcessor extends JobProcessor {
             RenameTracker renameTracker=optionalRenameTracker.isPresent() ?optionalRenameTracker.get():null;
             Optional<String> newTableName = Optional.ofNullable(renameTracker.getDesiredTableName());
             Optional<String> currentTableName = Optional.ofNullable(renameTracker.getExistingTableName());
-            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,currentTableName, newTableName, getRoles(renameTracker));
+            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,currentTableName, newTableName, getRoles(optionalRenameTracker));
 
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
@@ -60,19 +60,25 @@ public class RenameObjectProcessor extends JobProcessor {
         return  Optional.ofNullable(renameTracker);
     }
 
-    private List<HRoles> getRoles(RenameTracker renameTracker) {
+    private List<HRoles> getRoles(Optional<RenameTracker> optionalRenameTracker) {
 
         List<HRoles> hRoles = new ArrayList<>();
-        if (renameTracker.getHiveGrants().size() > 0) {
 
-            for (Grants grants : renameTracker.getHiveGrants()) {
-                hRoles.add(HRoles.builder()
-                        .principalName(grants.getPrincicpalName())
-                        .principalType(grants.getPrincipalType())
-                        .privilege(grants.getPrivilege())
-                        .grantOption(grants.isGrantOptions())
-                        .build()
-                );
+
+        if (optionalRenameTracker.isPresent() ) {
+
+            RenameTracker renameTracker = optionalRenameTracker.get();
+
+            if( renameTracker.getHiveGrants().size() > 0) {
+                for (Grants grants : renameTracker.getHiveGrants()) {
+                    hRoles.add(HRoles.builder()
+                            .principalName(grants.getPrincicpalName())
+                            .principalType(grants.getPrincipalType())
+                            .privilege(grants.getPrivilege())
+                            .grantOption(grants.isGrantOptions())
+                            .build()
+                    );
+                }
             }
         }
 
