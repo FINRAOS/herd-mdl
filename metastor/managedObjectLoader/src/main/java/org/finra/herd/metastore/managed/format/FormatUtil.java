@@ -1,30 +1,20 @@
 package org.finra.herd.metastore.managed.format;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
-import org.apache.commons.exec.ExecuteResultHandler;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
-import org.finra.herd.metastore.managed.operations.RenameTracker;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.finra.herd.metastore.managed.util.JobProcessorConstants.LATEST;
@@ -65,12 +55,11 @@ public class FormatUtil {
     }
 
 
-    public boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId,
-                                        Optional currentTableName, Optional desiredTableName,  List<HRoles> roles) {
+    public boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId, List<HRoles> roles) {
 
 
-        String existingTableName =  (String) currentTableName.orElse(jobDefinition.getTableName());
-        String newTableName = (String)desiredTableName.orElse(jobDefinition.getTableName().concat(LATEST));
+        String existingTableName =  jobDefinition.getTableName();
+        String newTableName = jobDefinition.getTableName().concat(LATEST);
         String renameTime = new SimpleDateFormat("yyyy_MM_dd_HmsS").format(new Date());
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         boolean isComplete = false;
@@ -79,7 +68,7 @@ public class FormatUtil {
             List<String> hqlStatements = new ArrayList<>();
             hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
             hqlStatements.add("set role admin;");
-            List<String> grantRolesHql = grantPrestoRoles(jobDefinition, roles);
+            List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName, roles);
             if (!grantRolesHql.isEmpty()) {
                 grantRolesHql.add(0, "set role admin");
                 hiveClient.executeQueries(dbName, grantRolesHql);
@@ -127,14 +116,12 @@ public class FormatUtil {
 
     }
 
-    private List<String> grantPrestoRoles(JobDefinition jobDefinition, List<HRoles> roles) throws SQLException {
+    private List<String> grantPrestoRoles(String dbName,String tableName, List<HRoles> roles) throws SQLException {
 
-        String dbName = jobDefinition.getObjectDefinition().getDbName();
-        String tableName = jobDefinition.getTableName().concat(LATEST);
         String objName = dbName + "." + tableName;
 
         if (roles.isEmpty()) {
-            roles = hiveClient.getRoles(dbName.toLowerCase(), jobDefinition.getTableName().toLowerCase());
+            roles = hiveClient.getRoles(dbName.toLowerCase(), tableName.toLowerCase());
 
         }
 

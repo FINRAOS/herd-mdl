@@ -93,8 +93,7 @@ public class RenameFormatStrategy implements FormatStrategy {
         List<List<String>> rootPartitionList = getSplitRootPartitionList(jobDefinition);
 
         if (runProcess(jobDefinition, rootPartitionList) && isPartitionCountCorrect(jobDefinition)) {
-            this.isComplete = formatUtil.renameExisitingTable(jobDefinition, clusterId, workerId,
-                    Optional.empty(),Optional.empty(),Lists.newArrayList());
+            this.isComplete = formatUtil.renameExisitingTable(jobDefinition, clusterId, workerId,Lists.newArrayList());
             if (this.isComplete) {
                 rootPartitionList.forEach(
                         partitionList ->
