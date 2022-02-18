@@ -90,7 +90,7 @@ public class FormatUtil {
 
 
             hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
-            hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " +"."+ existingTableName + ";");
+            hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
             File tmpFile = submitFormatProcess.createHqlFile(hqlStatements);
             DefaultExecuteResultHandler renameProcess = submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile));
 

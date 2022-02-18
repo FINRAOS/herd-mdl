@@ -38,10 +38,21 @@ public class RenameObjectProcessor extends JobProcessor {
         try {
             jobPicker.extendLock(od, clusterID, workerID);
             Optional<RenameTracker> optionalRenameTracker=getRenameObj(od);
-            RenameTracker renameTracker=optionalRenameTracker.isPresent() ?optionalRenameTracker.get():null;
-            Optional<String> newTableName = Optional.ofNullable(renameTracker.getDesiredTableName());
-            Optional<String> currentTableName = Optional.ofNullable(renameTracker.getExistingTableName());
-            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,currentTableName, newTableName, getRoles(optionalRenameTracker));
+
+            if(optionalRenameTracker.isPresent()){
+                RenameTracker renameTracker= optionalRenameTracker.get();
+
+
+                Optional<String> newTableName = Optional.ofNullable(renameTracker.getDesiredTableName());
+                Optional<String>  currentTableName = Optional.ofNullable(renameTracker.getExistingTableName());
+                isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,currentTableName, newTableName, getRoles(optionalRenameTracker));
+
+            }else{
+                isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID,Optional.empty(), Optional.empty(), getRoles(optionalRenameTracker));
+
+            }
+
+
 
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
@@ -55,7 +66,7 @@ public class RenameObjectProcessor extends JobProcessor {
     private Optional<RenameTracker> getRenameObj(JobDefinition jobDefinition){
         Gson gson = new Gson();
         RenameTracker renameTracker = gson.fromJson(jobDefinition.getCorrelation(), RenameTracker.class);
-        log.info("===>{}", renameTracker);
+        log.info("RenameTracker ===>{}", renameTracker);
 
         return  Optional.ofNullable(renameTracker);
     }
@@ -68,8 +79,9 @@ public class RenameObjectProcessor extends JobProcessor {
         if (optionalRenameTracker.isPresent() ) {
 
             RenameTracker renameTracker = optionalRenameTracker.get();
+            List<Grants> grantsList= renameTracker.getHiveGrants();
 
-            if( renameTracker.getHiveGrants().size() > 0) {
+            if( grantsList!=null && renameTracker.getHiveGrants().size() > 0) {
                 for (Grants grants : renameTracker.getHiveGrants()) {
                     hRoles.add(HRoles.builder()
                             .principalName(grants.getPrincicpalName())
