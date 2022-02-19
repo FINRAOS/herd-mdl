@@ -68,7 +68,7 @@ public class FormatUtil {
             List<String> hqlStatements = new ArrayList<>();
             hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
             hqlStatements.add("set role admin;");
-            List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName, roles);
+            List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName,newTableName, roles);
             if (!grantRolesHql.isEmpty()) {
                 grantRolesHql.add(0, "set role admin");
                 hiveClient.executeQueries(dbName, grantRolesHql);
@@ -116,12 +116,12 @@ public class FormatUtil {
 
     }
 
-    private List<String> grantPrestoRoles(String dbName,String tableName, List<HRoles> roles) throws SQLException {
+    private List<String> grantPrestoRoles(String dbName,String existingTableName,String newTableName, List<HRoles> roles) throws SQLException {
 
-        String objName = dbName + "." + tableName;
+        String objName = dbName + "." + newTableName;
 
         if (roles.isEmpty()) {
-            roles = hiveClient.getRoles(dbName.toLowerCase(), tableName.toLowerCase());
+            roles = hiveClient.getRoles(dbName.toLowerCase(), existingTableName.toLowerCase());
 
         }
 

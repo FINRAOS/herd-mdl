@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.*;
 import org.finra.herd.metastore.managed.operations.Grants;
+import org.finra.herd.metastore.managed.operations.RenameGrants;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,8 +29,10 @@ public class FormatRenameProcessor extends JobProcessor {
     FormatUtil formatUtil;
 
 
-    @SerializedName("grants")
-    List<Grants> hiveGrants;
+    @Autowired
+    RenameGrants renameGrants;
+
+
 
     @Override
     public boolean process(JobDefinition od, String clusterID, String workerID) {
@@ -49,10 +52,10 @@ public class FormatRenameProcessor extends JobProcessor {
     }
 
     private Optional<List<Grants>> getRenameObj(JobDefinition jobDefinition){
-        Type listOfGrants = new TypeToken<ArrayList<Grants>>() {}.getType();
 
         Gson gson = new Gson();
-        hiveGrants = gson.fromJson(jobDefinition.getCorrelation(), listOfGrants);
+        renameGrants = gson.fromJson(jobDefinition.getCorrelation(), RenameGrants.class);
+        List<Grants> hiveGrants = renameGrants.getHiveGrants();
         log.info("RenameTracker ===>{}", hiveGrants);
 
         return  Optional.ofNullable(hiveGrants);
