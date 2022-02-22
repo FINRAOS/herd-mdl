@@ -1,8 +1,6 @@
 package org.finra.herd.metastore.managed.jobProcessor;
 
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 import lombok.extern.slf4j.Slf4j;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.format.*;
@@ -12,7 +10,6 @@ import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +37,8 @@ public class FormatRenameProcessor extends JobProcessor {
         boolean isComplete=false;
         try {
             jobPicker.extendLock(od, clusterID, workerID);
-            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID, getRoles(getRenameObj(od)));
+            setPartitionKeyIfNotPresent( od );
+            isComplete = formatUtil.renameExisitingTable(od, clusterID, workerID, getUserSuppliedRoles(getUserSuppliedGrants(od)));
 
         } catch (Exception ex) {
             logger.severe(ex.getMessage());
@@ -51,17 +49,24 @@ public class FormatRenameProcessor extends JobProcessor {
 
     }
 
-    private Optional<List<Grants>> getRenameObj(JobDefinition jobDefinition){
+    private Optional<List<Grants>> getUserSuppliedGrants(JobDefinition jobDefinition){
 
         Gson gson = new Gson();
-        renameGrants = gson.fromJson(jobDefinition.getCorrelation(), RenameGrants.class);
-        List<Grants> hiveGrants = renameGrants.getHiveGrants();
-        log.info("RenameTracker ===>{}", hiveGrants);
+        String correlationData=jobDefinition.getCorrelation();
+        if(correlationData!=null) {
+            renameGrants = gson.fromJson(correlationData, RenameGrants.class);
+            List<Grants> hiveGrants = renameGrants.getHiveGrants();
+            log.info("hiveGrants supplied by user ===>{}", hiveGrants);
+            return  Optional.ofNullable(hiveGrants);
 
-        return  Optional.ofNullable(hiveGrants);
+        }else {
+
+            return Optional.ofNullable(null);
+        }
+
     }
 
-    private List<HRoles> getRoles(Optional<List<Grants>> optionalGrantsList) {
+    private List<HRoles> getUserSuppliedRoles(Optional<List<Grants>> optionalGrantsList) {
 
         List<HRoles> hRoles = new ArrayList<>();
 
