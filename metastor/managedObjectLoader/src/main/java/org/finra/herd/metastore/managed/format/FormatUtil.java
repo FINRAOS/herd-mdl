@@ -1,29 +1,20 @@
 package org.finra.herd.metastore.managed.format;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
-import org.apache.commons.exec.ExecuteResultHandler;
 import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
-import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.finra.herd.metastore.managed.util.JobProcessorConstants.LATEST;
@@ -64,10 +55,11 @@ public class FormatUtil {
     }
 
 
-    protected boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId, Optional tableName) {
+    public boolean renameExisitingTable(JobDefinition jobDefinition, String clusterId, String workerId, List<HRoles> roles) {
 
-        String existingTableName = jobDefinition.getTableName();
-        String newTableName = tableName.isPresent() ? tableName.get().toString() : jobDefinition.getTableName().concat(LATEST);
+
+        String existingTableName =  jobDefinition.getTableName();
+        String newTableName = jobDefinition.getTableName().concat(LATEST);
         String renameTime = new SimpleDateFormat("yyyy_MM_dd_HmsS").format(new Date());
         String dbName = jobDefinition.getObjectDefinition().getDbName();
         boolean isComplete = false;
@@ -76,16 +68,15 @@ public class FormatUtil {
             List<String> hqlStatements = new ArrayList<>();
             hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
             hqlStatements.add("set role admin;");
-            List<HRoles> existingRoles = new ArrayList<>();
-            List<String> grantRolesHql = grantPrestoRoles(jobDefinition, existingRoles);
-
+            List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName,newTableName, roles);
             if (!grantRolesHql.isEmpty()) {
                 grantRolesHql.add(0, "set role admin");
                 hiveClient.executeQueries(dbName, grantRolesHql);
                 Thread.sleep(5000);
                 List<HRoles> grantedRoles = hiveClient.getRoles(dbName.toLowerCase(), newTableName.toLowerCase());
-                log.info("Are the roles set properly? :{}", CollectionUtils.subtract(existingRoles, grantedRoles).size());
+                log.info("Are the roles set properly? :{}", CollectionUtils.subtract(roles, grantedRoles).size() == 0);
             }
+
 
             hqlStatements.add("ALTER TABLE  " + existingTableName + " RENAME TO archive." + existingTableName + renameTime + ";");
             hqlStatements.add("ALTER TABLE  " + newTableName + " RENAME TO " + existingTableName + ";");
@@ -125,20 +116,22 @@ public class FormatUtil {
 
     }
 
-    private List<String> grantPrestoRoles(JobDefinition jobDefinition, List<HRoles> roles) throws SQLException {
+    private List<String> grantPrestoRoles(String dbName,String existingTableName,String newTableName, List<HRoles> roles) throws SQLException {
 
+        String objName = dbName + "." + newTableName;
 
-        String dbName = jobDefinition.getObjectDefinition().getDbName();
-        String tableName = jobDefinition.getTableName().concat(LATEST);
-        roles = hiveClient.getRoles(dbName.toLowerCase(), jobDefinition.getTableName().toLowerCase());
-        log.info("Roles are ==>{}", roles);
+        if (roles.isEmpty()) {
+            roles = hiveClient.getRoles(dbName.toLowerCase(), existingTableName.toLowerCase());
 
-        String objName = dbName + "." + tableName;
+        }
+
+        log.info("Roles ===>",roles);
+
         if (!roles.isEmpty()) {
 
             return roles.stream().map(role -> role.isGrantOption() ?
-                    ("GRANT " + role.getPrivilege()  +" ON TABLE " + objName + " TO ROLE " + role.getPrincipalName() + " WITH GRANT OPTION") :
-                    ("GRANT "+ role.getPrivilege() +" ON TABLE " + objName + " TO ROLE " + role.getPrincipalName())).collect(Collectors.toList());
+                    ("GRANT " + role.getPrivilege() + " ON TABLE " + objName + " TO " + role.getPrincipalType() + " " + role.getPrincipalName() + " WITH GRANT OPTION") :
+                    ("GRANT " + role.getPrivilege() + " ON TABLE " + objName + " TO " + role.getPrincipalType() + "  " + role.getPrincipalName())).collect(Collectors.toList());
 
 
         }

@@ -62,6 +62,9 @@ public class ObjectProcessor {
 	private FormatObjectProcessor formatObjectProcessor;
 
 	@Autowired
+	private FormatRenameProcessor formatRenameProcessor;
+
+	@Autowired
 	protected NotificationSender notificationSender;
 
 	@Autowired
@@ -77,6 +80,7 @@ public class ObjectProcessor {
 	public static final int WF_TYPE_FORMAT = 17;
 	public static final int WF_TYPE_DROP_TABLE = 7;
 	public static final int WF_TYPE_BACK_LOAD_PARTITIONS = 8;
+	public static final int WF_TYPE_RENAME_FORMAT = 14;
 
 	private final long startTime = System.currentTimeMillis();
 
@@ -236,6 +240,9 @@ public class ObjectProcessor {
 				break;
 			case WF_TYPE_FORMAT:
 				jp= formatObjectProcessor;
+				break;
+			case WF_TYPE_RENAME_FORMAT:
+				jp = formatRenameProcessor;
 				break;
 			default:
 				logger.warning( "Cannot find job processor" );
