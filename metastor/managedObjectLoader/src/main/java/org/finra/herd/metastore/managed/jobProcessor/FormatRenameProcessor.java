@@ -9,6 +9,7 @@ import org.finra.herd.metastore.managed.operations.RenameGrants;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,17 +53,20 @@ public class FormatRenameProcessor extends JobProcessor {
     private Optional<List<Grants>> getUserSuppliedGrants(JobDefinition jobDefinition){
 
         Gson gson = new Gson();
-        String correlationData=jobDefinition.getCorrelation();
-        if(correlationData!=null) {
-            renameGrants = gson.fromJson(correlationData, RenameGrants.class);
-            List<Grants> hiveGrants = renameGrants.getHiveGrants();
-            log.info("hiveGrants supplied by user ===>{}", hiveGrants);
-            return  Optional.ofNullable(hiveGrants);
+        try {
+            String correlationData=jobDefinition.getCorrelation();
 
-        }else {
+            if (correlationData != null && !StringUtils.isEmpty(correlationData)) {
+                renameGrants = gson.fromJson(correlationData, RenameGrants.class);
+                List<Grants> hiveGrants = renameGrants.getHiveGrants();
+                log.info("hiveGrants supplied by user ===>{}", hiveGrants);
+                return Optional.ofNullable(hiveGrants);
 
-            return Optional.ofNullable(null);
+            }
+        }catch ( Exception ex ) {
+            log.warn( "Error parsing correlation:" + jobDefinition.getCorrelation() );
         }
+        return Optional.ofNullable(null);
 
     }
 
@@ -86,6 +90,8 @@ public class FormatRenameProcessor extends JobProcessor {
                     );
                 }
             }
+        }else {
+            log.info("No user provided roles");
         }
 
 
