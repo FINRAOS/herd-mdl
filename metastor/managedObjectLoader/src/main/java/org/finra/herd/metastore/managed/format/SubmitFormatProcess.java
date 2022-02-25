@@ -72,7 +72,7 @@ public class SubmitFormatProcess {
 
             } catch (IOException ie
             ) {
-                log.error("IO Exception", ie.getMessage());
+                log.error("IO Exception {}", ie.getMessage());
                 throw new RuntimeException("Unable to execute  hive process for Rename format ==>" + ie.getMessage());
 
             }
