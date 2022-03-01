@@ -89,7 +89,7 @@ public class ObjectProcessor {
 
 	public static final String UPDATE_PROCESS_SQL = "UPDATE METASTOR_PROCESSING_LOG SET END_TIME = now(), SUCCESS=? where ID=?";
 
-    private static final String PURGE_PROCESSED_NOTIFICAITON = "DELETE FROM DM_NOTIFICATION WHERE ID=?";
+    private static final String PURGE_PROCESSED_NOTIFICAITON = "DELETE FROM DM_NOTIFICATION_SNS WHERE ID=?";
 
 	public void setTemplate( JdbcTemplate template ) {
 		this.template = template;

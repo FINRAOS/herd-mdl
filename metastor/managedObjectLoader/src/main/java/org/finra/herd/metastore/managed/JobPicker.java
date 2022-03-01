@@ -34,7 +34,7 @@ public class JobPicker {
 	Logger logger = Logger.getLogger( "JobPicker" );
 
 	public static final String FIND_UNLOCKED_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c, PRIORITY" +
-			" FROM (DM_NOTIFICATION n left outer join " +
+			" FROM (DM_NOTIFICATION_SNS n left outer join " +
 			"(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
 			"group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
 			"where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
@@ -43,7 +43,7 @@ public class JobPicker {
 
 
     public static final String FIND_UNLOCKED_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c, PRIORITY" +
-        " FROM (DM_NOTIFICATION n left outer join " +
+        " FROM (DM_NOTIFICATION_SNS n left outer join " +
         "(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count, max(DATE_PROCESSED) as last_process from METASTOR_PROCESSING_LOG " +
         "group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) left outer join METASTOR_WORKFLOW m on WF_TYPE=m.WORKFLOW_ID " +
         "where WF_TYPE = 5  and ( l.success is null or (l.success not like '%Y' and l.count<? and TIMESTAMPDIFF(SECOND, l.last_process, now())>? )) and  NOT EXISTS (select * from " +
@@ -71,7 +71,7 @@ public class JobPicker {
 
 	static final String UNLOCK = "delete from METASTOR_OBJECT_LOCKS where CLUSTER_ID=? and WORKER_ID=?";
 
-	static final String DELETE_NOT_PROCESSING_NOTIFICATIONS = "DELETE FROM DM_NOTIFICATION WHERE WF_TYPE IN (3, 33)";
+	static final String DELETE_NOT_PROCESSING_NOTIFICATIONS = "DELETE FROM DM_NOTIFICATION_SNS WHERE WF_TYPE IN (3, 33)";
 
 
 	@Autowired

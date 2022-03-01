@@ -41,7 +41,7 @@ public class JobProcessorDAO {
 	public List<DMNotification> getSubmittedRequests( String executionId ) {
 		return template.query( "" +
 						"SELECT ID, NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, WF_TYPE, EXECUTION_ID, PARTITION_VALUES, PARTITION_KEY\n" +
-						"FROM DM_NOTIFICATION\n" +
+						"FROM DM_NOTIFICATION_SNS\n" +
 						"WHERE EXECUTION_ID = ?\n" +
 						"ORDER BY ID;"
 				, new Object[]{ executionId }
@@ -51,7 +51,7 @@ public class JobProcessorDAO {
 	public List<DMNotification> getFormatNotification(JobDefinition jobDefinition) {
 		return template.query( "" +
 						"SELECT ID, NAMESPACE, OBJECT_DEF_NAME, USAGE_CODE, FILE_TYPE, WF_TYPE, EXECUTION_ID, PARTITION_VALUES, PARTITION_KEY\n" +
-						"FROM DM_NOTIFICATION\n" +
+						"FROM DM_NOTIFICATION_SNS\n" +
 						"WHERE NAMESPACE = ?\n" +
 						"AND  OBJECT_DEF_NAME = ?\n" +
 						"AND  USAGE_CODE = ?\n" +

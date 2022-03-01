@@ -132,12 +132,12 @@ public class ClusterManager implements InitializingBean {
 
 	Logger logger = Logger.getLogger( "ClusterManager" );
 
-	public static final String FIND_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
+	public static final String FIND_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION_SNS n left outer join " +
 			"(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
 			"group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
 			"where WF_TYPE NOT IN (3,5) and ( l.success is null or (l.success like '%N' and l.count<? ))";
 
-	public static final String FIND_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION n left outer join " +
+	public static final String FIND_STATS_JOB_QUERY = "SELECT n.*, CASE WHEN l.count is null THEN 0 ELSE l.count END as c FROM (DM_NOTIFICATION_SNS n left outer join " +
 			"(SELECT NOTIFICATION_ID, group_concat(success) as success, count(*) as count from METASTOR_PROCESSING_LOG " +
 			"group by NOTIFICATION_ID) l on l.NOTIFICATION_ID=n.ID) " +
 			"where WF_TYPE = 5 and ( l.success is null or (l.success like '%N' and l.count<? ))";
