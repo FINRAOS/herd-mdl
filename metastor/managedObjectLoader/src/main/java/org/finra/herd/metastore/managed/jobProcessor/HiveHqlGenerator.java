@@ -124,30 +124,46 @@ public class HiveHqlGenerator {
         //Check for Format changes
         List<String> schemaHql = schemaSql(tableExists, jd);
 
-        log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
 
-        //Execute only when no format change
-        if(!tableExists || !this.formatChange.hasChange()){
-            // Add database Statements
-            selectDatabase(jd, schemaHql);
+        if (!tableExists ){
 
             // Add DDL's from data DDL
-            addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
+            return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
 
-            //Stats
-            statsHelper.addAnalyzeStats(jd, partitions);
+        }else{
 
-            // Create file
-            Path hqlFilePath = createHqlFile(jd);
-            Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
+            log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
+            //Execute only when no format change
+            if( !this.formatChange.hasChange()){
+                // Add database Statements
+                return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
 
-            return hqlFilePath.toString();
-        } else{
+            }
+
             return null;
+
         }
 
 
 
+
+    }
+
+    private String getHqlFilePath(JobDefinition jd, List<String> partitions, boolean tableExists, BusinessObjectDataDdl dataDdl, List<String> schemaHql) throws IOException {
+
+        selectDatabase(jd, schemaHql);
+
+        // Add DDL's from data DDL
+        addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
+
+        //Stats
+        statsHelper.addAnalyzeStats(jd, partitions);
+
+        // Create file
+        Path hqlFilePath = createHqlFile(jd);
+        Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
+
+        return hqlFilePath.toString();
     }
 
     protected void selectDatabase(JobDefinition jd, List<String> schemaHql) {
