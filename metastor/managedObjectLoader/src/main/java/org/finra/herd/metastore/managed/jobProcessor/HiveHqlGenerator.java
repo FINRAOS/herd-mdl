@@ -110,6 +110,7 @@ public class HiveHqlGenerator {
             }
 
         } else {
+
             log.info("Table does not exist, create new " + jd.toString());
         }
         return list;
@@ -126,7 +127,7 @@ public class HiveHqlGenerator {
         log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
 
         //Execute only when no format change
-        if(!this.formatChange.hasChange()){
+        if(!tableExists || !this.formatChange.hasChange()){
             // Add database Statements
             selectDatabase(jd, schemaHql);
 
