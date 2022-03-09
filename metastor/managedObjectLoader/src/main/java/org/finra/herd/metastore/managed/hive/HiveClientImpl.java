@@ -28,6 +28,8 @@ import org.finra.herd.metastore.managed.format.HRoleComparator;
 import org.finra.herd.metastore.managed.format.HRoles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
+import org.springframework.jdbc.core.RowCountCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -273,6 +275,8 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
             Statement stmt = con.createStatement();
 
+            stmt.execute("set role admin");
+
             stmt.execute("SHOW CREATE TABLE " + tableName);
 
             ResultSet resultSet = stmt.getResultSet();
@@ -307,40 +311,68 @@ public class HiveClientImpl implements HiveClient {
 
     @Override
     public List<HivePartition> getExistingPartitions(String database, String tableName, Set<String> partitionSpec) {
+
         List<HivePartition> partName = Lists.newArrayList();
 
-        partitionSpec.forEach(s -> {
-            partName.addAll(
-                    hiveJdbcTemplate.query(
-                            String.format("SHOW PARTITIONS %s.%s PARTITION (%s)", database, tableName, s)
-                            , new RowMapper<HivePartition>() {
-                                @Nullable
-                                @Override
-                                public HivePartition mapRow(ResultSet resultSet, int i) throws SQLException {
-                                    return HivePartition.builder().metastorePartName(resultSet.getString(1)).build();
-                                }
-                            }
-                    ));
-        });
+        try {
+
+            Connection con = getDatabaseConnection(database);
+            Statement stmt = con.createStatement();
+            partitionSpec.forEach(s -> {
+
+                try {
+
+                    stmt.execute("set role admin");
+
+                    String sql = String.format("SHOW PARTITIONS %s.%s PARTITION (%s)", database, tableName, s);
+
+                    ResultSet rs = stmt.executeQuery(sql);
+
+                    while (rs.next()) {
+
+                        partName.add(HivePartition.builder().metastorePartName(rs.getString(1)).build());
+
+                    }
+
+                } catch (SQLException se) {
+                    throw new RuntimeException("HQL can not be executed" + se.getMessage());
+                }
+
+            });
+
+
+        } catch (SQLException sqe) {
+            throw new RuntimeException("Could not connect to  HQL DB" + sqe.getMessage());
+
+        }
 
         return partName;
+
     }
 
     @Override
     public List<HivePartition> getExistingPartitions(String database, String tableName) {
         List<HivePartition> partName = Lists.newArrayList();
 
-        partName.addAll(
-                hiveJdbcTemplate.query(
-                        String.format("SHOW PARTITIONS %s.%s", database, tableName)
-                        , new RowMapper<HivePartition>() {
+        String sql = String.format("SHOW PARTITIONS %s.%s", database, tableName);
+        try {
 
-                            @Override
-                            public HivePartition mapRow(ResultSet resultSet, int i) throws SQLException {
-                                return HivePartition.builder().metastorePartName(resultSet.getString(1)).build();
-                            }
-                        }
-                ));
+            Connection con = getDatabaseConnection(database);
+            Statement stmt = con.createStatement();
+            stmt.execute("set role admin");
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+
+                partName.add(HivePartition.builder().metastorePartName(rs.getString(1)).build());
+
+            }
+
+
+        } catch (SQLException sqe) {
+            throw new RuntimeException("HQL can not be executed" + sqe.getMessage());
+
+        }
+
         return partName;
     }
 
