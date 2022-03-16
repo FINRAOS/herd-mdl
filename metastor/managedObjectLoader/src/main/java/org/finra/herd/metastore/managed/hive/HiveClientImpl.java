@@ -444,6 +444,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
 
             Statement stmt = con.createStatement();
+            stmt.execute("set role admin");
             return stmt.execute(hqlStatement);
 
         }
