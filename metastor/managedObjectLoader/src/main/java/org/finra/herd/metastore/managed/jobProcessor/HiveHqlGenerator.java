@@ -26,7 +26,6 @@ import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
 import org.finra.herd.metastore.managed.stats.StatsHelper;
-import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
@@ -42,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -73,28 +73,28 @@ public class HiveHqlGenerator {
     @Autowired
     protected StatsHelper statsHelper;
 
-    protected  FormatChange formatChange;
+    protected FormatChange formatChange;
 
 
     public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
 
         String tableName = jd.getTableName();
 
-        List<String> list = Lists.newArrayList();
+        List<String> schema = Lists.newArrayList();
 
         if (schemaExists) {
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
-                list.add(dataMgmtSvc.getTableSchema(jd, true));
+                schema.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
                 try {
                     this.formatChange = detectSchemaChanges.getFormatChange(jd);
                     if (this.formatChange.hasChange()) {
                         List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
-                        log.info("formatNotification:{}",formatNotification);
-                        if(formatNotification!=null && formatNotification.size()<=0){
+                        log.info("formatNotification:{}", formatNotification);
+                        if (formatNotification != null && formatNotification.size() <= 0) {
                             submitFormatJob(jd);
-                        }else{
-                            log.info("A format notification:  {} is being currently processed for this job definition:  {}",formatNotification,jd);
+                        } else {
+                            log.info("A format notification:  {} is being currently processed for this job definition:  {}", formatNotification, jd);
                         }
 
                     }
@@ -104,7 +104,7 @@ public class HiveHqlGenerator {
                     if (!jd.getObjectDefinition().getFileType().equalsIgnoreCase("ORC")) {
                         //Can only do replace column in this case
                         String sql = dataMgmtSvc.getTableSchema(jd, true);
-                        list.add(sql);
+                        schema.add(sql);
                     }
                 }
             }
@@ -113,28 +113,28 @@ public class HiveHqlGenerator {
 
             log.info("Table does not exist, create new " + jd.toString());
         }
-        return list;
+        return schema;
     }
 
 
     public String buildHql(JobDefinition jd, List<String> partitions) throws IOException, ApiException, SQLException {
+
         boolean tableExists = hiveClient.tableExist(jd.getObjectDefinition().getDbName(), jd.getTableName());
-        BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions);
+
+        BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions, true);
 
         //Check for Format changes
         List<String> schemaHql = schemaSql(tableExists, jd);
-
-
-        if (!tableExists ){
+        if (!tableExists) {
 
             // Add DDL's from data DDL
             return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
 
-        }else{
+        } else {
 
-            log.info("Are there any Format Changes ==>{}",this.formatChange.hasChange());
+            log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
             //Execute only when no format change
-            if( !this.formatChange.hasChange()){
+            if (!this.formatChange.hasChange()) {
                 // Add database Statements
                 return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
 
@@ -143,8 +143,6 @@ public class HiveHqlGenerator {
             return null;
 
         }
-
-
 
 
     }
@@ -188,8 +186,6 @@ public class HiveHqlGenerator {
             schemaHql.add(dataDdl.getDdl());
         }
     }
-
-
 
 
     private void submitFormatJob(JobDefinition jd) {
