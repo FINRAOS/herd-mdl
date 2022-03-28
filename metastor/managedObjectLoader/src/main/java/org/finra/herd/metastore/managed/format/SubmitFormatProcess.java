@@ -38,7 +38,6 @@ public class SubmitFormatProcess {
             ExecuteWatchdog watchdog = new ExecuteWatchdog(timeout);
             executor.setWatchdog(watchdog);
             log.info("File submitProcess {} in thread {}", cmdline.toString(), Thread.currentThread().getName());
-            executor.setStreamHandler(new PumpStreamHandler(null, null, null));
             executor.setWorkingDirectory(new File("/tmp"));
             executor.execute(cmdline, resultHandler);
 
@@ -65,7 +64,6 @@ public class SubmitFormatProcess {
             try {
 
                 log.info("File submitProcess {} in thread {}", cmdline.toString(), Thread.currentThread().getName());
-                executor.setStreamHandler(new PumpStreamHandler(null, null, null));
                 executor.setWorkingDirectory(new File("/tmp"));
                 int exitvalue = executor.execute(cmdline);
                 formatProcessObject.setExitValue(exitvalue);

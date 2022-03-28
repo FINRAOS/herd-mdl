@@ -299,7 +299,7 @@ public class RenameFormatStrategy implements FormatStrategy {
                 .jobDefinition(jobDefinition)
                 .build();
         formatProcessObjectList.add(submitFormatProcess.submitProcess(submitFormatProcess.getCommandLine(tmpFile), formatProcessObject));
-        jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId);
+        jobPicker.extendLock(jobDefinition, this.clusterId, this.workerId,25);
     }
 
 
