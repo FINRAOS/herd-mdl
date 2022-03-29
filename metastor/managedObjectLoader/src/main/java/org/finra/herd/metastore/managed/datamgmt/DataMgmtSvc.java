@@ -101,6 +101,7 @@ public class DataMgmtSvc {
         return format;
     }
 
+    // Older way of doing things. Individual partitions come in separate Alter table statements.
     public BusinessObjectDataDdl getBusinessObjectDataDdl(org.finra.herd.metastore.managed.JobDefinition jd, List<String> partitions) throws ApiException {
         BusinessObjectDataDdlRequest request = new BusinessObjectDataDdlRequest();
 
@@ -158,7 +159,9 @@ public class DataMgmtSvc {
         request.setIncludeIfNotExistsOption(true);
         request.setTableName(jd.getTableName());
         request.combineMultiplePartitionsInSingleAlterTable(combineAlterStmts);
-        request.combinedAlterTableMaxPartitions(ALTER_TABLE_MAX_PARTITIONS);
+        // request.combinedAlterTableMaxPartitions(ALTER_TABLE_MAX_PARTITIONS); -
+        // This method is also used by backLoading and we will not know what will be the max limit for a new object.
+        // DM does not set a limit on the DDL
 
         List<PartitionValueFilter> partitionValueFilters = Lists.newArrayList();
 
