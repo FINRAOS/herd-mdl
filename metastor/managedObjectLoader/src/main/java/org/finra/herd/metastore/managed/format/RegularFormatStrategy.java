@@ -81,7 +81,9 @@ public class RegularFormatStrategy implements FormatStrategy {
             log.info("No Regular format changes detected {} {}", jobDefinition.getObjectDefinition().getNameSpace(), jobDefinition.getObjectDefinition().getDbName());
         }
 
+
         if (errMsg != null && errMsg.capacity() > 0) {
+            log.info("Error Buffer is:{}",errMsg);
             notificationSender.sendFailureEmail(
                     jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change", this.clusterId
             );
