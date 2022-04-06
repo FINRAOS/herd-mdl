@@ -82,7 +82,7 @@ public class RegularFormatStrategy implements FormatStrategy {
         }
 
 
-        if (errMsg != null && errMsg.capacity() > 0) {
+        if (errMsg != null && errMsg.length() > 0) {
             log.info("Error Buffer is:{}",errMsg);
             notificationSender.sendFailureEmail(
                     jobDefinition, jobDefinition.getNumOfRetry(), "Unbale to do Regular format change", this.clusterId
