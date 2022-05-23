@@ -19,7 +19,7 @@
 	<parent>
 		<artifactId>metastore</artifactId>
 		<groupId>org.finra.herd-mdl.metastore</groupId>
-		<version>1.2.58</version>
+		<version>1.2.59</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -205,7 +205,12 @@
 			<artifactId>hadoop-common</artifactId>
 			<version>${hadoop.common.version}</version>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>4.3.7.RELEASE</version>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<outputDirectory>target/</outputDirectory>

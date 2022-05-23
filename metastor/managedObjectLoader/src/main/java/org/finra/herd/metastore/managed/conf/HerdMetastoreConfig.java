@@ -18,6 +18,7 @@ package org.finra.herd.metastore.managed.conf;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.hive.jdbc.HiveDriver;
+import org.finra.herd.metastore.managed.util.OAuthTokenSupplier;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,6 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 public class HerdMetastoreConfig {
     public static final String homeDir = System.getenv( "HOME" );
     public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
-    public static final String CRED_FILE_PATH = "cred.file.path";
     public static final String ANALYZE_STATS  = "analyze.stats";
     public static final int ALTER_TABLE_MAX_PARTITIONS = 6000; //Max partitions that can be dropped at a highest partition level.
 
@@ -72,7 +72,9 @@ public class HerdMetastoreConfig {
     protected Environment environment;
 
     @Autowired
-    protected Path credentialFilePath;
+    protected OAuthTokenSupplier oAuthTokenSupplier;
+
+
 
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
@@ -105,32 +107,13 @@ public class HerdMetastoreConfig {
     public ApiClient getDMApiClient() {
         ApiClient apiClient = new ApiClient();
         apiClient.setBasePath( dmUrl );
-        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
+        apiClient.setAccessToken(oAuthTokenSupplier.getAccessToken());
+//        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
 
         return apiClient;
     }
 
-    /**
-     * Reads Credentials from credential file
-     *
-     * @return
-     */
-    public String getCredentials() {
-        Path path = credentialFilePath;
-        try {
 
-            String cmdParamCredFilePath = environment.getProperty( CRED_FILE_PATH );
-
-            // If credential file passed as parameter to the object processor script, use that
-            log.info( "Credential file Passed as parameter: {}", cmdParamCredFilePath );
-            path = Paths.get( cmdParamCredFilePath );
-
-
-            return Files.lines( path ).findFirst().get();
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not read Herd Credentials from: " + path, e );
-        }
-    }
 
     /**
      * Returns Herd's Business Object Data Api
