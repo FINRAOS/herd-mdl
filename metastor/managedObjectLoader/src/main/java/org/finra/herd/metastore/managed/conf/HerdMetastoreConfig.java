@@ -18,7 +18,6 @@ package org.finra.herd.metastore.managed.conf;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.hive.jdbc.HiveDriver;
-import org.finra.herd.metastore.managed.util.OAuthTokenSupplier;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,8 +75,7 @@ public class HerdMetastoreConfig {
     @Autowired
     protected Path credentialFilePath;
 
-    @Autowired
-    OAuthTokenSupplier oAuthTokenSupplier;
+
 
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
@@ -101,22 +99,6 @@ public class HerdMetastoreConfig {
         return Paths.get(DM_PASS_FILE_PATH);
     }
 
-    /**
-     * Return herd ApiClient used to make calls to Herd Api's
-     *
-     * @return the Herd ApiClient {@link ApiClient}
-     *
-     */
-    @Bean
-    public ApiClient getDMApiClient() {
-        ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath(dmUrl);
-
-        apiClient.setAccessToken(oAuthTokenSupplier.getAccessToken(getCredentials()));
-//        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
-
-        return apiClient;
-    }
 
     /**
      * Reads Credentials from credential file
@@ -140,15 +122,6 @@ public class HerdMetastoreConfig {
         }
     }
 
-    /**
-     * Returns Herd's Business Object Data Api
-     *
-     * @return BusinessObjectDataApi {@link BusinessObjectDataApi}
-     */
-    @Bean
-    public BusinessObjectDataApi businessObjectDataApi() {
-        return new BusinessObjectDataApi( getDMApiClient() );
-    }
 
     @Bean
     public String homeDir(){
