@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.SpringVersion;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
@@ -45,28 +46,25 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 @Slf4j
 @Configuration
 public class HerdMetastoreConfig {
-    public static final String homeDir = System.getenv( "HOME" );
-    public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
-    public static final String ANALYZE_STATS  = "analyze.stats";
+    public static final String homeDir = System.getenv("HOME");
+    public static final String DM_PASS_FILE_PATH = String.format("%s/dmCreds/dmPass.base64", homeDir);
+    public static final String ANALYZE_STATS = "analyze.stats";
     public static final int ALTER_TABLE_MAX_PARTITIONS = 6000; //Max partitions that can be dropped at a highest partition level.
 
-
-
-    @Value( "${MYSQL_URL}" )
+    @Value("${MYSQL_URL}")
     protected String dburl;
 
-    @Value( "${MYSQL_USR}" )
+    @Value("${MYSQL_USR}")
     protected String dbUser;
 
-    @Value( "${MYSQL_PASS}" )
+    @Value("${MYSQL_PASS}")
     protected String dbPass;
 
-    @Value( "${DM_URL}" )
+    @Value("${DM_URL}")
     protected String dmUrl;
 
-    @Value( "${JDBC_VALIDATE_QUERY}" )
+    @Value("${JDBC_VALIDATE_QUERY}")
     protected String validationQuery;
-
 
     @Autowired
     protected Environment environment;
@@ -75,27 +73,26 @@ public class HerdMetastoreConfig {
     protected OAuthTokenSupplier oAuthTokenSupplier;
 
 
-
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setUrl( dburl );
-        dataSource.setUsername( dbUser );
-        dataSource.setPassword( dbPass );
-        dataSource.setInitialSize( 2 );
-        dataSource.setValidationQuery( validationQuery );
+        dataSource.setUrl(dburl);
+        dataSource.setUsername(dbUser);
+        dataSource.setPassword(dbPass);
+        dataSource.setInitialSize(2);
+        dataSource.setValidationQuery(validationQuery);
 
         return dataSource;
     }
 
     @Bean(name = "template")
     public JdbcTemplate getJdbcTemplate() {
-        return new JdbcTemplate( getDataSource() );
+        return new JdbcTemplate(getDataSource());
     }
 
     @Bean
     public Path credentialFilePath() {
-        return Paths.get( DM_PASS_FILE_PATH );
+        return Paths.get(DM_PASS_FILE_PATH);
     }
 
     /**
@@ -106,13 +103,13 @@ public class HerdMetastoreConfig {
     @Bean
     public ApiClient getDMApiClient() {
         ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath( dmUrl );
+        apiClient.setBasePath(dmUrl);
+
         apiClient.setAccessToken(oAuthTokenSupplier.getAccessToken());
 //        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
 
         return apiClient;
     }
-
 
 
     /**
@@ -122,11 +119,11 @@ public class HerdMetastoreConfig {
      */
     @Bean
     public BusinessObjectDataApi businessObjectDataApi() {
-        return new BusinessObjectDataApi( getDMApiClient() );
+        return new BusinessObjectDataApi(getDMApiClient());
     }
 
     @Bean
-    public String homeDir(){
+    public String homeDir() {
         return homeDir;
     }
 
@@ -138,15 +135,14 @@ public class HerdMetastoreConfig {
     }
 
 
-
-    @Bean (name = "hiveJdbcTemplate")
+    @Bean(name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource(
-            new HiveDriver()
-            , HIVE_URL
-            , HIVE_USER
-            , HIVE_PASSWORD
+                new HiveDriver()
+                , HIVE_URL
+                , HIVE_USER
+                , HIVE_PASSWORD
         );
-        return new JdbcTemplate( dataSource );
+        return new JdbcTemplate(dataSource);
     }
 }
