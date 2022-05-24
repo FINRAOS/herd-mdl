@@ -7,6 +7,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
 
@@ -29,8 +30,6 @@ public class OAuthTokenSupplier {
 
     private ConcurrentMap<String, AccessToken> accessTokenConcurrentMap = new ConcurrentHashMap<>();
 
-    public static final String CRED_FILE_PATH = "cred.file.path";
-
     private static final String TOKEN_NAME = "metastore_token";
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -44,7 +43,8 @@ public class OAuthTokenSupplier {
     protected Environment environment;
 
 
-    public String getAccessToken() {
+    @Retryable
+    public String getAccessToken(String credentials) {
 
 
         if (!accessTokenConcurrentMap.containsKey(TOKEN_NAME) ||
@@ -52,7 +52,7 @@ public class OAuthTokenSupplier {
 
             log.info("<===Generating a new token as one is needed===>");
             try {
-                generateToken();
+                generateToken(credentials);
             } catch (Exception e) {
                 throw new RuntimeException("Unable to execute call for getting Token" + e.getMessage());
             }
@@ -65,11 +65,11 @@ public class OAuthTokenSupplier {
     }
 
 
-    private void generateToken() throws Exception {
+    private void generateToken(String credentials) throws Exception {
 
 
         HttpPost httpPost = new HttpPost("https://isso-devint.fip.dev.catnms.com/fip//rest/isso/oauth2/access_token?grant_type=client_credentials");
-        httpPost.addHeader("Basic", getCredentials());
+        httpPost.addHeader("Authorization", String.format("Basic %s", credentials));
 
         CloseableHttpClient client = HttpClients.createDefault();
         AccessToken accessToken = client.execute(httpPost, httpResponse ->
@@ -81,26 +81,6 @@ public class OAuthTokenSupplier {
     }
 
 
-    /**
-     * Reads Credentials from credential file
-     *
-     * @return
-     */
-    private String getCredentials() {
-        Path path = credentialFilePath;
-        try {
 
-            String cmdParamCredFilePath = environment.getProperty(CRED_FILE_PATH);
-
-            // If credential file passed as parameter to the object processor script, use that
-            log.info("Credential file Passed as parameter: {}", cmdParamCredFilePath);
-            path = Paths.get(cmdParamCredFilePath);
-
-
-            return Files.lines(path).findFirst().get();
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read Herd Credentials from: " + path, e);
-        }
-    }
 
 }
