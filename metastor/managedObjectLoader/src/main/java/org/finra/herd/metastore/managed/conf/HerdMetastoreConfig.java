@@ -27,7 +27,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
-import org.springframework.retry.annotation.EnableRetry;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -43,7 +42,6 @@ import static org.finra.herd.metastore.managed.util.JobProcessorConstants.*;
 
 @Slf4j
 @Configuration
-@EnableRetry
 public class HerdMetastoreConfig {
     public static final String homeDir = System.getenv( "HOME" );
     public static final String DM_PASS_FILE_PATH = String.format( "%s/dmCreds/dmPass.base64", homeDir );
@@ -75,8 +73,6 @@ public class HerdMetastoreConfig {
     @Autowired
     protected Path credentialFilePath;
 
-
-
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
         BasicDataSource dataSource = new BasicDataSource();
@@ -91,12 +87,12 @@ public class HerdMetastoreConfig {
 
     @Bean(name = "template")
     public JdbcTemplate getJdbcTemplate() {
-        return new JdbcTemplate(getDataSource());
+        return new JdbcTemplate( getDataSource() );
     }
 
     @Bean
     public Path credentialFilePath() {
-        return Paths.get(DM_PASS_FILE_PATH);
+        return Paths.get( DM_PASS_FILE_PATH );
     }
 
 
