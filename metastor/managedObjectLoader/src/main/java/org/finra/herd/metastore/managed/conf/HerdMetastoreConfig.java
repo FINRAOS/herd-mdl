@@ -90,39 +90,7 @@ public class HerdMetastoreConfig {
         return new JdbcTemplate( getDataSource() );
     }
 
-    @Bean
-    public Path credentialFilePath() {
-        return Paths.get( DM_PASS_FILE_PATH );
-    }
 
-
-    /**
-     * Reads Credentials from credential file
-     *
-     * @return
-     */
-    public String getCredentials() {
-        Path path = credentialFilePath;
-        try {
-
-            String cmdParamCredFilePath = environment.getProperty( CRED_FILE_PATH );
-
-            // If credential file passed as parameter to the object processor script, use that
-            log.info( "Credential file Passed as parameter: {}", cmdParamCredFilePath );
-            path = Paths.get( cmdParamCredFilePath );
-
-
-            return Files.lines( path ).findFirst().get();
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not read Herd Credentials from: " + path, e );
-        }
-    }
-
-
-    @Bean
-    public String homeDir(){
-        return homeDir;
-    }
 
     @Bean
     public boolean analyzeStats() {
