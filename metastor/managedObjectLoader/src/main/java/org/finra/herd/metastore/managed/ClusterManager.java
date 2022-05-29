@@ -38,6 +38,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -299,9 +300,11 @@ public class ClusterManager implements InitializingBean {
 		}
 
 		ThreadPoolTaskExecutor executor= (ThreadPoolTaskExecutor) applicationContext.getBean("formatExecutor");
+		ThreadPoolTaskScheduler threadPoolTaskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("OauthToken");
 		ExecutorService fs= executor.getThreadPoolExecutor();
 		fs.shutdown();
 		es.shutdownNow();
+		threadPoolTaskScheduler.shutdown();
 
 		try {
 			es.awaitTermination( 5, TimeUnit.SECONDS );

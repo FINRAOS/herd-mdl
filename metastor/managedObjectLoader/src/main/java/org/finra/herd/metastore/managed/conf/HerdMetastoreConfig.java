@@ -21,12 +21,14 @@ import org.apache.hive.jdbc.HiveDriver;
 import org.finra.herd.sdk.api.BusinessObjectDataApi;
 import org.finra.herd.sdk.invoker.ApiClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -70,17 +72,16 @@ public class HerdMetastoreConfig {
     @Autowired
     protected Environment environment;
 
-    @Autowired
-    protected Path credentialFilePath;
+
 
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setUrl(dburl);
-        dataSource.setUsername(dbUser);
-        dataSource.setPassword(dbPass);
-        dataSource.setInitialSize(2);
-        dataSource.setValidationQuery(validationQuery);
+        dataSource.setUrl( dburl );
+        dataSource.setUsername( dbUser );
+        dataSource.setPassword( dbPass );
+        dataSource.setInitialSize( 2 );
+        dataSource.setValidationQuery( validationQuery );
 
         return dataSource;
     }
@@ -90,7 +91,16 @@ public class HerdMetastoreConfig {
         return new JdbcTemplate( getDataSource() );
     }
 
+    @Bean
+    public Path credentialFilePath() {
+        return Paths.get( DM_PASS_FILE_PATH );
+    }
 
+
+    @Bean
+    public String homeDir(){
+        return homeDir;
+    }
 
     @Bean
     public boolean analyzeStats() {
@@ -100,14 +110,25 @@ public class HerdMetastoreConfig {
     }
 
 
-    @Bean(name = "hiveJdbcTemplate")
+
+    @Bean (name = "hiveJdbcTemplate")
     public JdbcTemplate hiveJdbcTemplate() {
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource(
-                new HiveDriver()
-                , HIVE_URL
-                , HIVE_USER
-                , HIVE_PASSWORD
+            new HiveDriver()
+            , HIVE_URL
+            , HIVE_USER
+            , HIVE_PASSWORD
         );
-        return new JdbcTemplate(dataSource);
+        return new JdbcTemplate( dataSource );
+    }
+
+    @Bean(name="OauthToken")
+    public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
+        ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+        threadPoolTaskScheduler.setPoolSize(1);
+        threadPoolTaskScheduler.setThreadNamePrefix("OauthTokenRefresher");
+        threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(false);
+        return threadPoolTaskScheduler;
+
     }
 }
