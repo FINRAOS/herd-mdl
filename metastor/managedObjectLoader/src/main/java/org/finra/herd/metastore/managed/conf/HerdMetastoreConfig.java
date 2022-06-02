@@ -28,6 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -71,8 +72,7 @@ public class HerdMetastoreConfig {
     @Autowired
     protected Environment environment;
 
-    @Autowired
-    protected Path credentialFilePath;
+
 
     @Bean(destroyMethod = "")
     public DataSource getDataSource() {
@@ -96,51 +96,6 @@ public class HerdMetastoreConfig {
         return Paths.get( DM_PASS_FILE_PATH );
     }
 
-    /**
-     * Return herd ApiClient used to make calls to Herd Api's
-     *
-     * @return the Herd ApiClient {@link ApiClient}
-     */
-    @Bean
-    public ApiClient getDMApiClient() {
-        ApiClient apiClient = new ApiClient();
-        apiClient.setBasePath( dmUrl );
-        apiClient.addDefaultHeader( "Authorization", String.format( "Basic %s", getCredentials() ) );
-
-        return apiClient;
-    }
-
-    /**
-     * Reads Credentials from credential file
-     *
-     * @return
-     */
-    public String getCredentials() {
-        Path path = credentialFilePath;
-        try {
-
-            String cmdParamCredFilePath = environment.getProperty( CRED_FILE_PATH );
-
-            // If credential file passed as parameter to the object processor script, use that
-            log.info( "Credential file Passed as parameter: {}", cmdParamCredFilePath );
-            path = Paths.get( cmdParamCredFilePath );
-
-
-            return Files.lines( path ).findFirst().get();
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not read Herd Credentials from: " + path, e );
-        }
-    }
-
-    /**
-     * Returns Herd's Business Object Data Api
-     *
-     * @return BusinessObjectDataApi {@link BusinessObjectDataApi}
-     */
-    @Bean
-    public BusinessObjectDataApi businessObjectDataApi() {
-        return new BusinessObjectDataApi( getDMApiClient() );
-    }
 
     @Bean
     public String homeDir(){
@@ -165,5 +120,15 @@ public class HerdMetastoreConfig {
             , HIVE_PASSWORD
         );
         return new JdbcTemplate( dataSource );
+    }
+
+    @Bean(name="OauthToken")
+    public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
+        ThreadPoolTaskScheduler threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+        threadPoolTaskScheduler.setPoolSize(1);
+        threadPoolTaskScheduler.setThreadNamePrefix("OauthTokenRefresher");
+        threadPoolTaskScheduler.setWaitForTasksToCompleteOnShutdown(false);
+        return threadPoolTaskScheduler;
+
     }
 }

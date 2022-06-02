@@ -69,6 +69,8 @@ public class DataMgmtSvc {
                 (hostname, sslSession) -> true);
     }
 
+
+
     public String getTableSchema(org.finra.herd.metastore.managed.JobDefinition jd, boolean replaceColumn) throws ApiException {
 
         BusinessObjectFormatApi businessObjectFormatApi = new BusinessObjectFormatApi(dmApiClient);

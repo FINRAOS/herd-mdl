@@ -24,20 +24,17 @@ import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceClientBuild
 import com.amazonaws.services.elasticmapreduce.model.ClusterState;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterRequest;
 import com.amazonaws.services.elasticmapreduce.model.DescribeClusterResult;
-import org.finra.herd.metastore.managed.conf.AsyncConfig;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.sdk.api.EmrApi;
 import org.finra.herd.sdk.invoker.ApiClient;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -289,19 +286,28 @@ public class ClusterManager implements InitializingBean {
 		template.update( REMOVE_CLUSTER, this.clusterID );
 		logger.info( this.clusterID + " deleted from running cluster list before destroy" );
 
-		shutdownAutoscaleService( 1 );
+		shutdownAllRunningTasks( 1 );
 	}
 
-	void shutdownAutoscaleService( int counter ) {
+
+	/*
+	  - Shutdown cluster Manager Autoscale thread
+	  - Shutdown format Executor thread
+	  - Shutdown oauth Refresher thread once the application has finished processing all notifications.
+	 */
+
+	void shutdownAllRunningTasks(int counter ) {
 		if ( counter >= 5 ) {
 			logger.info( "Max Retries reached, might have to manually terminate cluster!" );
 			return;
 		}
 
 		ThreadPoolTaskExecutor executor= (ThreadPoolTaskExecutor) applicationContext.getBean("formatExecutor");
+		ThreadPoolTaskScheduler oauthTaskScheduler = (ThreadPoolTaskScheduler) applicationContext.getBean("OauthToken");
 		ExecutorService fs= executor.getThreadPoolExecutor();
 		fs.shutdown();
 		es.shutdownNow();
+		oauthTaskScheduler.shutdown();
 
 		try {
 			es.awaitTermination( 5, TimeUnit.SECONDS );
@@ -315,7 +321,7 @@ public class ClusterManager implements InitializingBean {
 				logger.info( "Autoscale service is still running, trying again to shutdown" );
 				counter++;
 				logger.info( "Retry #: " + counter );
-				shutdownAutoscaleService( counter );
+				shutdownAllRunningTasks( counter );
 			}
 		}
 	}
