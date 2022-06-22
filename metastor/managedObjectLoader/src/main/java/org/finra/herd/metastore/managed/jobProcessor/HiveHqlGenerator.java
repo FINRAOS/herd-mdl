@@ -82,12 +82,14 @@ public class HiveHqlGenerator {
 
         List<String> schema = Lists.newArrayList();
 
+
         if (schemaExists) {
+            this.formatChange = detectSchemaChanges.getFormatChange(jd);
+
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
                 schema.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
                 try {
-                    this.formatChange = detectSchemaChanges.getFormatChange(jd);
                     if (this.formatChange.hasChange()) {
                         List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
                         log.info("formatNotification:{}", formatNotification);
