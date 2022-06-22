@@ -82,7 +82,6 @@ public class HiveHqlGenerator {
 
         List<String> schema = Lists.newArrayList();
 
-
         if (schemaExists) {
             this.formatChange = detectSchemaChanges.getFormatChange(jd);
 
@@ -90,6 +89,7 @@ public class HiveHqlGenerator {
                 schema.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
                 try {
+                    this.formatChange = detectSchemaChanges.getFormatChange(jd);
                     if (this.formatChange.hasChange()) {
                         List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
                         log.info("formatNotification:{}", formatNotification);
@@ -134,12 +134,15 @@ public class HiveHqlGenerator {
 
         } else {
 
-            log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
-            //Execute only when no format change
-            if (!this.formatChange.hasChange()) {
-                // Add database Statements
-                return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
+            //Singelton we do not create format object
+            if (this.formatChange!=null) {
+                log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
+                //Execute only when no format change
+                if (!this.formatChange.hasChange()) {
+                    // Add database Statements
+                    return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
 
+                }
             }
 
             return null;
