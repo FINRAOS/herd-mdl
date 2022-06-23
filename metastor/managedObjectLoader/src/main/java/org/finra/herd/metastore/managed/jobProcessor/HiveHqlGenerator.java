@@ -83,8 +83,6 @@ public class HiveHqlGenerator {
         List<String> schema = Lists.newArrayList();
 
         if (schemaExists) {
-            this.formatChange = detectSchemaChanges.getFormatChange(jd);
-
             if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
                 schema.add(dataMgmtSvc.getTableSchema(jd, true));
             } else {
