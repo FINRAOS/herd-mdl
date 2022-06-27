@@ -98,7 +98,7 @@ public class HiveHqlGeneratorTest {
         when(dataMgmtSvc.getDMFormat(eq(jd))).thenReturn(format);
         when(dataMgmtSvc.getTableSchema(eq(jd), eq(false))).thenReturn(DM_DDL);
 
-        List<String> result = hiveHqlGenerator.formatChangeHql(true, jd);
+        List<String> result = hiveHqlGenerator.formatChangeHql(jd);
 
         assertTrue(result.size() == 0);
 
@@ -133,7 +133,7 @@ public class HiveHqlGeneratorTest {
         format.setBusinessObjectFormatVersion(1);
         when(dataMgmtSvc.getDMFormat(eq(jd))).thenReturn(format);
         when(dataMgmtSvc.getTableSchema(eq(jd), eq(false))).thenReturn(DM_DDL);
-        List<String> result = hiveHqlGenerator.formatChangeHql(true, jd);
+        List<String> result = hiveHqlGenerator.formatChangeHql(jd);
 
         assertEquals("format cahnge", 2, result.size());
 

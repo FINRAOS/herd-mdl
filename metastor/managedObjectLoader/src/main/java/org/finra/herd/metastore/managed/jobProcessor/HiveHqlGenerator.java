@@ -75,7 +75,7 @@ public class HiveHqlGenerator {
     protected FormatChange formatChange;
 
 
-    public List<String> formatChangeHql(boolean tableExists, JobDefinition jd) throws ApiException {
+    public List<String> formatChangeHql(JobDefinition jd) throws ApiException {
 
         List<String> hqlStatements = Lists.newArrayList();
 
@@ -102,7 +102,7 @@ public class HiveHqlGenerator {
 
         } else {
 
-            List<String> hqlStatements = formatChangeHql(tableExists, jd);
+            List<String> hqlStatements = formatChangeHql(jd);
 
             if (this.formatChange != null) {
                 log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
