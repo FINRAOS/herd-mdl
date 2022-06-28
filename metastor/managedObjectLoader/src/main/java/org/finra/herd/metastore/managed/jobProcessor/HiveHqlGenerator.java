@@ -41,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -76,44 +75,17 @@ public class HiveHqlGenerator {
     protected FormatChange formatChange;
 
 
-    public List<String> schemaSql(boolean schemaExists, JobDefinition jd) throws ApiException, SQLException {
+    public List<String> formatChangeHql(JobDefinition jd) throws ApiException {
 
-        String tableName = jd.getTableName();
+        List<String> hqlStatements = Lists.newArrayList();
 
-        List<String> schema = Lists.newArrayList();
-
-        if (schemaExists) {
-            if (jd.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jd.getPartitionKey().equalsIgnoreCase("partition")) {
-                schema.add(dataMgmtSvc.getTableSchema(jd, true));
-            } else {
-                try {
-                    this.formatChange = detectSchemaChanges.getFormatChange(jd);
-                    if (this.formatChange.hasChange()) {
-                        List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
-                        log.info("formatNotification:{}", formatNotification);
-                        if (formatNotification != null && formatNotification.size() <= 0) {
-                            submitFormatJob(jd);
-                        } else {
-                            log.info("A format notification:  {} is being currently processed for this job definition:  {}", formatNotification, jd);
-                        }
-
-                    }
-                } catch (Exception ex) {
-                    log.warn("Error comparing formats", ex);
-                    notificationSender.sendNotificationEmail(ex.getMessage(), "Error comparing formats", jd);
-                    if (!jd.getObjectDefinition().getFileType().equalsIgnoreCase("ORC")) {
-                        //Can only do replace column in this case
-                        String sql = dataMgmtSvc.getTableSchema(jd, true);
-                        schema.add(sql);
-                    }
-                }
-            }
-
+        if (isSingletonAndKeyPartition(jd)) {
+            hqlStatements.add(dataMgmtSvc.getTableSchema(jd, true));
         } else {
-
-            log.info("Table does not exist, create new " + jd.toString());
+            detectFormatChange(hqlStatements, jd);
         }
-        return schema;
+
+        return hqlStatements;
     }
 
 
@@ -123,22 +95,21 @@ public class HiveHqlGenerator {
 
         BusinessObjectDataDdl dataDdl = dataMgmtSvc.getBusinessObjectDataDdl(jd, partitions, true);
 
-        //Check for Format changes
-        List<String> schemaHql = schemaSql(tableExists, jd);
         if (!tableExists) {
 
             // Add DDL's from data DDL
-            return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
+            return getHqlFilePath(jd, partitions, tableExists, dataDdl, Lists.newArrayList());
 
         } else {
 
-            //Singelton we do not create format object
-            if (this.formatChange!=null) {
+            List<String> hqlStatements = formatChangeHql(jd);
+
+            if (this.formatChange != null) {
                 log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
                 //Execute only when no format change
                 if (!this.formatChange.hasChange()) {
                     // Add database Statements
-                    return getHqlFilePath(jd, partitions, tableExists, dataDdl, schemaHql);
+                    return getHqlFilePath(jd, partitions, tableExists, dataDdl, hqlStatements);
 
                 }
             }
@@ -148,6 +119,31 @@ public class HiveHqlGenerator {
         }
 
 
+    }
+
+    private void detectFormatChange(List<String> hqlStatements, JobDefinition jd) throws ApiException {
+
+        try {
+            this.formatChange = detectSchemaChanges.getFormatChange(jd);
+            if (this.formatChange.hasChange()) {
+                List<DMNotification> formatNotification = jobProcessorDAO.getFormatNotification(jd);
+                log.info("formatNotification:{}", formatNotification);
+                if (formatNotification != null && formatNotification.size() <= 0) {
+                    submitFormatJob(jd);
+                } else {
+                    log.info("A format notification:  {} is being currently processed for this job definition:  {}", formatNotification, jd);
+                }
+
+            }
+        } catch (Exception ex) {
+            log.warn("Error comparing formats", ex);
+            notificationSender.sendNotificationEmail(ex.getMessage(), "Error comparing formats", jd);
+            if (!jd.getObjectDefinition().getFileType().equalsIgnoreCase("ORC")) {
+                //Can only do replace column in this case
+                String sql = dataMgmtSvc.getTableSchema(jd, true);
+                hqlStatements.add(sql);
+            }
+        }
     }
 
     private String getHqlFilePath(JobDefinition jd, List<String> partitions, boolean tableExists, BusinessObjectDataDdl dataDdl, List<String> schemaHql) throws IOException {
@@ -188,6 +184,7 @@ public class HiveHqlGenerator {
         } else {
             schemaHql.add(dataDdl.getDdl());
         }
+        log.info("schemaHQL :{}", schemaHql);
     }
 
 
@@ -229,6 +226,10 @@ public class HiveHqlGenerator {
 
     protected boolean cascade(JobDefinition jd) {
         return true;
+    }
+
+    protected boolean isSingletonAndKeyPartition(JobDefinition jobDefinition) {
+        return jobDefinition.getWfType() == ObjectProcessor.WF_TYPE_SINGLETON && jobDefinition.getPartitionKey().equalsIgnoreCase("partition");
     }
 
     /**
