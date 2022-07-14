@@ -26,6 +26,7 @@ import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.finra.herd.metastore.managed.format.HRoleComparator;
 import org.finra.herd.metastore.managed.format.HRoles;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
@@ -275,7 +276,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
             Statement stmt = con.createStatement();
 
-            stmt.execute("set role admin");
+            stmt.execute(setroleadmin);
 
             stmt.execute("SHOW CREATE TABLE " + tableName);
 
@@ -322,7 +323,7 @@ public class HiveClientImpl implements HiveClient {
 
                 try {
 
-                    stmt.execute("set role admin");
+                    stmt.execute(setroleadmin);
 
                     String sql = String.format("SHOW PARTITIONS %s.%s PARTITION (%s)", database, tableName, s);
 
@@ -359,7 +360,7 @@ public class HiveClientImpl implements HiveClient {
 
             Connection con = getDatabaseConnection(database);
             Statement stmt = con.createStatement();
-            stmt.execute("set role admin");
+            stmt.execute(setroleadmin);
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
 
@@ -406,7 +407,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
 
             Statement stmt = con.createStatement();
-            stmt.execute("set role admin");
+            stmt.execute(setroleadmin);
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
                 String principalName = rs.getString(5);
@@ -444,7 +445,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
 
             Statement stmt = con.createStatement();
-            stmt.execute("set role admin");
+            stmt.execute(setroleadmin);
             return stmt.execute(hqlStatement);
 
         }

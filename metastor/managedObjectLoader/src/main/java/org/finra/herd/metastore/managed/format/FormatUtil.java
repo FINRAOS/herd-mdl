@@ -7,6 +7,7 @@ import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.JobPicker;
 import org.finra.herd.metastore.managed.NotificationSender;
 import org.finra.herd.metastore.managed.hive.HiveClientImpl;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -67,10 +68,10 @@ public class FormatUtil {
 
             List<String> hqlStatements = new ArrayList<>();
             hqlStatements.add("USE " + dbName + ";" + "CREATE DATABASE IF NOT EXISTS archive;");
-            hqlStatements.add("set role admin;");
+            hqlStatements.add(JobProcessorConstants.setroleadmin);
             List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName,newTableName, roles);
             if (!grantRolesHql.isEmpty()) {
-                grantRolesHql.add(0, "set role admin");
+                grantRolesHql.add(0, JobProcessorConstants.setroleadmin);
                 hiveClient.executeQueries(dbName, grantRolesHql);
                 Thread.sleep(5000);
                 List<HRoles> grantedRoles = hiveClient.getRoles(dbName.toLowerCase(), newTableName.toLowerCase());
