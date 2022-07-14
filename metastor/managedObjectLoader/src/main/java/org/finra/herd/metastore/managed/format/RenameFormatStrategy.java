@@ -269,6 +269,7 @@ public class RenameFormatStrategy implements FormatStrategy {
             rootPartitionList.forEach(partitionList -> {
                 String setHiveClientTimeout = "set hive.metastore.client.socket.timeout=3600;";
                 String useDb = "use " + jobDefinition.getObjectDefinition().getDbName() + ";";
+                hiveDdl.add("set role admin;");
                 hiveDdl.add(setHiveClientTimeout);
                 hiveDdl.add(useDb);
                 Optional<String> ddl = getPartitionDdlFromDM(jobDefinition, partitionList, request);
