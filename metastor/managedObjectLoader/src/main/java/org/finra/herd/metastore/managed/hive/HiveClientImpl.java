@@ -276,7 +276,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
             Statement stmt = con.createStatement();
 
-            stmt.execute(setroleadmin);
+            stmt.execute("set role admin");
 
             stmt.execute("SHOW CREATE TABLE " + tableName);
 
@@ -323,7 +323,7 @@ public class HiveClientImpl implements HiveClient {
 
                 try {
 
-                    stmt.execute(setroleadmin);
+                    stmt.execute("set role admin");
 
                     String sql = String.format("SHOW PARTITIONS %s.%s PARTITION (%s)", database, tableName, s);
 
@@ -360,7 +360,7 @@ public class HiveClientImpl implements HiveClient {
 
             Connection con = getDatabaseConnection(database);
             Statement stmt = con.createStatement();
-            stmt.execute(setroleadmin);
+            stmt.execute("set role admin");
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
 
@@ -407,7 +407,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
 
             Statement stmt = con.createStatement();
-            stmt.execute(setroleadmin);
+            stmt.execute("set role admin");
             ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
                 String principalName = rs.getString(5);
@@ -445,7 +445,7 @@ public class HiveClientImpl implements HiveClient {
         try (Connection con = getDatabaseConnection(dbName)) {
 
             Statement stmt = con.createStatement();
-            stmt.execute(setroleadmin);
+            stmt.execute("set role admin");
             return stmt.execute(hqlStatement);
 
         }

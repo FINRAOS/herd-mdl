@@ -71,7 +71,7 @@ public class FormatUtil {
             hqlStatements.add(JobProcessorConstants.setroleadmin);
             List<String> grantRolesHql = grantPrestoRoles(dbName,existingTableName,newTableName, roles);
             if (!grantRolesHql.isEmpty()) {
-                grantRolesHql.add(0, JobProcessorConstants.setroleadmin);
+                grantRolesHql.add(0, "set role admin");
                 hiveClient.executeQueries(dbName, grantRolesHql);
                 Thread.sleep(5000);
                 List<HRoles> grantedRoles = hiveClient.getRoles(dbName.toLowerCase(), newTableName.toLowerCase());
