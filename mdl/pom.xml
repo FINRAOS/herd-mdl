@@ -39,7 +39,7 @@
     <maven.shade.plugin.version>3.1.1</maven.shade.plugin.version>
 
     <!-- Third Party JAR Dependencies -->
-    <aws-sdk.version>1.11.339</aws-sdk.version>
+    <aws-sdk.version>1.12.261</aws-sdk.version>
     <commons.io.version>2.6</commons.io.version>
     <slf4j-log4j.version>1.7.25</slf4j-log4j.version>
     <junit.version>4.12</junit.version>
