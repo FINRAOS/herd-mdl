@@ -34,7 +34,7 @@
 		<commons.io.version>2.6</commons.io.version>
 		<httpclient.version>4.5.5</httpclient.version>
 		<jersey.common.version>2.8</jersey.common.version>
-		<aws.java.sdk>1.11.306</aws.java.sdk>
+		<aws.java.sdk>1.12.261</aws.java.sdk>
 		<guava.version>23.0</guava.version>
 		<common.dpcp.version>2.2.0</common.dpcp.version>
 		<pebble.version>2.3.0</pebble.version>
