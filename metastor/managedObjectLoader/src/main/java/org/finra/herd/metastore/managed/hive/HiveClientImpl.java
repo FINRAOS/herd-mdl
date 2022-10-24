@@ -26,6 +26,7 @@ import org.finra.herd.metastore.managed.format.ClusteredDef;
 import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.finra.herd.metastore.managed.format.HRoleComparator;
 import org.finra.herd.metastore.managed.format.HRoles;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;

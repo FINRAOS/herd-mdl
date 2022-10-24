@@ -7,6 +7,7 @@ import org.finra.herd.metastore.managed.JobDefinition;
 import org.finra.herd.metastore.managed.datamgmt.DataMgmtSvc;
 import org.finra.herd.metastore.managed.format.ColumnDef;
 import org.finra.herd.metastore.managed.format.FormatChange;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -111,6 +112,7 @@ public class HiveFormatAlterTable {
         List<String> hiveStatements = new ArrayList<>();
         String setHiveClientTimeout = "set hive.metastore.client.socket.timeout=3600;";
         String useDb = "use " + jd.getObjectDefinition().getDbName() + ";";
+        hiveStatements.add(JobProcessorConstants.setroleadmin);
         hiveStatements.add(setHiveClientTimeout);
         hiveStatements.add(useDb);
 

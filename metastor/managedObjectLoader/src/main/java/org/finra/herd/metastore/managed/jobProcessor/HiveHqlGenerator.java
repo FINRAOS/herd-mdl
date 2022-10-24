@@ -26,6 +26,7 @@ import org.finra.herd.metastore.managed.format.FormatChange;
 import org.finra.herd.metastore.managed.hive.*;
 import org.finra.herd.metastore.managed.jobProcessor.dao.JobProcessorDAO;
 import org.finra.herd.metastore.managed.stats.StatsHelper;
+import org.finra.herd.metastore.managed.util.JobProcessorConstants;
 import org.finra.herd.metastore.managed.util.MetastoreUtil;
 import org.finra.herd.sdk.invoker.ApiException;
 import org.finra.herd.sdk.model.BusinessObjectDataDdl;
@@ -97,8 +98,10 @@ public class HiveHqlGenerator {
 
         if (!tableExists) {
 
+            List<String> hqlStatements = Lists.newArrayList();
+            hqlStatements.add(JobProcessorConstants.setroleadmin);
             // Add DDL's from data DDL
-            return getHqlFilePath(jd, partitions, tableExists, dataDdl, Lists.newArrayList());
+            return getHqlFilePath(jd, partitions, tableExists, dataDdl, hqlStatements);
 
         } else {
 

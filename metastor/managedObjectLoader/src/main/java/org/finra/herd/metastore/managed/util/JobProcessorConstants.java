@@ -54,6 +54,7 @@ public interface JobProcessorConstants {
 	int getMaxPartitionFormatLimit();
 	int NO_OF_PARALLEL_EXECUTIONS = 5;
 	static final String TOKEN_NAME = "metastore_token";
+	static final String setroleadmin= "set role admin;";
 
 
 }
