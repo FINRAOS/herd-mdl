@@ -27,23 +27,28 @@ public class StatsHelper {
 
     public void addAnalyzeStats(JobDefinition jd, List<String> partitions) {
 
-        log.info("Adding gather Stats job");
-        try {
+        if ( !jd.contains("nameSpace=POD") ) {
+            log.info("Adding gather Stats job");
+            try {
 
-            if (partitions.size() == 1) {
-                submitStatsJob(jd, jd.partitionValuesForStats(partitions.get(0)));
-            } else {
-                //Filter not available Partitions
-                dataMgmtSvc.filterPartitionsAsPerAvailability(jd, partitions);
+                if (partitions.size() == 1) {
+                    submitStatsJob(jd, jd.partitionValuesForStats(partitions.get(0)));
+                } else {
+                    //Filter not available Partitions
+                    dataMgmtSvc.filterPartitionsAsPerAvailability(jd, partitions);
 
-                partitions.stream()
-                    .forEach(s -> submitStatsJob(jd, s));
+                    partitions.stream()
+                        .forEach(s -> submitStatsJob(jd, s));
+                }
+
+                // Start Stats cluster is not running
+                dataMgmtSvc.createCluster(true, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME);
+            } catch (Exception e) {
+                log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
             }
-
-            // Start Stats cluster is not running
-            dataMgmtSvc.createCluster(true, JobProcessorConstants.METASTOR_STATS_CLUSTER_NAME);
-        } catch (Exception e) {
-            log.error("Problem encountered in addAnalyzeStats: {}", e.getMessage(), e);
+        }
+        else {
+            log.info("POD object... skipping gather Stats job");
         }
     }
 

@@ -156,9 +156,10 @@ public class HiveHqlGenerator {
         // Add DDL's from data DDL
         addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
-        //Stats
-        statsHelper.addAnalyzeStats(jd, partitions);
-
+        //Stats: Collect stats ONLY for non-POD objects
+        if ( !jd.contains("nameSpace=POD") ) {
+            statsHelper.addAnalyzeStats(jd, partitions);
+        }
         // Create file
         Path hqlFilePath = createHqlFile(jd);
         Files.write(hqlFilePath, schemaHql, CREATE, APPEND);
