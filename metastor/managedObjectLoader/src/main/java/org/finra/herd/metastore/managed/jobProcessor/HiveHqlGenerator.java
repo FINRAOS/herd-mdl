@@ -157,7 +157,7 @@ public class HiveHqlGenerator {
         addPartitionChanges(tableExists, jd, dataDdl, schemaHql);
 
         //Stats: Collect stats ONLY for non-POD objects
-        if ( !JobDefinition.contains("nameSpace=POD") ) {
+        if ( !jd.getObjectDefinition().getNameSpace().startsWith("POD") || !jd.getObjectDefinition().getNameSpace().startsWith("pod") ) {
             statsHelper.addAnalyzeStats(jd, partitions);
         }
         // Create file

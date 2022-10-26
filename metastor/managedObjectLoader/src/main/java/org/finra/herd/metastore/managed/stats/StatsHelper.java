@@ -27,7 +27,7 @@ public class StatsHelper {
 
     public void addAnalyzeStats(JobDefinition jd, List<String> partitions) {
 
-        if ( !JobDefinition.contains("nameSpace=POD") ) {
+        if ( !jd.getObjectDefinition().getNameSpace().startsWith("POD") || !jd.getObjectDefinition().getNameSpace().startsWith("pod") ) {
             log.info("Adding gather Stats job");
             try {
 
