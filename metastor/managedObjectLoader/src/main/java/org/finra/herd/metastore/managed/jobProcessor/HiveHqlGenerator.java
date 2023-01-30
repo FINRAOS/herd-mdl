@@ -80,15 +80,20 @@ public class HiveHqlGenerator {
 
         List<String> hqlStatements = Lists.newArrayList();
 
-        if (isSingletonAndKeyPartition(jd)) {
-            hqlStatements.add(dataMgmtSvc.getTableSchema(jd, true));
-        } else {
+        if (!isSingletonAndKeyPartition(jd)) {
             detectFormatChange(hqlStatements, jd);
         }
 
         return hqlStatements;
     }
 
+    public void  singletonAndKeyPartitionFormatChangeHql(JobDefinition jd,List<String> hiveHqlStatements) {
+        try {
+            hiveHqlStatements.add(dataMgmtSvc.getTableSchema(jd, true));
+        }catch(ApiException e){
+            log.error("Unable to get format change DDL from DM for :{} {}",jd.getObjectDefinition().getObjectName(),e.getResponseBody());
+        }
+    }
 
     public String buildHql(JobDefinition jd, List<String> partitions) throws IOException, ApiException, SQLException {
 
@@ -179,6 +184,7 @@ public class HiveHqlGenerator {
                 String ddl = dataDdl.getDdl();
                 String location = ddl.substring(ddl.indexOf("LOCATION") + 8);
                 schemaHql.add(String.format("alter table %s SET LOCATION %s", jd.getTableName(), location));
+                singletonAndKeyPartitionFormatChangeHql(jd,schemaHql);
             } else {
                 //Singleton, add drop statement when table exists
                 schemaHql.add(String.format("alter table %s drop if exists partition (%s >'1970-01-01');", jd.getTableName(), jd.getPartitionKey()));
