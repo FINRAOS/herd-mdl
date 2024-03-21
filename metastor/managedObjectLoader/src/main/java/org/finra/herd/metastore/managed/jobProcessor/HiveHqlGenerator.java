@@ -111,7 +111,7 @@ public class HiveHqlGenerator {
         } else {
 
             List<String> hqlStatements = formatChangeHql(jd);
-
+            log.info("hqlStatements:{}, formatChange:{}",hqlStatements,this.formatChange);
             if (this.formatChange != null) {
                 log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
                 //Execute only when no format change
