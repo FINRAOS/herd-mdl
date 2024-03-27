@@ -112,7 +112,9 @@ public class HiveHqlGenerator {
 
             List<String> hqlStatements = formatChangeHql(jd);
 
-            if (this.formatChange != null) {
+            if(isSingletonAndKeyPartition(jd)){
+                return getHqlFilePath(jd, partitions, tableExists, dataDdl, hqlStatements);
+            }else if (this.formatChange != null ) {
                 log.info("Are there any Format Changes ==>{}", this.formatChange.hasChange());
                 //Execute only when no format change
                 if (!this.formatChange.hasChange()) {
